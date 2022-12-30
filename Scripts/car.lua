@@ -16,7 +16,6 @@ PID = class()
 ---@field angleDifference function
 ---@field updateAngle function
 
----@param dMeasure number Velocity/ErrorRateOfChange
 function PID:init( pGain, iGain, dGain, dMeasure, iSaturation )
     self.pGain = pGain
     self.iGain = iGain
@@ -467,8 +466,8 @@ function Car:client_onUpdate( dt )
                 end]]
             end
 
-            local lag = shape.velocity * 0.2 --newPos - sm.camera.getPosition()
-            sm.camera.setFov(sm.util.lerp(sm.camera.getFov(), sm.camera.getDefaultFov() + 2.5 * lag:length(), lerp) )
+            local lag = sm.util.clamp((shape.velocity * 0.2):length(), 0, 5) --newPos - sm.camera.getPosition()
+            sm.camera.setFov(sm.util.lerp(sm.camera.getFov(), sm.camera.getDefaultFov() + 2.5 * lag, lerp) )
         else
             sm.camera.setPosition( sm.camera.getPosition() )
             sm.camera.setDirection( sm.camera.getDirection() )
