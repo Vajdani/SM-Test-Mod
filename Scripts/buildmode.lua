@@ -50,20 +50,8 @@ function BM:sv_blockPlace( args )
     if not sm.exists(self.creation) then self.creation = nil end
 
     if self.creation == nil then
-        --[[
-        local shape = sm.shape.createBlock(
-            args.block,
-            vec3_one,
-            self.shape.worldPosition + vec3_up * 5,
-            sm.quat.identity(),
-            false,
-            true
-        )
-
-        self.creation = shape.body
-        ]]
-
         self.creation = sm.body.createBody( self.shape.worldPosition + vec3_up * 5, sm.quat.identity(), false )
+        self.creation:setConvertibleToDynamic(false)
         self.creation:createBlock(
             args.block,
             vec3_one,
@@ -76,21 +64,23 @@ function BM:sv_blockPlace( args )
     local pos = args.pos
     local hit, result = sm.physics.raycast(pos, pos + args.dir * 100)
     if hit and result.type == "body" and result:getBody() == self.creation then
-        local shape = result:getShape()
-        local worldPos, localPos = getClosestBlockWorldPosition(shape, result.pointWorld)
-        self.creation:createBlock(
-            args.block,
-            vec3_one,
-            roundVector(result.pointLocal + result.normalLocal)
-        )
-
-        sm.effect.playEffect(
-            "Part - Upgrade",
-            self.creation:transformPoint(localPos + roundVector(result.normalWorld)),
-            sm.vec3.zero(),
-            sm.vec3.getRotation(sm.vec3.new(0,1,0), result.normalWorld)
-        )
+        local gridPos, normal = self:getBlockPos(result)
+        sm.construction.buildBlock( args.block, gridPos, result:getShape() )
     end
+end
+
+function BM:getBlockPos(result)
+    local groundPointOffset = -( sm.construction.constants.subdivideRatio_2 - 0.04 + sm.construction.constants.shapeSpacing + 0.005 )
+    local pointLocal = result.pointLocal
+    if result.type ~= "body" and result.type ~= "joint" then
+        pointLocal = pointLocal + result.normalLocal * groundPointOffset
+    end
+
+    local n = sm.vec3.closestAxis( result.normalLocal )
+    local a = pointLocal * sm.construction.constants.subdivisions - n * 0.5
+    local gridPos = sm.vec3.new( math.floor( a.x ), math.floor( a.y ), math.floor( a.z ) ) + n
+
+    return gridPos, result.normalLocal
 end
 
 ---@param args BlockPlaceData
@@ -284,15 +274,18 @@ function BM:client_onUpdate(dt)
         sm.camera.setDirection(sm.vec3.lerp(sm.camera.getDirection(), playerDir, lerp))
         sm.camera.setFov(sm.util.lerp(sm.camera.getFov(), sm.camera.getDefaultFov() * self.zoom, lerp))
 
+        if self.hotbarItems[self.mode].gui == "blockSelect" then
+            local hit, result = sm.physics.raycast(lerpedPos, lerpedPos + playerDir * 100)
+            if hit and result.type == "body" and result:getBody() == self.creation then
+                self.blockVisualisation:setPosition(
+                    getClosestBlockWorldPosition(result:getShape(), result.pointWorld) + sm.vec3.closestAxis(result.normalLocal) * 0.25
+                )
 
-        local hit, result = sm.physics.raycast(lerpedPos, lerpedPos + playerDir * 100)
-        if hit and result.type == "body" and result:getBody() == self.creation then
-            self.blockVisualisation:setPosition(
-                getClosestBlockWorldPosition(result:getShape(), result.pointWorld) + roundVector(result.normalWorld) * 0.25
-            )
-
-            if not self.blockVisualisation:isPlaying() then
-                self.blockVisualisation:start()
+                if not self.blockVisualisation:isPlaying() then
+                    self.blockVisualisation:start()
+                end
+            elseif self.blockVisualisation:isPlaying() then
+                self.blockVisualisation:stop()
             end
         elseif self.blockVisualisation:isPlaying() then
             self.blockVisualisation:stop()
@@ -331,33 +324,14 @@ function calculateRightVector(vector)
     return sm.vec3.new(math.cos(yaw), math.sin(yaw), 0)
 end
 
----@return Vec3, Vec3
+---@return Vec3
 function getClosestBlockWorldPosition( target, position )
     local A = target:getClosestBlockLocalPosition( position )/4
     local B = target.localPosition/4 - sm.vec3.new(0.125,0.125,0.125)
     local C = target:getBoundingBox()
-    local point = A-(B+C/2)
-    return target:transformLocalPoint( point ), point
-end
-
-function _round( num )
-    return round(num*4)/4
+    return target:transformLocalPoint( A-(B+C/2) )
 end
 
 function roundVector( vec3 )
     return sm.vec3.new(round(vec3.x), round(vec3.y), round(vec3.z))
-end
-
----@param body Body
----@param pos Vec3
----@return Vec3
-function transformPos(body, pos)
-    return sm.quat.inverse(body.worldRotation) * (pos - body.worldPosition)
-end
-
----@param body Body
----@param pos Vec3
----@return Vec3
-function transformLocalPos(body, pos)
-    return (body.worldRotation * pos) + body.worldPosition
 end
