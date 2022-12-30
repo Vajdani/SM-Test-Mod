@@ -1,0 +1,11 @@
+{
+	"lodList": [{
+		"mesh": "$GAME_DATA/Character/Char_Male/Animations/Animationrefs/aniref_char_male_tpose.dae",
+		"includes" : ["POSITION", "UV0", "NORMAL", "TANGENTS", "BLEND_INDICES", "BLEND_WEIGHTS"],
+		"animationList" : [
+			{ "name" : "punch",					"file" : "$CONTENT_DATA/Tools/Anims/bloodpunch/bloodpunchFP.dae", "looping" : false },
+			{ "name" : "parry",					"file" : "$CONTENT_DATA/Tools/Anims/parry/parryFP.dae", "looping" : false }
+		],
+		"maxViewDistance": 1000.0
+	}]
+} 

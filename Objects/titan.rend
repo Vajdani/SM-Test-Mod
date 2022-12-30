@@ -1,0 +1,138 @@
+{
+	"lodList": [
+		{
+			"mesh": "$CONTENT_DATA/Objects/char_male_body_test.dae", //"$SURVIVAL_DATA/Character/Char_Male/Body/Male/char_male_body.dae",
+			"subMeshList": [
+				{
+					"material": "SkelAnimDifAsgNor",
+					"textureList": [
+						"$SURVIVAL_DATA/Character/Char_Craftbot/char_craftbot_dif.tga",
+						"$SURVIVAL_DATA/Character/Char_Craftbot/char_craftbot_asg.tga",
+						"$SURVIVAL_DATA/Character/Char_Craftbot/char_craftbot_nor.tga"
+					]
+				}
+			],
+			"animationList": [
+				//default
+				{
+					"name": "idle",
+					"file": "$GAME_DATA/Character/Char_Male/Animations/Thirdperson/Locomotion/Idle/ani_char_male_lom_idle.dae",
+					"looping": true
+				},
+				{
+					"name": "run",
+					"file": "$GAME_DATA/Character/Char_Male/Animations/Thirdperson/Locomotion/Run/ani_char_male_lom_run_fwd.dae",
+					"looping": true
+				},
+				{
+					"name": "run_left",
+					"file": "$GAME_DATA/Character/Char_Male/Animations/Thirdperson/Locomotion/Run/ani_char_male_lom_run_left.dae",
+					"looping": true
+				},
+				{
+					"name": "run_right",
+					"file": "$GAME_DATA/Character/Char_Male/Animations/Thirdperson/Locomotion/Run/ani_char_male_lom_run_right.dae",
+					"looping": true
+				},
+				{
+					"name": "shuffle_left",
+					"file": "$GAME_DATA/Character/Char_Male/Animations/Thirdperson/Locomotion/Shuffle/ani_char_male_lom_shuffle_left.dae",
+					"looping": true
+				},
+				{
+					"name": "shuffle_right",
+					"file": "$GAME_DATA/Character/Char_Male/Animations/Thirdperson/Locomotion/Shuffle/ani_char_male_lom_shuffle_right.dae",
+					"looping": true
+				},
+				{
+					"name": "run_bwd",
+					"file": "$GAME_DATA/Character/Char_Male/Animations/Thirdperson/Locomotion/Run/ani_char_male_lom_run_bwd.dae",
+					"looping": true
+				},
+				{
+					"name": "run_bwd_left",
+					"file": "$GAME_DATA/Character/Char_Male/Animations/Thirdperson/Locomotion/Run/ani_char_male_lom_run_bwdleft.dae",
+					"looping": true
+				},
+				{
+					"name": "run_bwd_right",
+					"file": "$GAME_DATA/Character/Char_Male/Animations/Thirdperson/Locomotion/Run/ani_char_male_lom_run_bwdright.dae",
+					"looping": true
+				},
+				{
+					"name": "spine_bend",
+					"file": "$GAME_DATA/Character/Char_Male/Animations/Thirdperson/Posetarget/ani_posetarget_spine_bend.dae"
+				},
+
+				//spudgun
+				{
+					"name": "spudgun_idle",
+					"file": "$GAME_DATA/Character/Char_Male/Animations/Thirdperson/Spudgun/ani_char_male_spudgun_idle.dae",
+					"looping": true
+				},
+				{
+					"name": "spudgun_run",
+					"file": "$GAME_DATA/Character/Char_Male/Animations/Thirdperson/Spudgun/ani_char_male_spudgun_run.dae",
+					"looping": true
+				},
+				{
+					"name": "spudgun_run_left",
+					"file": "$GAME_DATA/Character/Char_Male/Animations/Thirdperson/Locomotion/Run/ani_char_male_lom_run_left.dae",
+					"looping": true
+				},
+				{
+					"name": "spudgun_run_right",
+					"file": "$GAME_DATA/Character/Char_Male/Animations/Thirdperson/Locomotion/Run/ani_char_male_lom_run_right.dae",
+					"looping": true
+				},
+				{
+					"name": "spudgun_shuffle_left",
+					"file": "$GAME_DATA/Character/Char_Male/Animations/Thirdperson/Locomotion/Shuffle/ani_char_male_lom_shuffle_left.dae",
+					"looping": true
+				},
+				{
+					"name": "spudgun_shuffle_right",
+					"file": "$GAME_DATA/Character/Char_Male/Animations/Thirdperson/Locomotion/Shuffle/ani_char_male_lom_shuffle_right.dae",
+					"looping": true
+				},
+				{
+					"name": "spudgun_run_bwd",
+					"file": "$GAME_DATA/Character/Char_Male/Animations/Thirdperson/Spudgun/ani_char_male_spudgun_run_bwd.dae",
+					"looping": true
+				},
+				{
+					"name": "spudgun_run_bwd_left",
+					"file": "$GAME_DATA/Character/Char_Male/Animations/Thirdperson/Locomotion/Run/ani_char_male_lom_run_bwdleft.dae",
+					"looping": true
+				},
+				{
+					"name": "spudgun_run_bwd_right",
+					"file": "$GAME_DATA/Character/Char_Male/Animations/Thirdperson/Locomotion/Run/ani_char_male_lom_run_bwdright.dae",
+					"looping": true
+				},
+				{
+					"name": "spudgun_spine_bend",
+					"file": "$GAME_DATA/Character/Char_Male/Animations/Thirdperson/Posetarget/ani_posetarget_spine_bend.dae"
+				}
+
+				//,{ "name": "sprint", 				"file": "$GAME_DATA/Character/Char_Male/Animations/Thirdperson/Locomotion/Sprint/ani_char_male_lom_sprint_fwd.dae", "looping": true },
+				//{ "name": "sprint_left_45", 		"file": "$GAME_DATA/Character/Char_Male/Animations/Thirdperson/Locomotion/Sprint/ani_char_male_lom_sprint_fwd_left45.dae", "looping": true },
+				//{	"name": "sprint_right_45", 		"file": "$GAME_DATA/Character/Char_Male/Animations/Thirdperson/Locomotion/Sprint/ani_char_male_lom_sprint_fwd_right45.dae", "looping": true },
+				//{ "name" : "ko_fromidle", 		"file" : "$GAME_DATA/Character/Char_Male/Animations/Thirdperson/Locomotion/Ko/ani_char_male_lom_ko_fromidle.dae"},
+				//{ "name" : "ko_fromrun", 			"file" : "$GAME_DATA/Character/Char_Male/Animations/Thirdperson/Locomotion/Ko/ani_char_male_lom_ko_fromrun.dae"},
+				//{ "name" : "ko_idle", 			"file" : "$GAME_DATA/Character/Char_Male/Animations/Thirdperson/Locomotion/Ko/ani_char_male_lom_ko_idle.dae", "looping": true }
+			
+				//{ "name" : "spine_lean", 			"file" : "$GAME_DATA/Character/Char_Male/Animations/Thirdperson/Posetarget/ani_posetarget_spine_lean.dae"},
+				//{ "name" : "spine_turn", 			"file" : "$GAME_DATA/Character/Char_Male/Animations/Thirdperson/Posetarget/ani_posetarget_spine_turn.dae"},
+
+				//{ "name" : "jump", 				"file" : "$GAME_DATA/Character/Char_Male/Animations/Thirdperson/Locomotion/Jump/ani_char_male_lom_jump.dae" },
+				//{ "name" : "jump_up", 			"file" : "$GAME_DATA/Character/Char_Male/Animations/Thirdperson/Locomotion/Jump/ani_char_male_lom_jump_up.dae", "looping" : true },
+				//{ "name" : "jump_down", 			"file" : "$GAME_DATA/Character/Char_Male/Animations/Thirdperson/Locomotion/Jump/ani_char_male_lom_jump_down.dae", "looping" : true },
+				//{ "name" : "jump_land", 			"file" : "$GAME_DATA/Character/Char_Male/Animations/Thirdperson/Locomotion/Jump/ani_char_male_lom_jump_land.dae" },
+				//{ "name" : "jump_land_fwd", 		"file" : "$GAME_DATA/Character/Char_Male/Animations/Thirdperson/Locomotion/Jump/ani_char_male_lom_jump_land_fwd.dae" },
+				//{ "name" : "jump_land_bwd", 		"file" : "$GAME_DATA/Character/Char_Male/Animations/Thirdperson/Locomotion/Jump/ani_char_male_lom_jump_land_bwd.dae" },
+			],
+			"maxViewDistance": 1000.0
+		}
+	]
+}

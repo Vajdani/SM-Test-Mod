@@ -1,0 +1,227 @@
+{
+   "toolList": [
+      {
+         "name": "tool_possess",
+         "previewRenderable": "$GAME_DATA/Character/Char_Tools/char_spudgun_preview.rend",
+         "previewRotation": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            -1,
+            0,
+            1,
+            0
+         ],
+         "script": {
+            "class": "Possess",
+            "data": {},
+            "file": "$CONTENT_DATA/Scripts/possess.lua"
+         },
+         "uuid": "92a363c9-6979-4f60-b609-74bad78d2a11"
+      },
+      {
+         "name": "tool_gravgun",
+         "previewRenderable": "$GAME_DATA/Character/Char_Tools/char_connecttool_preview.rend",
+         "previewRotation": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            -1,
+            0,
+            1,
+            0
+         ],
+         "script": {
+            "class": "Grav",
+            "data": {},
+            "file": "$CONTENT_DATA/Scripts/gravgun.lua"
+         },
+         "uuid": "3aa15a68-ce9b-4df8-a821-f232d22ce73a"
+      },
+      {
+         "name": "tool_railgun",
+         "previewRenderable": "$GAME_DATA/Character/Char_Tools/char_spudgun_preview.rend",
+         "previewRotation": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            -1,
+            0,
+            1,
+            0
+         ],
+         "script": {
+            "class": "Railgun",
+            "data": {},
+            "file": "$CONTENT_DATA/Scripts/railgun.lua"
+         },
+         "uuid": "72c717c3-9eab-4a77-80e0-690ab171abfe"
+      },
+      {
+         "name": "tool_bomber",
+         "previewRenderable": "$GAME_DATA/Character/Char_Tools/char_spudgun_preview.rend",
+         "previewRotation": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            -1,
+            0,
+            1,
+            0
+         ],
+         "script": {
+            "class": "Bomber",
+            "data": {},
+            "file": "$CONTENT_DATA/Scripts/bomber.lua"
+         },
+         "uuid": "f5faff4d-feaa-4839-a60d-43637ecd619c"
+      },
+      {
+         "name": "tool_spine",
+         "previewRenderable": "$GAME_DATA/Character/Char_Tools/char_spudgun_preview.rend",
+         "previewRotation": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            -1,
+            0,
+            1,
+            0
+         ],
+         "script": {
+            "class": "Spine",
+            "data": {},
+            "file": "$CONTENT_DATA/Scripts/spine.lua"
+         },
+         "uuid": "19855dce-6047-44d0-bf3a-062d11c38a34"
+      },
+      {
+         "name": "tool_shit",
+         "previewRenderable": "$GAME_DATA/Character/Char_Tools/char_spudgun_preview.rend",
+         "previewRotation": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            -1,
+            0,
+            1,
+            0
+         ],
+         "script": {
+            "class": "Shit",
+            "data": {},
+            "file": "$CONTENT_DATA/Scripts/shit.lua"
+         },
+         "uuid": "e8b3adcb-06cb-46d9-b539-a3ca84824cca"
+      },
+      {
+         "uuid": "ca50b410-a53b-46a8-a1c6-a16ae7608229",
+         "previewRenderable": "$GAME_DATA/Character/Char_Tools/char_spudgun_preview.rend",
+         "previewRotation": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            -1,
+            0,
+            1,
+            0
+         ],
+         "script": {
+            "file": "$CONTENT_DATA/Scripts/molotov.lua",
+            "class": "Molotov"
+         }
+         //,"autoTool": true
+      },
+      {
+         "uuid": "7d4e8cdc-107b-474c-a13b-aab8266f0d53",
+         "previewRenderable": "$GAME_DATA/Character/Char_Tools/char_spudgun_preview.rend",
+         "previewRotation": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            -1,
+            0,
+            1,
+            0
+         ],
+         "script": {
+            "file": "$CONTENT_DATA/Scripts/acm_tooltest.lua",
+            "class": "test"
+         },
+         "showInInventory": false
+      },
+      {
+         "uuid": "afcd0fef-f25b-474d-8496-00096f8f6cef",
+         "previewRenderable": "$GAME_DATA/Character/Char_Tools/char_spudgun_preview.rend",
+         "previewRotation": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            -1,
+            0,
+            1,
+            0
+         ],
+         "script": {
+            "file": "$CONTENT_DATA/Scripts/shield.lua",
+            "class": "Shield"
+         }
+      },
+      {
+         "uuid": "d95078dc-a3fa-4c68-b3f4-d896d71b0a72",
+         "previewRenderable": "$CONTENT_DATA/Objects/sus.rend",
+         "previewRotation": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            -1,
+            0,
+            1,
+            0
+         ],
+         "script": {
+            "file": "$CONTENT_DATA/Scripts/amogus.lua",
+            "class": "Amogus"
+         }
+      },
+      {
+         "uuid": "5b625f4e-baf2-4a49-b7c5-e2779e974471",
+         "previewRenderable": "$GAME_DATA/Character/Char_Tools/char_spudgun_preview.rend",
+         "previewRotation": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            -1,
+            0,
+            1,
+            0
+         ],
+         "script": {
+            "file": "$CONTENT_DATA/Scripts/blockGun_tool.lua",
+            "class": "BG_tool"
+         }
+      }
+   ]
+}

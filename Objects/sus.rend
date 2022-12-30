@@ -1,0 +1,18 @@
+{
+	"lodList": [
+		{
+			"subMeshList": [
+				{
+					"textureList": [
+						"$CONTENT_DATA/Objects/Textures/susshake.tga",
+						"$GAME_DATA/Textures/Default/default_asg.tga",
+						"$GAME_DATA/Textures/Default/default_nor.tga"
+					],
+					"material": "DifAsgNor",
+					"color": "ff0000"
+				}
+			],
+			"mesh": "$CONTENT_DATA/Objects/Mesh/sus_in_hand.dae"
+		}
+	]
+}

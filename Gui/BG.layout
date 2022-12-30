@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<MyGUI type="Layout" version="3.2.0">
+    <Widget type="Widget" skin="PanelEmpty" name="BackPanel" position_real="0 0 0.3125 0.7407407407407407">
+        <Widget type="Canvas" skin="BackgroundLiftExport" position_real="0.016666666666666666 0.0125 0.9666666666666667 0.975">
+            <Widget type="TextBox" skin="TextBox" position_real="0 0 1 0.11538461538461539">
+                <Property key="Caption" value="Gun Settings"/>
+                <Property key="FontName" value="SM_HeaderLarge_Wide"/>
+                <Property key="TextAlign" value="Center"/>
+            </Widget>
+            <Widget type="TextBox" skin="TextBox" position_real="0.04310344827586207 0.1282051282051282 0.43103448275862066 0.0641025641025641">
+                <Property key="Caption" value="Aiming Down Sights:"/>
+                <Property key="TextAlign" value="Left VCenter"/>
+                <Property key="FontName" value="SM_ItemTitle"/>
+            </Widget>
+            <Widget type="Button" skin="SMButton" name="aim" position_real="0.5258620689655172 0.1282051282051282 0.43103448275862066 0.0641025641025641">
+                <Property key="FontHeight" value="10"/>
+                <Property key="FontName" value="InventoryItemTitle"/>
+                <Property key="TextAlign" value="Center"/>
+            </Widget>
+            <Widget type="TextBox" skin="TextBox" position_real="0.04310344827586207 0.20512820512820512 0.43103448275862066 0.0641025641025641">
+                <Property key="Caption" value="FOV Scale While Aiming:"/>
+                <Property key="TextAlign" value="Left VCenter"/>
+                <Property key="FontName" value="SM_ItemTitle"/>
+            </Widget>
+            <Widget type="Canvas" skin="GenderButton" position_real="0.5258620689655172 0.20512820512820512 0.43103448275862066 0.0641025641025641">
+                <Property key="Colour" value="1 1 1"/>
+                <Widget type="EditBox" skin="EditBoxEmpty" name="fov" position_real="0.02 0.1 0.96 0.8">
+                    <Property key="FontName" value="SM_ItemTitle"/>
+                    <Property key="TextAlign" value="Center"/>
+                </Widget>
+            </Widget>
+            <Widget type="TextBox" skin="TextBox" position_real="0.04310344827586207 0.28205128205128205 0.43103448275862066 0.0641025641025641">
+                <Property key="Caption" value="Full Auto"/>
+                <Property key="TextAlign" value="Left VCenter"/>
+                <Property key="FontName" value="SM_ItemTitle"/>
+            </Widget>
+            <Widget type="Button" skin="SMButton" name="auto" position_real="0.5258620689655172 0.28205128205128205 0.43103448275862066 0.0641025641025641">
+                <Property key="FontHeight" value="10"/>
+                <Property key="FontName" value="InventoryItemTitle"/>
+                <Property key="TextAlign" value="Center"/>
+            </Widget>
+            <Widget type="TextBox" skin="TextBox" position_real="0.04310344827586207 0.358974358974359 0.43103448275862066 0.0641025641025641">
+                <Property key="Caption" value="Fire Cooldown:"/>
+                <Property key="TextAlign" value="Left VCenter"/>
+                <Property key="FontName" value="SM_ItemTitle"/>
+            </Widget>
+            <Widget type="Canvas" skin="GenderButton" position_real="0.5258620689655172 0.358974358974359 0.43103448275862066 0.0641025641025641">
+                <Property key="Colour" value="1 1 1"/>
+                <Widget type="EditBox" skin="EditBoxEmpty" name="cooldown" position_real="0.02 0.1 0.96 0.8">
+                    <Property key="FontName" value="SM_ItemTitle"/>
+                    <Property key="TextAlign" value="Center"/>
+                </Widget>
+            </Widget>
+            <Widget type="TextBox" skin="TextBox" position_real="0.04310344827586207 0.4358974358974359 0.43103448275862066 0.0641025641025641">
+                <Property key="Caption" value="Projectile Type:"/>
+                <Property key="TextAlign" value="Left VCenter"/>
+                <Property key="FontName" value="SM_ItemTitle"/>
+            </Widget>
+            <Widget type="Canvas" skin="Canvas" name="projectile" position_real="0.5258620689655172 0.4358974358974359 0.43103448275862066 0.0641025641025641"/>
+            <Widget type="TextBox" skin="TextBox" position_real="0.04310344827586207 0.5128205128205128 0.43103448275862066 0.0641025641025641">
+                <Property key="Caption" value="Projectile Damage:"/>
+                <Property key="TextAlign" value="Left VCenter"/>
+                <Property key="FontName" value="SM_ItemTitle"/>
+            </Widget>
+            <Widget type="Canvas" skin="GenderButton" position_real="0.5258620689655172 0.5128205128205128 0.43103448275862066 0.0641025641025641">
+                <Property key="Colour" value="1 1 1"/>
+                <Widget type="EditBox" skin="EditBoxEmpty" name="damage" position_real="0.02 0.1 0.96 0.8">
+                    <Property key="FontName" value="SM_ItemTitle"/>
+                    <Property key="TextAlign" value="Center"/>
+                </Widget>
+            </Widget>
+            <Widget type="TextBox" skin="TextBox" position_real="0.04310344827586207 0.5897435897435898 0.43103448275862066 0.0641025641025641">
+                <Property key="Caption" value="Projectile Velocity:"/>
+                <Property key="TextAlign" value="Left VCenter"/>
+                <Property key="FontName" value="SM_ItemTitle"/>
+            </Widget>
+            <Widget type="Canvas" skin="GenderButton" position_real="0.5258620689655172 0.5897435897435898 0.43103448275862066 0.0641025641025641">
+                <Property key="Colour" value="1 1 1"/>
+                <Widget type="EditBox" skin="EditBoxEmpty" name="velocity" position_real="0.02 0.1 0.96 0.8">
+                    <Property key="FontName" value="SM_ItemTitle"/>
+                    <Property key="TextAlign" value="Center"/>
+                </Widget>
+            </Widget>
+            <Widget type="TextBox" skin="TextBox" position_real="0.04310344827586207 0.6666666666666666 0.43103448275862066 0.0641025641025641">
+                <Property key="Caption" value="Muzzle Effect:"/>
+                <Property key="TextAlign" value="Left VCenter"/>
+                <Property key="FontName" value="SM_ItemTitle"/>
+            </Widget>
+            <Widget type="Canvas" skin="Canvas" name="muzzle" position_real="0.5258620689655172 0.6666666666666666 0.43103448275862066 0.0641025641025641"/>
+            <Widget type="TextBox" skin="TextBox" position_real="0.04310344827586207 0.7435897435897436 0.43103448275862066 0.0641025641025641">
+                <Property key="Caption" value="Projectile Spread:"/>
+                <Property key="TextAlign" value="Left VCenter"/>
+                <Property key="FontName" value="SM_ItemTitle"/>
+            </Widget>
+            <Widget type="Canvas" skin="GenderButton" position_real="0.5258620689655172 0.7435897435897436 0.43103448275862066 0.0641025641025641">
+                <Property key="Colour" value="1 1 1"/>
+                <Widget type="EditBox" skin="EditBoxEmpty" name="spread" position_real="0.02 0.1 0.96 0.8">
+                    <Property key="FontName" value="SM_ItemTitle"/>
+                    <Property key="TextAlign" value="Center"/>
+                </Widget>
+            </Widget>
+            <Widget type="TextBox" skin="TextBox" position_real="0.04310344827586207 0.8205128205128205 0.43103448275862066 0.0641025641025641">
+                <Property key="Caption" value="Gun Scale:"/>
+                <Property key="TextAlign" value="Left VCenter"/>
+                <Property key="FontName" value="SM_ItemTitle"/>
+            </Widget>
+            <Widget type="Canvas" skin="GenderButton" position_real="0.5258620689655172 0.8205128205128205 0.43103448275862066 0.0641025641025641">
+                <Property key="Colour" value="1 1 1"/>
+                <Widget type="EditBox" skin="EditBoxEmpty" name="scale" position_real="0.02 0.1 0.96 0.8">
+                    <Property key="FontName" value="SM_ItemTitle"/>
+                    <Property key="TextAlign" value="Center"/>
+                </Widget>
+            </Widget>
+            <Widget type="Button" skin="SMButton" name="reset" position_real="0.5258620689655172 0.9230769230769231 0.43103448275862066 0.0641025641025641">
+                <Property key="FontHeight" value="10"/>
+                <Property key="FontName" value="InventoryItemTitle"/>
+                <Property key="TextAlign" value="Center"/>
+                <Property key="Caption" value="Reset"/>
+            </Widget>
+        </Widget>
+    </Widget>
+    <CodeGeneratorSettings/>
+</MyGUI>

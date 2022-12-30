@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<MyGUI type="Layout" version="3.2.0">
+    <Widget type="Widget" skin="PanelEmpty" position="0 0 600 600" name="BackPanel">
+        <Widget type="Canvas" skin="BackgroundLiftExport" position="10 10 580 580">
+            <Widget type="Canvas" skin="Canvas" position_real="0.017241379310344827 0.37068965517241381 0.42931034482758623 0.084482758620689657" name="mode_dropdown"/>
+            <Widget type="Canvas" skin="Canvas" position_real="0.017241379310344827 0.51724137931034486 0.42931034482758623 0.084482758620689657" name="uuidOld"/>
+            <Widget type="Canvas" skin="Canvas" position_real="0.55172413793103448 0.51724137931034486 0.42931034482758623 0.084482758620689657" name="uuidNew"/>
+            <Widget type="Canvas" skin="Canvas" position_real="0.017241379310344827 0.60344827586206895 0.42931034482758623 0.43103448275862066" name="meshOld"/>
+            <Widget type="Canvas" skin="Canvas" position_real="0.55172413793103448 0.60344827586206895 0.42931034482758623 0.43103448275862066" name="meshNew"/>
+            <Widget type="ItemBox" skin="ItemBoxEmpty" position="10 10 560 560" name="inventory"/>
+        </Widget>
+    </Widget>
+    <CodeGeneratorSettings/>
+</MyGUI>

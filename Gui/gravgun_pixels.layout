@@ -1,0 +1,37 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<MyGUI type="Layout" version="3.2.0">
+    <Widget type="Widget" skin="PanelEmpty" position="0 0 600 800" name="BackPanel">
+        <Widget type="Canvas" skin="BackgroundLiftExport" position="9 11 580 780">
+            <Widget type="TextBox" skin="TextBox" position="0 0 580 150">
+                <Property key="Caption" value="Mode Settings"/>
+                <Property key="FontName" value="SM_HeaderLarge_Wide"/>
+                <Property key="TextAlign" value="Center"/>
+            </Widget>
+            <Widget type="TextBox" skin="TextBox" position="10 175 250 50">
+                <Property key="Caption" value="Current Mode:"/>
+                <Property key="TextAlign" value="Center"/>
+                <Property key="FontName" value="SM_ItemTitle"/>
+                <Property key="FontHeight" value="15"/>
+            </Widget>
+            <Widget type="Canvas" skin="Canvas" position="10 215 250 50" name="mode_dropdown"/>
+            <Widget type="TextBox" skin="TextBox" position="320 175 250 50">
+                <Property key="Caption" value="Tumble Duration(seconds):"/>
+                <Property key="TextAlign" value="Center"/>
+                <Property key="FontName" value="SM_ItemTitle"/>
+                <Property key="FontHeight" value="15"/>
+            </Widget>
+            <Widget type="Canvas" skin="LiftInput" position="320 215 250 50">
+                <Widget type="EditBox" skin="EditBoxEmpty" position="5 5 240 40" name="tumble_duration">
+                    <Property key="TextAlign" value="Center"/>
+                    <Property key="FontName" value="SM_TextLabel"/>
+                    <Property key="Caption" value="1"/>
+                </Widget>
+            </Widget>
+            <Widget type="Canvas" skin="Canvas" position="10 300 250 50" name="uuidOld"/>
+            <Widget type="Canvas" skin="Canvas" position="320 300 250 50" name="uuidNew"/>
+            <Widget type="Canvas" skin="Canvas" position="10 350 250 250" name="meshOld"/>
+            <Widget type="Canvas" skin="Canvas" position="320 350 250 250" name="meshNew"/>
+        </Widget>
+    </Widget>
+    <CodeGeneratorSettings/>
+</MyGUI>

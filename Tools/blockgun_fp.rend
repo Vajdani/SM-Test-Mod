@@ -1,0 +1,23 @@
+{
+	"lodList": [{
+		"mesh": "$GAME_DATA/Character/Char_Male/Animations/Animationrefs/aniref_char_male_tpose.dae",
+		"includes" : ["POSITION", "UV0", "NORMAL", "TANGENTS", "BLEND_INDICES", "BLEND_WEIGHTS"],
+		"animationList" : [
+			{ "name" : "bg_idle", 					"file" : "$GAME_DATA/Character/Char_Male/Animations/Firstperson/Spudgun/ani_char_male_fp_spudgun_normal_idle.dae" },
+			{ "name" : "bg_shoot", 				    "file" : "$GAME_DATA/Character/Char_Male/Animations/Firstperson/Spudgun/ani_char_male_fp_spudgun_normal_shoot.dae" },
+
+			{ "name" : "bg_pickup", 				"file" : "$GAME_DATA/Character/Char_Male/Animations/Firstperson/Spudgun/ani_char_male_fp_spudgun_normal_pickup.dae" },
+			{ "name" : "bg_putdown", 				"file" : "$GAME_DATA/Character/Char_Male/Animations/Firstperson/Spudgun/ani_char_male_fp_spudgun_normal_putdown.dae" },
+
+			{ "name" : "bg_sprint_into", 			"file" : "$GAME_DATA/Character/Char_Male/Animations/Firstperson/Spudgun/ani_char_male_fp_spudgun_sprint_into.dae" },
+			{ "name" : "bg_sprint_exit", 			"file" : "$GAME_DATA/Character/Char_Male/Animations/Firstperson/Spudgun/ani_char_male_fp_spudgun_sprint_exit.dae" },
+			{ "name" : "bg_sprint_idle", 			"file" : "$GAME_DATA/Character/Char_Male/Animations/Firstperson/Spudgun/ani_char_male_fp_spudgun_sprint_idle.dae" },
+
+			{ "name" : "bg_aim_into", 				"file" : "$GAME_DATA/Character/Char_Male/Animations/Firstperson/Spudgun/ani_char_male_fp_spudgun_aim_into.dae" },
+			{ "name" : "bg_aim_exit", 				"file" : "$GAME_DATA/Character/Char_Male/Animations/Firstperson/Spudgun/ani_char_male_fp_spudgun_aim_exit.dae" },
+			{ "name" : "bg_aim_shoot", 			    "file" : "$GAME_DATA/Character/Char_Male/Animations/Firstperson/Spudgun/ani_char_male_fp_spudgun_aim_shoot.dae" },
+			{ "name" : "bg_aim_idle", 				"file" : "$GAME_DATA/Character/Char_Male/Animations/Firstperson/Spudgun/ani_char_male_fp_spudgun_aim_idle.dae" }
+		],
+		"maxViewDistance": 1000.0
+	}]
+} 

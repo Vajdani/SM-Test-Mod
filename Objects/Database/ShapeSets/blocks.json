@@ -1,0 +1,15 @@
+{
+   "blockList" : 
+   [
+		{
+			"uuid": "73956adf-ddb0-4a1e-93e3-4fa5983225e1",
+			"dif": "$MOD_DATA/Objects/Textures/reflective_block_dif.png",
+			"asg": "$MOD_DATA/Objects/Textures/reflective_block_asg1.png",
+			"nor": "$GAME_DATA/Textures/nonor_nor.tga",
+			"color": "DF7F00",
+			"density": 250,
+			"tiling": 4,
+			"physicsMaterial": "plastic"
+		}
+   ]
+}

@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<MyGUI type="Layout" version="3.2.0">
+    <Widget type="Canvas" skin="BackgroundEngineNoUpgrade" position_real="0 0 0.26041666666666669 0.46296296296296297">
+        <Widget type="EditBox" skin="EditBoxEmpty" position_real="0.14999999999999999 0.050000000000000003 0.69999999999999996 0.20000000000000001" name="input">
+            <Property key="TextAlign" value="Center"/>
+            <Property key="FontName" value="SM_ItemTitle"/>
+        </Widget>
+        <Widget type="Canvas" skin="GenderButton" position_real="0.14999999999999999 0.29999999999999999 0.69999999999999996 0.59999999999999998">
+            <Property key="Colour" value="1 1 1"/>
+            <Widget type="EditBox" skin="TextBox" position_real="0.014285714285714285 0.016666666666666666 0.97142857142857142 0.96666666666666667" name="output">
+                <Property key="FontName" value="SM_ItemTitle"/>
+                <Property key="TextAlign" value="Default"/>
+                <Property key="WordWrap" value="true"/>
+                <Property key="ReadOnly" value="true"/>
+                <Property key="Static" value="true"/>
+            </Widget>
+        </Widget>
+    </Widget>
+    <CodeGeneratorSettings/>
+</MyGUI>
