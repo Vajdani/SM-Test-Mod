@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="UTF-8"?>
 <MyGUI type="Layout" version="3.2.0">
-    <Widget type="Widget" skin="PanelEmpty" position="0 0 710 855" name="BackPanel">
+    <Widget type="Widget" skin="PanelEmpty" position="0 0 710 800" name="BackPanel">
         <Widget type="Widget" skin="BackgroundPopup" position="5 5 345 415">
             <Widget type="TextBox" skin="TextBox" position="15 15 315 50">
                 <Property key="Caption" value="PHYSICS"/>
@@ -87,7 +87,7 @@
                 </Widget>
             </Widget>
         </Widget>
-        <Widget type="Widget" skin="BackgroundPopup" position="360 435 345 340">
+        <Widget type="Widget" skin="BackgroundPopup" position="360 435 345 360">
             <Widget type="TextBox" skin="TextBox" position="15 15 315 50">
                 <Property key="Caption" value="VISUALS"/>
                 <Property key="FontName" value="SM_HeaderLarge_Wide"/>
@@ -107,8 +107,54 @@
                     <Property key="FontName" value="SM_ItemTitle"/>
                 </Widget>
             </Widget>
+            <Widget type="TextBox" skin="GenderButton" position="15 125 150 50">
+                <Property key="Caption" value="Wheel Effects"/>
+                <Property key="FontName" value="SM_Header"/>
+                <Property key="TextAlign" value="Center"/>
+                <Property key="TextColour" value="1 1 1"/>
+            </Widget>
+            <Widget type="Button" skin="SMButton" position="180 125 150 50" name="button_wheelfx">
+                <Property key="FontName" value="SM_Header"/>
+            </Widget>
+            <Widget type="TextBox" skin="GenderButton" position="15 180 150 50">
+                <Property key="Caption" value="FOV Distortion"/>
+                <Property key="FontName" value="SM_Header"/>
+                <Property key="TextAlign" value="Center"/>
+                <Property key="TextColour" value="1 1 1"/>
+            </Widget>
+            <Widget type="Button" skin="SMButton" position="180 180 150 50" name="button_fovdist">
+                <Property key="FontName" value="SM_Header"/>
+            </Widget>
+            <Widget type="Widget" skin="PanelEmpty" position="15 235 315 105" name="panel_fov">
+                <Widget type="TextBox" skin="GenderButton" position="0 0 150 50">
+                    <Property key="Caption" value="Multiplier"/>
+                    <Property key="FontName" value="SM_Header"/>
+                    <Property key="TextAlign" value="Center"/>
+                    <Property key="TextColour" value="1 1 1"/>
+                </Widget>
+                <Widget type="Canvas" skin="GenderButton" position="165 0 150 50">
+                    <Widget type="EditBox" skin="EditBoxEmpty" position="5 5 140 40" name="editbox_fovdistmult">
+                        <Property key="TextAlign" value="Center"/>
+                        <Property key="TextColour" value="1 1 1"/>
+                        <Property key="FontName" value="SM_ItemTitle"/>
+                    </Widget>
+                </Widget>
+                <Widget type="TextBox" skin="GenderButton" position="0 55 150 50">
+                    <Property key="Caption" value="Limit"/>
+                    <Property key="FontName" value="SM_Header"/>
+                    <Property key="TextAlign" value="Center"/>
+                    <Property key="TextColour" value="1 1 1"/>
+                </Widget>
+                <Widget type="Canvas" skin="GenderButton" position="165 55 150 50">
+                    <Widget type="EditBox" skin="EditBoxEmpty" position="5 5 140 40" name="editbox_fovdistcap">
+                        <Property key="TextAlign" value="Center"/>
+                        <Property key="TextColour" value="1 1 1"/>
+                        <Property key="FontName" value="SM_ItemTitle"/>
+                    </Widget>
+                </Widget>
+            </Widget>
         </Widget>
-        <Widget type="Widget" skin="BackgroundPopup" position="360 5 345 340">
+        <Widget type="Widget" skin="BackgroundPopup" position="360 5 345 345">
             <Widget type="TextBox" skin="TextBox" position="15 15 315 50">
                 <Property key="Caption" value="WHEELS"/>
                 <Property key="FontName" value="SM_HeaderLarge_Wide"/>
@@ -181,12 +227,71 @@
             </Widget>
             <Widget type="Canvas" skin="Canvas" position="180 175 150 50" name="dropdown_wheels"/>
         </Widget>
-        <Widget type="Canvas" skin="BackgroundPopup" position="5 435 345 415">
+        <Widget type="Widget" skin="BackgroundPopup" position="5 435 345 360">
             <Widget type="TextBox" skin="TextBox" position="15 15 315 50">
                 <Property key="Caption" value="PID"/>
                 <Property key="FontName" value="SM_HeaderLarge_Wide"/>
                 <Property key="TextAlign" value="Center"/>
                 <Property key="TextColour" value="1 1 1"/>
+            </Widget>
+            <Widget type="TextBox" skin="GenderButton" position="15 70 150 50">
+                <Property key="Caption" value="P"/>
+                <Property key="FontName" value="SM_Header"/>
+                <Property key="TextAlign" value="Center"/>
+                <Property key="TextColour" value="1 1 1"/>
+            </Widget>
+            <Widget type="Canvas" skin="GenderButton" position="180 70 150 50">
+                <Widget type="EditBox" skin="EditBoxEmpty" position="5 5 140 40" name="editbox_pid_p">
+                    <Property key="TextAlign" value="Center"/>
+                    <Property key="TextColour" value="1 1 1"/>
+                    <Property key="FontName" value="SM_ItemTitle"/>
+                </Widget>
+            </Widget>
+            <Widget type="TextBox" skin="GenderButton" position="15 125 150 50">
+                <Property key="Caption" value="I"/>
+                <Property key="FontName" value="SM_Header"/>
+                <Property key="TextAlign" value="Center"/>
+                <Property key="TextColour" value="1 1 1"/>
+            </Widget>
+            <Widget type="Canvas" skin="GenderButton" position="180 125 150 50">
+                <Widget type="EditBox" skin="EditBoxEmpty" position="5 5 140 40" name="editbox_pid_i">
+                    <Property key="TextAlign" value="Center"/>
+                    <Property key="TextColour" value="1 1 1"/>
+                    <Property key="FontName" value="SM_ItemTitle"/>
+                </Widget>
+            </Widget>
+            <Widget type="TextBox" skin="GenderButton" position="15 180 150 50">
+                <Property key="Caption" value="D"/>
+                <Property key="FontName" value="SM_Header"/>
+                <Property key="TextAlign" value="Center"/>
+                <Property key="TextColour" value="1 1 1"/>
+            </Widget>
+            <Widget type="Canvas" skin="GenderButton" position="180 180 150 50">
+                <Widget type="EditBox" skin="EditBoxEmpty" position="5 5 140 40" name="editbox_pid_d">
+                    <Property key="TextAlign" value="Center"/>
+                    <Property key="TextColour" value="1 1 1"/>
+                    <Property key="FontName" value="SM_ItemTitle"/>
+                </Widget>
+            </Widget>
+            <Widget type="TextBox" skin="GenderButton" position="15 235 150 50">
+                <Property key="Caption" value="Derivative"/>
+                <Property key="FontName" value="SM_Header"/>
+                <Property key="TextAlign" value="Center"/>
+                <Property key="TextColour" value="1 1 1"/>
+            </Widget>
+            <Widget type="Canvas" skin="Canvas" position="180 235 150 50" name="dropdown_derivative"/>
+            <Widget type="TextBox" skin="GenderButton" position="15 290 150 50">
+                <Property key="Caption" value="I Saturation"/>
+                <Property key="FontName" value="SM_Header"/>
+                <Property key="TextAlign" value="Center"/>
+                <Property key="TextColour" value="1 1 1"/>
+            </Widget>
+            <Widget type="Canvas" skin="GenderButton" position="180 290 150 50">
+                <Widget type="EditBox" skin="EditBoxEmpty" position="5 5 140 40" name="editbox_pid_isaturation">
+                    <Property key="TextAlign" value="Center"/>
+                    <Property key="TextColour" value="1 1 1"/>
+                    <Property key="FontName" value="SM_ItemTitle"/>
+                </Widget>
             </Widget>
         </Widget>
     </Widget>

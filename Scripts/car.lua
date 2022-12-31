@@ -1,4 +1,11 @@
 -- #region PID
+--[[
+    The PID controller code is not mine, I took it from here:
+    https://github.com/vazgriz/PID_Controller/blob/master/Assets/Scripts/PID_Controller.cs
+
+    Also check out the YT video about it:
+    https://www.youtube.com/watch?v=y3K6FUgrgXw
+]]
 PID = class()
 ---@class PID
 ---@field pGain number
@@ -16,6 +23,7 @@ PID = class()
 ---@field angleDifference function
 ---@field updateAngle function
 
+--dMeasure: Velocity/ErrorRateOfChange
 function PID:init( pGain, iGain, dGain, dMeasure, iSaturation )
     self.pGain = pGain
     self.iGain = iGain
@@ -113,7 +121,8 @@ TODO:
 2. PID for body roll
 3. Find whoever made sm.quat.slerp and give them a bad time
 4. Settings gui
-5. Reduce size to just a block
+5. Reduce size to 2x2x1
+6. Have to connect driver's seat instead of interacting
 ]]
 
 
@@ -124,6 +133,8 @@ local vec3_down = sm.vec3.new(0,0,-1)
 local vec3_x = sm.vec3.new(1,0,0)
 local camRotAdjust = sm.quat.angleAxis(math.rad(-90), vec3_x) * sm.quat.angleAxis(math.rad(180), vec3_up)
 --local camAngleDown = sm.quat.angleAxis(math.rad(-15), vec3_x)
+local on = "#269e44On"
+local off = "#9e2626Off"
 
 ---@class Car : ShapeClass
 Car = class()
@@ -148,6 +159,7 @@ function Car:server_onCreate()
     self.sv_data = self.storage:load()
     if not self.sv_data then
         self.sv_data = {
+            --wheels
             wheelCount = 4,
             wheelOffsets = {
                 sm.vec3.new( 1.5, 0, 2.5 ),
@@ -164,15 +176,27 @@ function Car:server_onCreate()
             turnSpeed = 0.5,
             turnFriction = 0.1,
 
+            --pid
+            pid_p = 0.2,
+            pid_i = 0.5,
+            pid_d = 0.06,
+            pid_derivative = "Velocity",
+            pid_isaturation = 0.5,
+
             --visuals
-            cameraFollowSpeed = 5
+            cameraFollowSpeed = 5,
+            wheelfx = true,
+            fovDist = true,
+            fovDistMultiplier = 2.5,
+            fovDistCap = 5
         }
     end
 
+    local data = self.sv_data
     self.sv_pids = {}
     for i = 1, self.sv_data.wheelCount do
         local pid = PID()
-        pid:init( 0.2, 0.5, 0.06, "Velocity", 0.5 ) --( 1, 0.25, 0.1, "Velocity", 1 )
+        pid:init( data.pid_p, data.pid_i, data.pid_d, data.pid_derivative, data.pid_isaturation ) --( 1, 0.25, 0.1, "Velocity", 1 )
 
         self.sv_pids[#self.sv_pids+1] = pid
     end
@@ -188,9 +212,9 @@ function Car:sv_updateSettings( data )
             local pid = self.sv_pids[i]
             if not pid then
                 pid = PID()
-                pid:init( 0.2, 0.5, 0.06, "Velocity", 0.5 )
             end
 
+            pid:init( data.pid_p, data.pid_i, data.pid_d, data.pid_derivative, data.pid_isaturation )
             newPids[#newPids+1] = pid
         end
 
@@ -222,7 +246,7 @@ function Car:server_onFixedUpdate( dt )
 
     for k, offset in pairs(data.wheelOffsets) do
         local pos = shape:transformLocalPoint(offset)
-        local hit, result = sm.physics.raycast(pos, pos - vec3_up * (data.hoverHeight + 1), body, -1)
+        local hit, result = sm.physics.raycast(pos, pos - shape.at * (data.hoverHeight + 1), body, -1)
 
         if hit and (result.type ~= "areaTrigger" or self:isLiquid(result:getAreaTrigger())) then
             local pid = self.sv_pids[k]
@@ -242,7 +266,7 @@ function Car:server_onFixedUpdate( dt )
 
     local fwd = BoolToVal(self.sv_controls[3]) - BoolToVal(self.sv_controls[4])
     local right = BoolToVal(self.sv_controls[1]) - BoolToVal(self.sv_controls[2])
-    self.fwd = sm.util.lerp(self.fwd, fwd, dt * data.acceleration)
+    self.fwd = sm.util.lerp(self.fwd, fwd, dt * data.acceleration * (fwd ~= 0 and 1 or 2))
     sm.physics.applyImpulse( shape, (fwdDir * mass * data.speed * self.fwd) * (wheelHits / #data.wheelOffsets), true )
 
     local angularVel = body.angularVelocity
@@ -299,21 +323,35 @@ function Car:client_onClientDataUpdate( data )
     end
 
     self.cl_data = data
-    self.gui:setText("editbox_height",          string.format("%.3f", tostring(data.hoverHeight)))
-    self.gui:setText("editbox_speed",           string.format("%.3f", tostring(data.speed)))
-    self.gui:setText("editbox_acceleration",    string.format("%.3f", tostring(data.acceleration)))
-    self.gui:setText("editbox_friction",        string.format("%.3f", tostring(data.friction)))
-    self.gui:setText("editbox_turnspeed",       string.format("%.3f", tostring(data.turnSpeed)))
-    self.gui:setText("editbox_turnfriction",    string.format("%.3f", tostring(data.turnFriction)))
-    self.gui:setText("editbox_camspeed",        string.format("%.3f", tostring(data.cameraFollowSpeed)))
-    self.gui:setText("editbox_wheels",          tostring(data.wheelCount))
+    self.gui:setText("editbox_height",                      string.format("%.3f", tostring(data.hoverHeight)))
+    self.gui:setText("editbox_speed",                       string.format("%.3f", tostring(data.speed)))
+    self.gui:setText("editbox_acceleration",                string.format("%.3f", tostring(data.acceleration)))
+    self.gui:setText("editbox_friction",                    string.format("%.3f", tostring(data.friction)))
+    self.gui:setText("editbox_turnspeed",                   string.format("%.3f", tostring(data.turnSpeed)))
+    self.gui:setText("editbox_turnfriction",                string.format("%.3f", tostring(data.turnFriction)))
+    self.gui:setText("editbox_camspeed",                    string.format("%.3f", tostring(data.cameraFollowSpeed)))
+    self.gui:setText("editbox_wheels",                      tostring(data.wheelCount))
+    self.gui:setText("button_wheelfx",                      data.wheelfx and on or off)
+    self.gui:setText("button_fovdist",                      data.fovDist and on or off)
+    self.gui:setVisible("panel_fov",                        data.fovDist)
+    self.gui:setText("editbox_fovdistmult",                 string.format("%.3f", tostring(data.fovDistMultiplier)))
+    self.gui:setText("editbox_fovdistcap",                  string.format("%.3f", tostring(data.fovDistCap)))
+    self.gui:setText("editbox_pid_p",                       string.format("%.3f", tostring(data.pid_p)))
+    self.gui:setText("editbox_pid_i",                       string.format("%.3f", tostring(data.pid_i)))
+    self.gui:setText("editbox_pid_d",                       string.format("%.3f", tostring(data.pid_d)))
+    self.gui:setText("editbox_pid_isaturation",             string.format("%.3f", tostring(data.pid_isaturation)))
     self:cl_ui_updateOffsets()
+
+    self.derivative = data.pid_derivative
+    self.gui:setSelectedDropDownItem("dropdown_derivative", data.pid_derivative)
 
     for k, effectData in pairs(self.effects) do
         effectData.effect:destroy()
     end
-
     self.effects = {}
+
+    if not data.wheelfx then return end
+
     for k, offset in pairs(data.wheelOffsets) do
         local effect = sm.effect.createEffect("Thruster - Level 5", self.interactable)
         effect:setOffsetPosition( offset )
@@ -421,7 +459,7 @@ function Car:client_onUpdate( dt )
         if self.cameraMode ~= 1 then
             local worldPos = shape.worldPosition
             --1.875 7.5
-            local offset = (fwd == -1 and dir_forward or -dir_forward) * (3.75 * self.zoom) + dir_up * 4
+            local offset = dir_forward * -1 * (3.75 * self.zoom) + dir_up * 4 --(fwd == -1 and dir_forward or -dir_forward) * (3.75 * self.zoom) + dir_up * 4
             local newPos = worldPos + offset
 
             local lerp = dt * self.cl_data.cameraFollowSpeed
@@ -466,8 +504,10 @@ function Car:client_onUpdate( dt )
                 end]]
             end
 
-            local lag = sm.util.clamp((shape.velocity * 0.2):length(), 0, 5) --newPos - sm.camera.getPosition()
-            sm.camera.setFov(sm.util.lerp(sm.camera.getFov(), sm.camera.getDefaultFov() + 2.5 * lag, lerp) )
+            if self.cl_data.fovDist then
+                local lag = sm.util.clamp((shape.velocity * 0.2):length(), 0, self.cl_data.fovDistCap)
+                sm.camera.setFov(sm.util.lerp(sm.camera.getFov(), sm.camera.getDefaultFov() + self.cl_data.fovDistMultiplier * lag, lerp) )
+            end
         else
             sm.camera.setPosition( sm.camera.getPosition() )
             sm.camera.setDirection( sm.camera.getDirection() )
@@ -498,11 +538,21 @@ function Car:cl_ui_create( wheelCount )
     self.gui:setTextAcceptedCallback( "editbox_turnspeed",      "cl_ui_turnspeed" )
     self.gui:setTextAcceptedCallback( "editbox_turnfriction",   "cl_ui_turnfriction" )
     self.gui:setTextAcceptedCallback( "editbox_camspeed",       "cl_ui_camspeed" )
+    self.gui:setTextAcceptedCallback( "editbox_fovdistmult",    "cl_ui_fovDistMult" )
+    self.gui:setTextAcceptedCallback( "editbox_fovdistcap",     "cl_ui_fovDistCap" )
+
+    self.gui:setButtonCallback("button_wheelfx",                "cl_ui_wheelfx")
+    self.gui:setButtonCallback("button_fovdist",                "cl_ui_fovDist")
 
     self.gui:setTextAcceptedCallback( "editbox_wheels",         "cl_ui_wheelCount" )
     self.gui:setTextAcceptedCallback( "editbox_offsetx",        "cl_ui_offset" )
     self.gui:setTextAcceptedCallback( "editbox_offsety",        "cl_ui_offset" )
     self.gui:setTextAcceptedCallback( "editbox_offsetz",        "cl_ui_offset" )
+
+    self.gui:setTextAcceptedCallback( "editbox_pid_p",          "cl_ui_pid" )
+    self.gui:setTextAcceptedCallback( "editbox_pid_i",          "cl_ui_pid" )
+    self.gui:setTextAcceptedCallback( "editbox_pid_d",          "cl_ui_pid" )
+    self.gui:setTextAcceptedCallback( "editbox_pid_isaturation","cl_ui_pid" )
 
     self.gui:setOnCloseCallback( "cl_ui_onClose" )
 
@@ -510,7 +560,8 @@ function Car:cl_ui_create( wheelCount )
     for i = 1, wheelCount do
         options[#options+1] = tostring(i)
     end
-    self.gui:createDropDown( "dropdown_wheels", "cl_ui_wheelSelect", options )
+    self.gui:createDropDown( "dropdown_wheels",                 "cl_ui_wheelSelect", options )
+    self.gui:createDropDown( "dropdown_derivative",             "cl_ui_derivative", { "Velocity", "ErrorRateOfChange" } )
 end
 
 function Car:cl_ui_height(widget, text)
@@ -569,6 +620,32 @@ function Car:cl_ui_camspeed(widget, text)
     end
 end
 
+function Car:cl_ui_fovDistMult(widget, text)
+    local valid, value = self:verifyInput( text, widget, self.cl_data.fovDistMultiplier )
+    if valid then
+        self.cl_data.fovDistMultiplier = value
+        self.network:sendToServer("sv_updateSettings", self.cl_data)
+    end
+end
+
+function Car:cl_ui_fovDistCap(widget, text)
+    local valid, value = self:verifyInput( text, widget, self.cl_data.fovDistCap )
+    if valid then
+        self.cl_data.fovDistCap = value
+        self.network:sendToServer("sv_updateSettings", self.cl_data)
+    end
+end
+
+function Car:cl_ui_wheelfx()
+    self.cl_data.wheelfx = not self.cl_data.wheelfx
+    self.network:sendToServer("sv_updateSettings", self.cl_data)
+end
+
+function Car:cl_ui_fovDist()
+    self.cl_data.fovDist = not self.cl_data.fovDist
+    self.network:sendToServer("sv_updateSettings", self.cl_data)
+end
+
 function Car:cl_ui_wheelCount( widget, text )
     local valid, value = self:verifyInput( text, widget, self.cl_data.wheelCount )
     if valid then
@@ -577,7 +654,7 @@ function Car:cl_ui_wheelCount( widget, text )
         sent.wheelCount = value
         local newOffsets = {}
         for i = 1, value do
-            newOffsets[#newOffsets+1] = self.cl_data.wheelOffsets[i] or sm.vec3.zero()
+            newOffsets[#newOffsets+1] = self.cl_data.wheelOffsets[i] or vec3_zero
         end
 
         sent.wheelOffsets = newOffsets
@@ -596,6 +673,16 @@ function Car:cl_ui_offset( widget, text )
     end
 end
 
+function Car:cl_ui_pid( widget, text )
+    local index = widget:sub(13, 23)
+    local valid, value = self:verifyInput( text, widget, self.cl_data["pid_"..index] )
+
+    if valid then
+        self.cl_data["pid_"..index] = value
+        self.network:sendToServer("sv_updateSettings", self.cl_data)
+    end
+end
+
 function Car:cl_ui_wheelSelect( option )
     self.selectedWheel = tonumber(option)
     self:cl_ui_updateOffsets()
@@ -608,8 +695,15 @@ function Car:cl_ui_updateOffsets()
     self.gui:setText("editbox_offsetz", tostring(offset.z))
 end
 
-function Car:cl_ui_onClose()
+function Car:cl_ui_derivative( option )
+    if self.derivative == option then return end
+
+    self.cl_data.pid_derivative = option
     self.network:sendToServer("sv_updateSettings", self.cl_data)
+end
+
+function Car:cl_ui_onClose()
+    --self.network:sendToServer("sv_updateSettings", self.cl_data)
 end
 
 

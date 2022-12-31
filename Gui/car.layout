@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <MyGUI type="Layout" version="3.2.0">
-    <Widget type="Widget" skin="PanelEmpty" name="BackPanel" position_real="0 0 0.3697916666666667 0.7916666666666666">
-        <Widget type="Widget" skin="BackgroundPopup" position_real="0.007042253521126761 0.005847953216374269 0.4859154929577465 0.4853801169590643">
+    <Widget type="Widget" skin="PanelEmpty" name="BackPanel" position_real="0 0 0.3697916666666667 0.7407407407407407">
+        <Widget type="Widget" skin="BackgroundPopup" position_real="0.007042253521126761 0.00625 0.4859154929577465 0.51875">
             <Widget type="TextBox" skin="TextBox" position_real="0.043478260869565216 0.03614457831325301 0.9130434782608695 0.12048192771084337">
                 <Property key="Caption" value="PHYSICS"/>
                 <Property key="FontName" value="SM_HeaderLarge_Wide"/>
@@ -87,106 +87,211 @@
                 </Widget>
             </Widget>
         </Widget>
-        <Widget type="Widget" skin="BackgroundPopup" position_real="0.5070422535211268 0.5087719298245614 0.4859154929577465 0.39766081871345027">
-            <Widget type="TextBox" skin="TextBox" position_real="0.043478260869565216 0.04411764705882353 0.9130434782608695 0.14705882352941177">
+        <Widget type="Widget" skin="BackgroundPopup" position_real="0.5070422535211268 0.54375 0.4859154929577465 0.45">
+            <Widget type="TextBox" skin="TextBox" position_real="0.043478260869565216 0.041666666666666664 0.9130434782608695 0.1388888888888889">
                 <Property key="Caption" value="VISUALS"/>
                 <Property key="FontName" value="SM_HeaderLarge_Wide"/>
                 <Property key="TextAlign" value="Center"/>
                 <Property key="TextColour" value="1 1 1"/>
             </Widget>
-            <Widget type="TextBox" skin="GenderButton" position_real="0.043478260869565216 0.20588235294117646 0.43478260869565216 0.14705882352941177">
+            <Widget type="TextBox" skin="GenderButton" position_real="0.043478260869565216 0.19444444444444445 0.43478260869565216 0.1388888888888889">
                 <Property key="Caption" value="Camera Speed"/>
                 <Property key="FontName" value="SM_Header"/>
                 <Property key="TextAlign" value="Center"/>
                 <Property key="TextColour" value="1 1 1"/>
             </Widget>
-            <Widget type="Canvas" skin="GenderButton" position_real="0.5217391304347826 0.20588235294117646 0.43478260869565216 0.14705882352941177">
+            <Widget type="Canvas" skin="GenderButton" position_real="0.5217391304347826 0.19444444444444445 0.43478260869565216 0.1388888888888889">
                 <Widget type="EditBox" skin="EditBoxEmpty" name="editbox_camspeed" position_real="0.03333333333333333 0.1 0.9333333333333333 0.8">
                     <Property key="TextAlign" value="Center"/>
                     <Property key="TextColour" value="1 1 1"/>
                     <Property key="FontName" value="SM_ItemTitle"/>
                 </Widget>
             </Widget>
+            <Widget type="TextBox" skin="GenderButton" position_real="0.043478260869565216 0.3472222222222222 0.43478260869565216 0.1388888888888889">
+                <Property key="Caption" value="Wheel Effects"/>
+                <Property key="FontName" value="SM_Header"/>
+                <Property key="TextAlign" value="Center"/>
+                <Property key="TextColour" value="1 1 1"/>
+            </Widget>
+            <Widget type="Button" skin="SMButton" name="button_wheelfx" position_real="0.5217391304347826 0.3472222222222222 0.43478260869565216 0.1388888888888889">
+                <Property key="FontName" value="SM_Header"/>
+            </Widget>
+            <Widget type="TextBox" skin="GenderButton" position_real="0.043478260869565216 0.5 0.43478260869565216 0.1388888888888889">
+                <Property key="Caption" value="FOV Distortion"/>
+                <Property key="FontName" value="SM_Header"/>
+                <Property key="TextAlign" value="Center"/>
+                <Property key="TextColour" value="1 1 1"/>
+            </Widget>
+            <Widget type="Button" skin="SMButton" name="button_fovdist" position_real="0.5217391304347826 0.5 0.43478260869565216 0.1388888888888889">
+                <Property key="FontName" value="SM_Header"/>
+            </Widget>
+            <Widget type="Widget" skin="PanelEmpty" name="panel_fov" position_real="0.043478260869565216 0.6527777777777778 0.9130434782608695 0.2916666666666667">
+                <Widget type="TextBox" skin="GenderButton" position_real="0 0 0.47619047619047616 0.47619047619047616">
+                    <Property key="Caption" value="Multiplier"/>
+                    <Property key="FontName" value="SM_Header"/>
+                    <Property key="TextAlign" value="Center"/>
+                    <Property key="TextColour" value="1 1 1"/>
+                </Widget>
+                <Widget type="Canvas" skin="GenderButton" position_real="0.5238095238095238 0 0.47619047619047616 0.47619047619047616">
+                    <Widget type="EditBox" skin="EditBoxEmpty" name="editbox_fovdistmult" position_real="0.03333333333333333 0.1 0.9333333333333333 0.8">
+                        <Property key="TextAlign" value="Center"/>
+                        <Property key="TextColour" value="1 1 1"/>
+                        <Property key="FontName" value="SM_ItemTitle"/>
+                    </Widget>
+                </Widget>
+                <Widget type="TextBox" skin="GenderButton" position_real="0 0.5238095238095238 0.47619047619047616 0.47619047619047616">
+                    <Property key="Caption" value="Limit"/>
+                    <Property key="FontName" value="SM_Header"/>
+                    <Property key="TextAlign" value="Center"/>
+                    <Property key="TextColour" value="1 1 1"/>
+                </Widget>
+                <Widget type="Canvas" skin="GenderButton" position_real="0.5238095238095238 0.5238095238095238 0.47619047619047616 0.47619047619047616">
+                    <Widget type="EditBox" skin="EditBoxEmpty" name="editbox_fovdistcap" position_real="0.03333333333333333 0.1 0.9333333333333333 0.8">
+                        <Property key="TextAlign" value="Center"/>
+                        <Property key="TextColour" value="1 1 1"/>
+                        <Property key="FontName" value="SM_ItemTitle"/>
+                    </Widget>
+                </Widget>
+            </Widget>
         </Widget>
-        <Widget type="Widget" skin="BackgroundPopup" position_real="0.5070422535211268 0.005847953216374269 0.4859154929577465 0.39766081871345027">
-            <Widget type="TextBox" skin="TextBox" position_real="0.043478260869565216 0.04411764705882353 0.9130434782608695 0.14705882352941177">
+        <Widget type="Widget" skin="BackgroundPopup" position_real="0.5070422535211268 0.00625 0.4859154929577465 0.43125">
+            <Widget type="TextBox" skin="TextBox" position_real="0.043478260869565216 0.043478260869565216 0.9130434782608695 0.14492753623188406">
                 <Property key="Caption" value="WHEELS"/>
                 <Property key="FontName" value="SM_HeaderLarge_Wide"/>
                 <Property key="TextAlign" value="Center"/>
                 <Property key="TextColour" value="1 1 1"/>
             </Widget>
-            <Widget type="TextBox" skin="GenderButton" position_real="0.043478260869565216 0.20588235294117646 0.43478260869565216 0.14705882352941177">
+            <Widget type="TextBox" skin="GenderButton" position_real="0.043478260869565216 0.2028985507246377 0.43478260869565216 0.14492753623188406">
                 <Property key="Caption" value="Wheel Count"/>
                 <Property key="FontName" value="SM_Header"/>
                 <Property key="TextAlign" value="Center"/>
                 <Property key="TextColour" value="1 1 1"/>
             </Widget>
-            <Widget type="Canvas" skin="GenderButton" position_real="0.5217391304347826 0.20588235294117646 0.43478260869565216 0.14705882352941177">
+            <Widget type="Canvas" skin="GenderButton" position_real="0.5217391304347826 0.2028985507246377 0.43478260869565216 0.14492753623188406">
                 <Widget type="EditBox" skin="EditBoxEmpty" name="editbox_wheels" position_real="0.03333333333333333 0.1 0.9333333333333333 0.8">
                     <Property key="TextAlign" value="Center"/>
                     <Property key="TextColour" value="1 1 1"/>
                     <Property key="FontName" value="SM_ItemTitle"/>
                 </Widget>
             </Widget>
-            <Widget type="TextBox" skin="GenderButton" position_real="0.043478260869565216 0.36764705882352944 0.43478260869565216 0.14705882352941177">
+            <Widget type="TextBox" skin="GenderButton" position_real="0.043478260869565216 0.36231884057971014 0.43478260869565216 0.14492753623188406">
                 <Property key="Caption" value="Wheel Offset"/>
                 <Property key="FontName" value="SM_Header"/>
                 <Property key="TextAlign" value="Center"/>
                 <Property key="TextColour" value="1 1 1"/>
             </Widget>
-            <Widget type="TextBox" skin="GenderButton" position_real="0.043478260869565216 0.5147058823529411 0.14492753623188406 0.14705882352941177">
+            <Widget type="TextBox" skin="GenderButton" position_real="0.043478260869565216 0.5072463768115942 0.14492753623188406 0.14492753623188406">
                 <Property key="Caption" value="X"/>
                 <Property key="FontName" value="SM_Header"/>
                 <Property key="TextAlign" value="Center"/>
                 <Property key="TextColour" value="1 1 1"/>
             </Widget>
-            <Widget type="Canvas" skin="GenderButton" position_real="0.18840579710144928 0.5147058823529411 0.2898550724637681 0.14705882352941177">
+            <Widget type="Canvas" skin="GenderButton" position_real="0.18840579710144928 0.5072463768115942 0.2898550724637681 0.14492753623188406">
                 <Widget type="EditBox" skin="EditBoxEmpty" name="editbox_offsetx" position_real="0.05 0.1 0.9 0.8">
                     <Property key="TextAlign" value="Center"/>
                     <Property key="TextColour" value="1 1 1"/>
                     <Property key="FontName" value="SM_ItemTitle"/>
                 </Widget>
             </Widget>
-            <Widget type="TextBox" skin="GenderButton" position_real="0.043478260869565216 0.6617647058823529 0.14492753623188406 0.14705882352941177">
+            <Widget type="TextBox" skin="GenderButton" position_real="0.043478260869565216 0.6521739130434783 0.14492753623188406 0.14492753623188406">
                 <Property key="Caption" value="Y"/>
                 <Property key="FontName" value="SM_Header"/>
                 <Property key="TextAlign" value="Center"/>
                 <Property key="TextColour" value="1 1 1"/>
             </Widget>
-            <Widget type="Canvas" skin="GenderButton" position_real="0.18840579710144928 0.6617647058823529 0.2898550724637681 0.14705882352941177">
+            <Widget type="Canvas" skin="GenderButton" position_real="0.18840579710144928 0.6521739130434783 0.2898550724637681 0.14492753623188406">
                 <Widget type="EditBox" skin="EditBoxEmpty" name="editbox_offsety" position_real="0.05 0.1 0.9 0.8">
                     <Property key="TextAlign" value="Center"/>
                     <Property key="TextColour" value="1 1 1"/>
                     <Property key="FontName" value="SM_ItemTitle"/>
                 </Widget>
             </Widget>
-            <Widget type="TextBox" skin="GenderButton" position_real="0.043478260869565216 0.8088235294117647 0.14492753623188406 0.14705882352941177">
+            <Widget type="TextBox" skin="GenderButton" position_real="0.043478260869565216 0.7971014492753623 0.14492753623188406 0.14492753623188406">
                 <Property key="Caption" value="Z"/>
                 <Property key="FontName" value="SM_Header"/>
                 <Property key="TextAlign" value="Center"/>
                 <Property key="TextColour" value="1 1 1"/>
             </Widget>
-            <Widget type="Canvas" skin="GenderButton" position_real="0.18840579710144928 0.8088235294117647 0.2898550724637681 0.14705882352941177">
+            <Widget type="Canvas" skin="GenderButton" position_real="0.18840579710144928 0.7971014492753623 0.2898550724637681 0.14492753623188406">
                 <Widget type="EditBox" skin="EditBoxEmpty" name="editbox_offsetz" position_real="0.05 0.1 0.9 0.8">
                     <Property key="TextAlign" value="Center"/>
                     <Property key="TextColour" value="1 1 1"/>
                     <Property key="FontName" value="SM_ItemTitle"/>
                 </Widget>
             </Widget>
-            <Widget type="TextBox" skin="GenderButton" position_real="0.5217391304347826 0.36764705882352944 0.43478260869565216 0.14705882352941177">
+            <Widget type="TextBox" skin="GenderButton" position_real="0.5217391304347826 0.36231884057971014 0.43478260869565216 0.14492753623188406">
                 <Property key="Caption" value="Selected"/>
                 <Property key="FontName" value="SM_Header"/>
                 <Property key="TextAlign" value="Center"/>
                 <Property key="TextColour" value="1 1 1"/>
             </Widget>
-            <Widget type="Canvas" skin="Canvas" name="dropdown_wheels" position_real="0.5217391304347826 0.5147058823529411 0.43478260869565216 0.14705882352941177"/>
+            <Widget type="Canvas" skin="Canvas" name="dropdown_wheels" position_real="0.5217391304347826 0.5072463768115942 0.43478260869565216 0.14492753623188406"/>
         </Widget>
-        <Widget type="Canvas" skin="BackgroundPopup" position_real="0.007042253521126761 0.5087719298245614 0.4859154929577465 0.4853801169590643">
-            <Widget type="TextBox" skin="TextBox" position_real="0.043478260869565216 0.03614457831325301 0.9130434782608695 0.12048192771084337">
+        <Widget type="Widget" skin="BackgroundPopup" position_real="0.007042253521126761 0.54375 0.4859154929577465 0.45">
+            <Widget type="TextBox" skin="TextBox" position_real="0.043478260869565216 0.041666666666666664 0.9130434782608695 0.1388888888888889">
                 <Property key="Caption" value="PID"/>
                 <Property key="FontName" value="SM_HeaderLarge_Wide"/>
                 <Property key="TextAlign" value="Center"/>
                 <Property key="TextColour" value="1 1 1"/>
+            </Widget>
+            <Widget type="TextBox" skin="GenderButton" position_real="0.043478260869565216 0.19444444444444445 0.43478260869565216 0.1388888888888889">
+                <Property key="Caption" value="P"/>
+                <Property key="FontName" value="SM_Header"/>
+                <Property key="TextAlign" value="Center"/>
+                <Property key="TextColour" value="1 1 1"/>
+            </Widget>
+            <Widget type="Canvas" skin="GenderButton" position_real="0.5217391304347826 0.19444444444444445 0.43478260869565216 0.1388888888888889">
+                <Widget type="EditBox" skin="EditBoxEmpty" name="editbox_pid_p" position_real="0.03333333333333333 0.1 0.9333333333333333 0.8">
+                    <Property key="TextAlign" value="Center"/>
+                    <Property key="TextColour" value="1 1 1"/>
+                    <Property key="FontName" value="SM_ItemTitle"/>
+                </Widget>
+            </Widget>
+            <Widget type="TextBox" skin="GenderButton" position_real="0.043478260869565216 0.3472222222222222 0.43478260869565216 0.1388888888888889">
+                <Property key="Caption" value="I"/>
+                <Property key="FontName" value="SM_Header"/>
+                <Property key="TextAlign" value="Center"/>
+                <Property key="TextColour" value="1 1 1"/>
+            </Widget>
+            <Widget type="Canvas" skin="GenderButton" position_real="0.5217391304347826 0.3472222222222222 0.43478260869565216 0.1388888888888889">
+                <Widget type="EditBox" skin="EditBoxEmpty" name="editbox_pid_i" position_real="0.03333333333333333 0.1 0.9333333333333333 0.8">
+                    <Property key="TextAlign" value="Center"/>
+                    <Property key="TextColour" value="1 1 1"/>
+                    <Property key="FontName" value="SM_ItemTitle"/>
+                </Widget>
+            </Widget>
+            <Widget type="TextBox" skin="GenderButton" position_real="0.043478260869565216 0.5 0.43478260869565216 0.1388888888888889">
+                <Property key="Caption" value="D"/>
+                <Property key="FontName" value="SM_Header"/>
+                <Property key="TextAlign" value="Center"/>
+                <Property key="TextColour" value="1 1 1"/>
+            </Widget>
+            <Widget type="Canvas" skin="GenderButton" position_real="0.5217391304347826 0.5 0.43478260869565216 0.1388888888888889">
+                <Widget type="EditBox" skin="EditBoxEmpty" name="editbox_pid_d" position_real="0.03333333333333333 0.1 0.9333333333333333 0.8">
+                    <Property key="TextAlign" value="Center"/>
+                    <Property key="TextColour" value="1 1 1"/>
+                    <Property key="FontName" value="SM_ItemTitle"/>
+                </Widget>
+            </Widget>
+            <Widget type="TextBox" skin="GenderButton" position_real="0.043478260869565216 0.6527777777777778 0.43478260869565216 0.1388888888888889">
+                <Property key="Caption" value="Derivative"/>
+                <Property key="FontName" value="SM_Header"/>
+                <Property key="TextAlign" value="Center"/>
+                <Property key="TextColour" value="1 1 1"/>
+            </Widget>
+            <Widget type="Canvas" skin="Canvas" name="dropdown_derivative" position_real="0.5217391304347826 0.6527777777777778 0.43478260869565216 0.1388888888888889"/>
+            <Widget type="TextBox" skin="GenderButton" position_real="0.043478260869565216 0.8055555555555556 0.43478260869565216 0.1388888888888889">
+                <Property key="Caption" value="I Saturation"/>
+                <Property key="FontName" value="SM_Header"/>
+                <Property key="TextAlign" value="Center"/>
+                <Property key="TextColour" value="1 1 1"/>
+            </Widget>
+            <Widget type="Canvas" skin="GenderButton" position_real="0.5217391304347826 0.8055555555555556 0.43478260869565216 0.1388888888888889">
+                <Widget type="EditBox" skin="EditBoxEmpty" name="editbox_pid_isaturation" position_real="0.03333333333333333 0.1 0.9333333333333333 0.8">
+                    <Property key="TextAlign" value="Center"/>
+                    <Property key="TextColour" value="1 1 1"/>
+                    <Property key="FontName" value="SM_ItemTitle"/>
+                </Widget>
             </Widget>
         </Widget>
     </Widget>
