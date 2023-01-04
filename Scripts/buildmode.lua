@@ -11,10 +11,15 @@ BM.hotbarItems = {
         id = tostring(blk_wood1),
         gui = "blockSelect",
         lmb = "cl_blockPlace",
-        rmb = "cl_blockRemove"
+        rmb = "cl_blockRemove",
+        descriptions = { lmb = "Place block", rmb = "Remove block" }
     },
     {
-        id = tostring(blk_concrete1)
+        id = tostring(blk_concrete1),
+        gui = "partSelect",
+        lmb = "",
+        rmb = "",
+        descriptions = { lmb = "Place part", rmb = "Remove part" }
     },
     {
         id = tostring(blk_metal1)
@@ -162,6 +167,38 @@ function BM:client_onCreate()
         if count == 25 then break end
     end
 
+    self.selectedPart = obj_vehicle_smallwheel
+    self.partSelect = sm.gui.createGuiFromLayout("$CONTENT_DATA/Gui/buildmode_blockplace.layout")
+    self.partSelect:createGridFromJson(
+        "inventory",
+        {
+            type = "itemGrid",
+            layout = "$CONTENT_DATA/Gui/buildmode_blockselect_gridItem.layout",
+            itemWidth = 75,
+            itemHeight = 75,
+            itemCount = 25,
+        }
+    )
+    self.partSelect:setGridButtonCallback( "MainPanel", "cl_partSelect" )
+
+    count = 0
+    for k, v in pairs(_G) do
+        if type(v) == "Uuid" and not sm.item.isBlock(v) then
+            self.partSelect:setGridItem(
+                "inventory",
+                count,
+                {
+                    itemId = tostring(v),
+                    quantity = 1,
+                }
+            )
+
+            count = count + 1
+        end
+
+        if count == 25 then break end
+    end
+
     self.blockVisualisation = sm.effect.createEffect("ShapeRenderable")
     self.blockVisualisation:setParameter("uuid", blk_plastic)
     self.blockVisualisation:setParameter("visualization", true)
@@ -274,7 +311,8 @@ function BM:client_onUpdate(dt)
         sm.camera.setDirection(sm.vec3.lerp(sm.camera.getDirection(), playerDir, lerp))
         sm.camera.setFov(sm.util.lerp(sm.camera.getFov(), sm.camera.getDefaultFov() * self.zoom, lerp))
 
-        if self.hotbarItems[self.mode].gui == "blockSelect" then
+        local mode = self.hotbarItems[self.mode]
+        if mode.gui == "blockSelect" then
             local hit, result = sm.physics.raycast(lerpedPos, lerpedPos + playerDir * 100)
             if hit and result.type == "body" and result:getBody() == self.creation then
                 self.blockVisualisation:setPosition(
@@ -290,12 +328,29 @@ function BM:client_onUpdate(dt)
         elseif self.blockVisualisation:isPlaying() then
             self.blockVisualisation:stop()
         end
+
+        local mouseText = ""
+        if mode.lmb then
+            mouseText = mouseText..sm.gui.getKeyBinding("Create", true)..mode.descriptions.lmb.."\t"
+        end
+        if mode.rmb then
+            mouseText = mouseText..sm.gui.getKeyBinding("Attack", true)..mode.descriptions.rmb
+        end
+        sm.gui.setInteractionText("", mouseText, "")
+
+        if mode.gui then
+            sm.gui.setInteractionText("", sm.gui.getKeyBinding("Jump", true), "Open gui")
+        end
     end
 end
 
 
 function BM:cl_blockSelect( buttonName, gridIndex, gridItemData, gridName )
     self.selectedBlock = sm.uuid.new(gridItemData.itemId)
+end
+
+function BM:cl_partSelect( buttonName, gridIndex, gridItemData, gridName )
+    self.selectedPart = sm.uuid.new(gridItemData.itemId)
 end
 
 function BM:cl_blockPlace()

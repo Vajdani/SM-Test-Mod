@@ -169,8 +169,8 @@ function Car:server_onCreate()
             },
 
             --physics
-            hoverHeight = 3,
-            speed = 1.25,
+            hoverHeight = 1,
+            speed = 1,
             acceleration = 1,
             friction = 0.05,
             turnSpeed = 0.5,
@@ -239,14 +239,14 @@ function Car:server_onFixedUpdate( dt )
     local up = vec3_up --shape.at
     local vel = shape.velocity; vel.z = 0
     local fwdDir = shape.up
-    local rightDir = shape.at
+    local localUp = shape.at
     local wheelHits = 0
     local data = self.sv_data
     local wheelMult = 1 / #data.wheelOffsets
 
     for k, offset in pairs(data.wheelOffsets) do
         local pos = shape:transformLocalPoint(offset)
-        local hit, result = sm.physics.raycast(pos, pos - shape.at * (data.hoverHeight + 1), body, -1)
+        local hit, result = sm.physics.raycast(pos, pos - localUp * (data.hoverHeight + 1), body, -1)
 
         if hit and (result.type ~= "areaTrigger" or self:isLiquid(result:getAreaTrigger())) then
             local pid = self.sv_pids[k]
@@ -272,7 +272,7 @@ function Car:server_onFixedUpdate( dt )
     local angularVel = body.angularVelocity
     local dir = round(shape.at:dot(vec3_up))
     if dir == 0 then dir = 1 end
-    sm.physics.applyTorque( body, ((rightDir * data.turnSpeed * right) + (rightDir * angularVel * -data.turnFriction)) * mass * dir, true )
+    sm.physics.applyTorque( body, ((localUp * data.turnSpeed * right) + (localUp * angularVel * -data.turnFriction)) * mass * dir, true )
 end
 
 function Car:sv_syncControls( controls, caller )
@@ -434,6 +434,7 @@ function Car:client_onUpdate( dt )
     local dir_forward = shape.up
     local dir_left = shape.right
     local dir_up = shape.at
+    local dir_down = shape.at * -1
 
     local fwd = BoolToVal(self.cl_controls[3]) - BoolToVal(self.cl_controls[4])
     local right = BoolToVal(self.cl_controls[1]) - BoolToVal(self.cl_controls[2])
@@ -444,7 +445,7 @@ function Car:client_onUpdate( dt )
         local downwardRot = shape:transformRotation(
             sm.vec3.getRotation(
                 vec3_up,
-                vec3_down + fwdDir + (dir_left * (k > rearWheels and right or -right))
+                dir_down + fwdDir + (dir_left * (k > rearWheels and right or -right))
             )
         )
 
@@ -452,8 +453,7 @@ function Car:client_onUpdate( dt )
         data.effect:setOffsetRotation( data.rot )
     end
 
-    local char = self.interactable:getSeatCharacter()
-    if char == sm.localPlayer.getPlayer().character then
+    if self.seated then
         --sm.gui.displayAlertText(string.format("%.0f km/h",tostring(self.shape.velocity:length()*3.6)), 1)
 
         if self.cameraMode ~= 1 then
@@ -505,7 +505,7 @@ function Car:client_onUpdate( dt )
             end
 
             if self.cl_data.fovDist then
-                local lag = sm.util.clamp((shape.velocity * 0.2):length(), 0, self.cl_data.fovDistCap)
+                local lag = sm.util.clamp((shape.velocity * 0.2):length(), 0, self.cl_data.fovDistCap) * (fwd == 0 and 1 or fwd)
                 sm.camera.setFov(sm.util.lerp(sm.camera.getFov(), sm.camera.getDefaultFov() + self.cl_data.fovDistMultiplier * lag, lerp) )
             end
         else

@@ -322,14 +322,14 @@ function Grav.client_onCreate( self )
 	end
 	self.oldUuid = blk_wood1
 	self.newUuid = blk_concrete1
-	--[[
 	self.gui:createDropDown( "uuidOld", "cl_gui_oldUuid", options )
 	self.gui:createDropDown( "uuidNew", "cl_gui_newUuid", options )
 	self.gui:setSelectedDropDownItem( "uuidOld", sm.shape.getShapeTitle(self.oldUuid) )
 	self.gui:setSelectedDropDownItem( "uuidNew", sm.shape.getShapeTitle(self.newUuid) )
-	self.gui:setMeshPreview( "meshOld", self.oldUuid )
+	self.gui:setVisible( "uuidOld", false )
+	self.gui:setVisible( "uuidNew", false )
+	--self.gui:setMeshPreview( "meshOld", self.oldUuid )
 	--self.gui:setMeshPreview( "meshNew", self.newUuid )
-	]]
 
 
 	self.copyTarget = nil
@@ -346,6 +346,10 @@ end
 
 function Grav:cl_gui_modeDropDown( selected )
 	self.mode = selected
+
+	local visible = selected == "Block Replacer"
+	self.gui:setVisible( "uuidOld", visible )
+	self.gui:setVisible( "uuidNew", visible )
 end
 
 function Grav:cl_gui_tumbleDuration( widget, text )
