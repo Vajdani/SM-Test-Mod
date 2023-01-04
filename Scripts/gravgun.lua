@@ -322,6 +322,7 @@ function Grav.client_onCreate( self )
 	end
 	self.oldUuid = blk_wood1
 	self.newUuid = blk_concrete1
+	--[[
 	self.gui:createDropDown( "uuidOld", "cl_gui_oldUuid", options )
 	self.gui:createDropDown( "uuidNew", "cl_gui_newUuid", options )
 	self.gui:setSelectedDropDownItem( "uuidOld", sm.shape.getShapeTitle(self.oldUuid) )
@@ -330,7 +331,7 @@ function Grav.client_onCreate( self )
 	self.gui:setVisible( "uuidNew", false )
 	--self.gui:setMeshPreview( "meshOld", self.oldUuid )
 	--self.gui:setMeshPreview( "meshNew", self.newUuid )
-
+	]]
 
 	self.copyTarget = nil
 	self.copyTargetBodies = nil
