@@ -129,10 +129,8 @@ TODO:
 dofile "$SURVIVAL_DATA/Scripts/util.lua"
 local vec3_up = sm.vec3.new(0,0,1)
 local vec3_zero = sm.vec3.zero()
-local vec3_down = sm.vec3.new(0,0,-1)
 local vec3_x = sm.vec3.new(1,0,0)
 local camRotAdjust = sm.quat.angleAxis(math.rad(-90), vec3_x) * sm.quat.angleAxis(math.rad(180), vec3_up)
---local camAngleDown = sm.quat.angleAxis(math.rad(-15), vec3_x)
 local on = "#269e44On"
 local off = "#9e2626Off"
 
@@ -283,13 +281,6 @@ function Car:sv_syncControls( controls, caller )
     self.sv_controls = controls
     self.network:sendToClients("cl_syncControls", controls)
 end
-
---[[
-function Car:sv_toggleAi()
-    self.manual = not self.manual
-    self:sv_syncControls( { false, false, false, false } )
-end
-]]
 
 
 
@@ -759,76 +750,6 @@ function BoolToVal( bool )
 end
 
 --[[
-function GetRotation( forward, up )
-    local vector = sm.vec3.normalize( forward )
-    local vector2 = sm.vec3.normalize( sm.vec3.cross( up, vector ) )
-    local vector3 = sm.vec3.cross( vector, vector2 )
-    local m00 = vector2.x
-    local m01 = vector2.y
-    local m02 = vector2.z
-    local m10 = vector3.x
-    local m11 = vector3.y
-    local m12 = vector3.z
-    local m20 = vector.x
-    local m21 = vector.y
-    local m22 = vector.z
-    local num8 = (m00 + m11) + m22
-    local quaternion = sm.quat.identity()
-    if num8 > 0 then
-        local num = math.sqrt(num8 + 1)
-        quaternion.w = num * 0.5
-        num = 0.5 / num
-        quaternion.x = (m12 - m21) * num
-        quaternion.y = (m20 - m02) * num
-        quaternion.z = (m01 - m10) * num
-        return quaternion
-    end
-    if (m00 >= m11) and (m00 >= m22) then
-        local num7 = math.sqrt(((1 + m00) - m11) - m22)
-        local num4 = 0.5 / num7
-        quaternion.x = 0.5 * num7
-        quaternion.y = (m01 + m10) * num4
-        quaternion.z = (m02 + m20) * num4
-        quaternion.w = (m12 - m21) * num4
-        return quaternion
-    end
-    if m11 > m22 then
-        local num6 = math.sqrt(((1 + m11) - m00) - m22)
-        local num3 = 0.5 / num6
-        quaternion.x = (m10+ m01) * num3
-        quaternion.y = 0.5 * num6
-        quaternion.z = (m21 + m12) * num3
-        quaternion.w = (m20 - m02) * num3
-        return quaternion
-    end
-    local num5 = math.sqrt(((1 + m22) - m00) - m11)
-    local num2 = 0.5 / num5
-    quaternion.x = (m20 + m02) * num2
-    quaternion.y = (m21 + m12) * num2
-    quaternion.z = 0.5 * num5;
-    quaternion.w = (m01 - m10) * num2
-    return quaternion
-end
-
-function QuatAngle(q1)
-    local angle = 2 * math.acos(q1.w)
-    local s = math.sqrt(1-q1.w*q1.w)
-    local x, y, z
-
-    if (s < 0.001) then
-        x = q1.x
-        y = q1.y
-        z = q1.z
-    else
-        x = q1.x / s
-        y = q1.y / s
-        z = q1.z / s
-    end
-
-    return {x, y , z}
-end
-
-
 function Angle(from, to)
     local function sqrMagnitude( vec3 )
         return vec3.x * vec3.x + vec3.y * vec3.y + vec3.z * vec3.z
@@ -856,46 +777,51 @@ function SignedAngle(from, to, axis)
     return num * num5;
 end
 
-    local fwd = 0
-    local right = 0
-    if self.manual then
-        fwd = BoolToVal(self.sv_controls[3]) - BoolToVal(self.sv_controls[4])
-        right = BoolToVal(self.sv_controls[1]) - BoolToVal(self.sv_controls[2])
-    else
-        local worldPos = shape.worldPosition
-        local worldPos_64 = worldPos / 64
-        local waypoints = sm.cell.getNodesByTag( math.floor(worldPos_64.x), math.floor(worldPos_64.y), "AREATRIGGER" )
-        local closestWaypoint = waypoints[1]
-        if closestWaypoint then
-            if #waypoints > 1 then
-                for k, waypoint in pairs(waypoints) do
-                    local distance = (closestWaypoint.position - worldPos):length2()
-                    if distance > 0.1 and (waypoint.position - worldPos):length2() < distance then
-                        closestWaypoint = waypoint
-                    end
+function Car:sv_toggleAi()
+    self.manual = not self.manual
+    self:sv_syncControls( { false, false, false, false } )
+end
+
+local fwd = 0
+local right = 0
+if self.manual then
+    fwd = BoolToVal(self.sv_controls[3]) - BoolToVal(self.sv_controls[4])
+    right = BoolToVal(self.sv_controls[1]) - BoolToVal(self.sv_controls[2])
+else
+    local worldPos = shape.worldPosition
+    local worldPos_64 = worldPos / 64
+    local waypoints = sm.cell.getNodesByTag( math.floor(worldPos_64.x), math.floor(worldPos_64.y), "AREATRIGGER" )
+    local closestWaypoint = waypoints[1]
+    if closestWaypoint then
+        if #waypoints > 1 then
+            for k, waypoint in pairs(waypoints) do
+                local distance = (closestWaypoint.position - worldPos):length2()
+                if distance > 0.1 and (waypoint.position - worldPos):length2() < distance then
+                    closestWaypoint = waypoint
                 end
             end
-            self.network:sendToClients("cl_visualize", closestWaypoint)
+        end
+        self.network:sendToClients("cl_visualize", closestWaypoint)
 
-            local dir = closestWaypoint.position - worldPos
-            local distanceToPoint = dir:length()
-            if distanceToPoint > self.reachedTargetDistance then
-                local dirToPoint = dir:normalize()
-                local dot = fwdDir:dot(dirToPoint)
-                fwd = dot > 0 and (distanceToPoint < self.stoppingDistance and vel:length() > self.stoppingSpeed and -0.5 or 1) or (distanceToPoint > self.reverseDistance and 1 or -1)
+        local dir = closestWaypoint.position - worldPos
+        local distanceToPoint = dir:length()
+        if distanceToPoint > self.reachedTargetDistance then
+            local dirToPoint = dir:normalize()
+            local dot = fwdDir:dot(dirToPoint)
+            fwd = dot > 0 and (distanceToPoint < self.stoppingDistance and vel:length() > self.stoppingSpeed and -0.5 or 1) or (distanceToPoint > self.reverseDistance and 1 or -1)
 
-                local angleToDir = SignedAngle(fwdDir, dirToPoint, vec3_up)
-                right = angleToDir > 0 and 1 or -1
-            else
-                fwd = vel:length() > 5 and -0.5 or 0
-                right = 0
-            end
+            local angleToDir = SignedAngle(fwdDir, dirToPoint, vec3_up)
+            right = angleToDir > 0 and 1 or -1
+        else
+            fwd = vel:length() > 5 and -0.5 or 0
+            right = 0
+        end
 
-            if self.prevFwd ~= fwd or self.prevRight ~= right then
-                self.prevFwd = fwd
-                self.prevRight = right
-                self:sv_syncControls( { right > 0, right < 0, fwd > 0, fwd < 0 } )
-            end
+        if self.prevFwd ~= fwd or self.prevRight ~= right then
+            self.prevFwd = fwd
+            self.prevRight = right
+            self:sv_syncControls( { right > 0, right < 0, fwd > 0, fwd < 0 } )
         end
     end
+end
 ]]
