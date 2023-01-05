@@ -73,8 +73,7 @@ function Drone:server_onFixedUpdate()
     if seatedChar ~= nil then
         appliedForce = appliedForce + self:sv_getMoveDir()
 
-        local dir = seatedChar.direction
-        dir.z = 0
+        local dir = seatedChar.direction; dir.z = 0; dir = dir:normalize()
         local forceDir = self.shape.up:cross(dir)
         sm.physics.applyTorque( self.shape.body, forceDir * 0.005, true )
     end

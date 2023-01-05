@@ -10,5 +10,5 @@ function idtest:server_onCreate()
 end
 
 function idtest:cl_crashGame()
-    while true do end
+    sm.util.positiveModulo(1,0)
 end

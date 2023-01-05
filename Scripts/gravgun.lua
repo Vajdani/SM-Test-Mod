@@ -664,8 +664,10 @@ function Grav.client_onUpdate( self, dt )
 	if self.isLocal then
 		if self.target then
 			local x, y = sm.localPlayer.getMouseDelta()
-			local sensitivity = sm.localPlayer.getAimSensitivity() * 100
-			self.network:sendToServer("sv_syncMouseDelta", { x * sensitivity, y * sensitivity })
+			if (x ~= 0 or y ~= 0) and sm.camera.getCameraState() == 2 then
+				local sensitivity = sm.localPlayer.getAimSensitivity() * 100
+				self.network:sendToServer("sv_syncMouseDelta", { x * sensitivity, y * sensitivity })
+			end
 
 			if not sm.exists(self.target) then
 				self.target = nil
@@ -1001,7 +1003,7 @@ function Grav:updateFP(crouch, sprint, equipped, dt)
 
 
 	local bobbing = 1
-	local blend = 1 - math.pow( 1 - 1 / self.aimBlendSpeed, dt * 60 )
+	local blend = 1 - (1 - 1 / self.aimBlendSpeed) ^ (dt * 60)
 	self.aimWeight = sm.util.lerp( self.aimWeight, 0.0, blend )
 
 	self.tool:updateCamera( 2.8, 30.0, sm.vec3.new( 0.65, 0.0, 0.05 ), self.aimWeight )

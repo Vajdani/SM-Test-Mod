@@ -42,6 +42,7 @@ function Spine:client_onUpdate( dt )
     --[[self.dt_sum = (self.dt_sum or 0) + dt * 2.5
     self.dt_sum_2 = (self.dt_sum_2 or 0) + dt * 5
     local dir = sm.vec3.new( 0, 0, math.sin(self.dt_sum) ) * 100
+    self.tool:updateJoint( "jnt_spine1", dir, 1 )
 
     local char = self.tool:getOwner().character
     local charPos = char.worldPosition + sm.vec3.new(0,0,0.35)

@@ -242,7 +242,7 @@ function Car:server_onFixedUpdate( dt )
     local localUp = shape.at
     local wheelHits = 0
     local data = self.sv_data
-    local wheelMult = 1 / #data.wheelOffsets
+    --local wheelMult = 1 / #data.wheelOffsets
 
     for k, offset in pairs(data.wheelOffsets) do
         local pos = shape:transformLocalPoint(offset)
@@ -254,7 +254,7 @@ function Car:server_onFixedUpdate( dt )
                 local pidValue = pid:update(dt, pos.z, result.pointWorld.z + data.hoverHeight)
                 sm.physics.applyImpulse(
                     shape,
-                    ((up * pidValue) + (vel * -data.friction * wheelMult)) * mass,
+                    up * pidValue * mass, --((up * pidValue) + (vel * -data.friction * wheelMult)) * mass,
                     true,
                     shape.worldRotation * offset
                 )
@@ -267,7 +267,8 @@ function Car:server_onFixedUpdate( dt )
     local fwd = BoolToVal(self.sv_controls[3]) - BoolToVal(self.sv_controls[4])
     local right = BoolToVal(self.sv_controls[1]) - BoolToVal(self.sv_controls[2])
     self.fwd = sm.util.lerp(self.fwd, fwd, dt * data.acceleration * (fwd ~= 0 and 1 or 2))
-    sm.physics.applyImpulse( shape, (fwdDir * mass * data.speed * self.fwd) * (wheelHits / #data.wheelOffsets), true )
+    --sm.physics.applyImpulse( shape, (fwdDir * mass * data.speed * self.fwd) * (wheelHits / #data.wheelOffsets), true )
+    sm.physics.applyImpulse( shape, ((fwdDir * data.speed * self.fwd - vel * data.friction) * (wheelHits / #data.wheelOffsets)) * mass, true )
 
     local angularVel = body.angularVelocity
     local dir = round(shape.at:dot(vec3_up))
