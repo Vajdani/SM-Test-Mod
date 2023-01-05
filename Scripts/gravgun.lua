@@ -181,7 +181,7 @@ function Grav:server_onFixedUpdate()
 	else
 		sm.physics.applyImpulse( target, force, true )
 
-		if sv.rotState then
+		if sv.rotState and not targetIsChar then
 			local mouseDelta = sv.mouseDelta
 			local charDir = sv.rotDirection:rotate(math.rad(mouseDelta.x), up)
 			charDir = charDir:rotate(math.rad(mouseDelta.y), calculateRightVector(charDir))
@@ -421,6 +421,7 @@ function Grav:cl_mode_grav_onEquipped( lmb, rmb, f )
 	end
 
 	if self.target then
+		local canRotate = type(self.target) == "Body"
 		if not f then
 			sm.gui.setInteractionText(
 				sm.gui.getKeyBinding("Create", true).."Drop target\t",
@@ -430,7 +431,7 @@ function Grav:cl_mode_grav_onEquipped( lmb, rmb, f )
 			sm.gui.setInteractionText(
 				sm.gui.getKeyBinding("NextCreateRotation", true).."Decrease distance\t",
 				sm.gui.getKeyBinding("Reload", true).."Increase distance\t",
-				sm.gui.getKeyBinding("ForceBuild", true).."Hold to Rotate Target",
+				canRotate and sm.gui.getKeyBinding("ForceBuild", true).."Hold to Rotate Target" or "",
 				""
 			)
 		else
@@ -439,7 +440,9 @@ function Grav:cl_mode_grav_onEquipped( lmb, rmb, f )
 				sm.gui.getKeyBinding("Attack", true).."Throw target",
 				""
 			)
-			sm.gui.setInteractionText("<p textShadow='false' bg='gui_keybinds_bg' color='#ffffff' spacing='9'>Move your mouse to rotate the creation</p>")
+			if canRotate then
+				sm.gui.setInteractionText("<p textShadow='false' bg='gui_keybinds_bg' color='#ffffff' spacing='9'>Move your mouse to rotate the creation</p>")
+			end
 		end
 
 		--[[
@@ -451,30 +454,32 @@ function Grav:cl_mode_grav_onEquipped( lmb, rmb, f )
 		end
 		]]
 
-		local cam = sm.camera
-		if f then
-			if cam.getCameraState() ~= 2 then
-				cam.setCameraState(2)
-				cam.setFov(cam.getDefaultFov())
-				self.dir = sm.localPlayer.getDirection()
-				self.pos = cam.getDefaultPosition()
-				self.network:sendToServer("sv_setRotState", {state = true, dir = self.dir})
-			end
+		if canRotate then
+			local cam = sm.camera
+			if f then
+				if cam.getCameraState() ~= 2 then
+					cam.setCameraState(2)
+					cam.setFov(cam.getDefaultFov())
+					self.dir = sm.localPlayer.getDirection()
+					self.pos = cam.getDefaultPosition()
+					self.network:sendToServer("sv_setRotState", {state = true, dir = self.dir})
+				end
 
-			cam.setPosition(self.pos)
-			cam.setDirection(self.dir)
-		elseif cam.getCameraState() ~= 0 then
-			cam.setCameraState(0)
-			self.network:sendToServer("sv_setRotState", {state = false})
+				cam.setPosition(self.pos)
+				cam.setDirection(self.dir)
+			elseif cam.getCameraState() ~= 0 then
+				cam.setCameraState(0)
+				self.network:sendToServer("sv_setRotState", {state = false})
 
-			self.dir = nil
-			self.pos = nil
-			--[[
-			if self.dir then
-				sm.localPlayer.setLockedControls(true)
-				self.locked = true
+				self.dir = nil
+				self.pos = nil
+				--[[
+				if self.dir then
+					sm.localPlayer.setLockedControls(true)
+					self.locked = true
+				end
+				]]
 			end
-			]]
 		end
 
 		return false
