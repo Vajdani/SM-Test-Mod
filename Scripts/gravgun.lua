@@ -63,7 +63,6 @@ Grav.maxHover = 50
 Grav.lineColour = sm.color.new(0,1,1)
 Grav.modes = {
 	["Gravity Gun"] = {
-		onSecondary = "cl_mode_grav_yeet",
 		onEquipped = "cl_mode_grav_onEquipped"
 	},
 	["Tumbler"] = {
@@ -372,6 +371,8 @@ function Grav.client_onCreate( self )
     self.copyTargetGui:setImage( "Icon", "$CONTENT_DATA/Gui/aimbot_marker.png" )
 
 	self.teleportObject = nil
+
+	self.blockF = false
 end
 
 function Grav:client_onDestroy()
@@ -409,20 +410,41 @@ function Grav:cl_gui_newUuid( selected )
 end
 
 function Grav:cl_mode_grav_onEquipped( lmb, rmb, f )
-	if lmb == 1 and self.target then
-		self.target = nil
-		self.network:sendToServer( "sv_targetSelect", nil )
-		sm.gui.displayAlertText("Target cleared!", 2.5)
-		sm.audio.play("Blueprint - Delete")
+	if self.target then
+		if rmb == 1 then
+			self.blockF = true
+			sm.camera.setCameraState(0)
+			self.network:sendToServer("sv_yeet")
+			sm.gui.displayAlertText("#00ff00Target thrown!", 2.5)
+			sm.audio.play("Blueprint - Build")
+			return true
+		end
 
-		sm.camera.setCameraState(0)
-		self.network:sendToServer("sv_setRotState", {state = false})
-		return true
+		if lmb == 1 then
+			self.blockF = true
+			self.target = nil
+			self.network:sendToServer( "sv_targetSelect", nil )
+			sm.gui.displayAlertText("Target cleared!", 2.5)
+			sm.audio.play("Blueprint - Delete")
+
+			sm.camera.setCameraState(0)
+			self.network:sendToServer("sv_setRotState", {state = false})
+			return true
+		end
 	end
 
 	if self.target then
 		local canRotate = type(self.target) == "Body"
-		if not f then
+		if f then
+			sm.gui.setInteractionText(
+				sm.gui.getKeyBinding("Create", true).."Drop target\t",
+				sm.gui.getKeyBinding("Attack", true).."Throw target",
+				""
+			)
+			if canRotate then
+				sm.gui.setInteractionText("<p textShadow='false' bg='gui_keybinds_bg' color='#ffffff' spacing='9'>Move your mouse to rotate the creation</p>")
+			end
+		else
 			sm.gui.setInteractionText(
 				sm.gui.getKeyBinding("Create", true).."Drop target\t",
 				sm.gui.getKeyBinding("Attack", true).."Throw target",
@@ -434,15 +456,6 @@ function Grav:cl_mode_grav_onEquipped( lmb, rmb, f )
 				canRotate and sm.gui.getKeyBinding("ForceBuild", true).."Hold to Rotate Target" or "",
 				""
 			)
-		else
-			sm.gui.setInteractionText(
-				sm.gui.getKeyBinding("Create", true).."Drop target\t",
-				sm.gui.getKeyBinding("Attack", true).."Throw target",
-				""
-			)
-			if canRotate then
-				sm.gui.setInteractionText("<p textShadow='false' bg='gui_keybinds_bg' color='#ffffff' spacing='9'>Move your mouse to rotate the creation</p>")
-			end
 		end
 
 		--[[
@@ -502,15 +515,6 @@ function Grav:cl_mode_grav_onEquipped( lmb, rmb, f )
 	end
 
 	return true
-end
-
-function Grav:cl_mode_grav_yeet()
-	if not self.target then return end
-
-	sm.camera.setCameraState(0)
-	self.network:sendToServer("sv_yeet")
-	sm.gui.displayAlertText("#00ff00Target thrown!", 2.5)
-	sm.audio.play("Blueprint - Build")
 end
 
 function Grav:cl_mode_tumble()
@@ -826,11 +830,12 @@ function Grav.client_onEquippedUpdate( self, lmb, rmb, f )
 	end
 
 	if guiToggleEnabled == true then
-		if f and self.canTriggerFb then
+		if f and self.canTriggerFb and not self.blockF then
 			self.canTriggerFb = false
 			self.gui:open()
 		elseif not f then
 			self.canTriggerFb = true
+			self.blockF = false
 		end
 	elseif self.gui:isActive() then
 		self.gui:close()
