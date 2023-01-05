@@ -417,7 +417,7 @@ function Grav:cl_mode_grav_onEquipped( lmb, rmb, f )
 
 		sm.camera.setCameraState(0)
 		self.network:sendToServer("sv_setRotState", {state = false})
-		return false
+		return true
 	end
 
 	if self.target then
@@ -476,13 +476,15 @@ function Grav:cl_mode_grav_onEquipped( lmb, rmb, f )
 			end
 			]]
 		end
+
+		return false
 	end
 
 	local hit, result = sm.localPlayer.getRaycast( self.raycastRange )
-	if not hit then return false end
+	if not hit then return true end
 
 	local target = result:getBody() or result:getCharacter()
-	if not target or type(target) == "Body" and not target:isDynamic() then return false end
+	if not target or type(target) == "Body" and not target:isDynamic() then return true end
 
 	if not self.target then
 		sm.gui.setInteractionText("", sm.gui.getKeyBinding("Create", true), "Pick up target")
@@ -494,7 +496,7 @@ function Grav:cl_mode_grav_onEquipped( lmb, rmb, f )
 		end
 	end
 
-	return false
+	return true
 end
 
 function Grav:cl_mode_grav_yeet()
