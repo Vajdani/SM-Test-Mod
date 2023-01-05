@@ -63,8 +63,8 @@ Grav.maxHover = 50
 Grav.lineColour = sm.color.new(0,1,1)
 Grav.modes = {
 	["Gravity Gun"] = {
-		onPrimary = "cl_mode_grav",
-		onSecondary = "cl_mode_grav_yeet"
+		onSecondary = "cl_mode_grav_yeet",
+		onEquipped = "cl_mode_grav_onEquipped"
 	},
 	["Tumbler"] = {
 		onPrimary = "cl_mode_tumble"
@@ -125,6 +125,10 @@ function Grav:server_onCreate()
 	self.sv.hoverRange = 5
 
 	self.sv.copyTarget = nil
+
+	self.sv.rotState = false
+	self.sv.rotDirection = nil
+	self.sv.mouseDelta = { x = 0, y = 0 }
 end
 
 function Grav:server_onDestroy()
@@ -142,27 +146,54 @@ end
 
 function Grav:sv_updateEquipped( toggle )
 	self.sv.equipped = toggle
+	self:sv_setRotState({state = false})
+end
+
+function Grav:sv_setRotState( args )
+	self.sv.rotState = args.state
+	self.sv.rotDirection = args.dir
+	self.sv.mouseDelta = { x = 0, y = 0 }
+end
+
+function Grav:sv_syncMouseDelta( mouseDelta )
+	self.sv.mouseDelta.x = self.sv.mouseDelta.x + mouseDelta[1]
+	self.sv.mouseDelta.y = self.sv.mouseDelta.y + mouseDelta[2]
 end
 
 function Grav:server_onFixedUpdate()
-	if not self.sv.target or not sm.exists(self.sv.target) or not self.sv.equipped then return end
+	local target = self.sv.target
+	local sv = self.sv
+	if not target or not sm.exists(target) or not sv.equipped then return end
 
 	--thanks 00Fant for the math
 	---@type Character
 	local char = self.tool:getOwner().character
-	local pos = char.worldPosition + camAdjust + char.direction * self.sv.hoverRange
+	local dir = sv.rotState and sv.rotDirection or char.direction
+	local pos = char.worldPosition + camAdjust + dir * sv.hoverRange
 
-	local targetIsChar = type(self.sv.target) == "Character"
-	local force = pos - (targetIsChar and self.sv.target.worldPosition or self.sv.target:getCenterOfMassPosition())
-	local mass = self.sv.target.mass
-	force = force * mass * 2
-	force = force - ( self.sv.target.velocity * mass * 0.3 )
+	local targetIsChar = type(target) == "Character"
+	local force = pos - (targetIsChar and target.worldPosition or target:getCenterOfMassPosition())
+	local mass = target.mass
+	force = ((force  * 2) - ( target.velocity * 0.3 )) * mass
 
-	if targetIsChar and self.sv.target:isTumbling() then
-		self.sv.target:applyTumblingImpulse( force )
+	if targetIsChar and target:isTumbling() then
+		target:applyTumblingImpulse( force )
 	else
-		sm.physics.applyImpulse( self.sv.target, force, true )
+		sm.physics.applyImpulse( target, force, true )
+
+		if sv.rotState then
+			local mouseDelta = sv.mouseDelta
+			local charDir = sv.rotDirection:rotate(math.rad(mouseDelta.x), up)
+			charDir = charDir:rotate(math.rad(mouseDelta.y), calculateRightVector(charDir))
+			local difference = (target.worldRotation * sm.vec3.new(1,0,0)):cross(charDir)
+			sm.physics.applyTorque(target, ((difference * 2) - ( target.angularVelocity * 0.3 )) * mass, true)
+		end
 	end
+end
+
+function calculateRightVector(vector)
+    local yaw = math.atan2(vector.y, vector.x) - math.pi / 2
+    return sm.vec3.new(math.cos(yaw), math.sin(yaw), 0)
 end
 
 function Grav:sv_yeet()
@@ -174,6 +205,8 @@ function Grav:sv_yeet()
 		sm.physics.applyImpulse( self.sv.target, force, true )
 	end
 	self:sv_targetSelect( nil )
+
+	self:sv_setRotState({state = false})
 end
 
 function Grav:sv_targetTumble( target )
@@ -375,30 +408,99 @@ function Grav:cl_gui_newUuid( selected )
 	self.newUuid = shapesInG[selected]
 end
 
-function Grav:cl_mode_grav()
-	if self.target ~= nil and sm.exists(self.target) then
+function Grav:cl_mode_grav_onEquipped( lmb, rmb, f )
+	if lmb == 1 and self.target then
 		self.target = nil
 		self.network:sendToServer( "sv_targetSelect", nil )
 		sm.gui.displayAlertText("Target cleared!", 2.5)
 		sm.audio.play("Blueprint - Delete")
-		return
+
+		sm.camera.setCameraState(0)
+		self.network:sendToServer("sv_setRotState", {state = false})
+		return false
+	end
+
+	if self.target then
+		if not f then
+			sm.gui.setInteractionText(
+				sm.gui.getKeyBinding("Create", true).."Drop target\t",
+				sm.gui.getKeyBinding("Attack", true).."Throw target",
+				""
+			)
+			sm.gui.setInteractionText(
+				sm.gui.getKeyBinding("NextCreateRotation", true).."Decrease distance\t",
+				sm.gui.getKeyBinding("Reload", true).."Increase distance\t",
+				sm.gui.getKeyBinding("ForceBuild", true).."Hold to Rotate Target",
+				""
+			)
+		else
+			sm.gui.setInteractionText(
+				sm.gui.getKeyBinding("Create", true).."Drop target\t",
+				sm.gui.getKeyBinding("Attack", true).."Throw target",
+				""
+			)
+			sm.gui.setInteractionText("<p textShadow='false' bg='gui_keybinds_bg' color='#ffffff' spacing='9'>Move your mouse to rotate the creation</p>")
+		end
+
+		--[[
+		if self.locked == true then
+			sm.localPlayer.setDirection(self.dir)
+			sm.localPlayer.setLockedControls(false)
+			self.locked = false
+			self.dir = nil
+		end
+		]]
+
+		local cam = sm.camera
+		if f then
+			if cam.getCameraState() ~= 2 then
+				cam.setCameraState(2)
+				cam.setFov(cam.getDefaultFov())
+				self.dir = sm.localPlayer.getDirection()
+				self.pos = cam.getDefaultPosition()
+				self.network:sendToServer("sv_setRotState", {state = true, dir = self.dir})
+			end
+
+			cam.setPosition(self.pos)
+			cam.setDirection(self.dir)
+		elseif cam.getCameraState() ~= 0 then
+			cam.setCameraState(0)
+			self.network:sendToServer("sv_setRotState", {state = false})
+
+			self.dir = nil
+			self.pos = nil
+			--[[
+			if self.dir then
+				sm.localPlayer.setLockedControls(true)
+				self.locked = true
+			end
+			]]
+		end
 	end
 
 	local hit, result = sm.localPlayer.getRaycast( self.raycastRange )
-	if not hit then return end
+	if not hit then return false end
 
 	local target = result:getBody() or result:getCharacter()
-	if not target or type(target) == "Body" and not target:isDynamic() then return end
+	if not target or type(target) == "Body" and not target:isDynamic() then return false end
 
-	self.target = target
-	self.network:sendToServer( "sv_targetSelect", target )
-	sm.gui.displayAlertText("#00ff00Target selected!", 2.5)
-	sm.audio.play("Blueprint - Camera")
+	if not self.target then
+		sm.gui.setInteractionText("", sm.gui.getKeyBinding("Create", true), "Pick up target")
+		if lmb == 1  then
+			self.target = target
+			self.network:sendToServer( "sv_targetSelect", target )
+			sm.gui.displayAlertText("#00ff00Target selected!", 2.5)
+			sm.audio.play("Blueprint - Camera")
+		end
+	end
+
+	return false
 end
 
 function Grav:cl_mode_grav_yeet()
 	if not self.target then return end
 
+	sm.camera.setCameraState(0)
 	self.network:sendToServer("sv_yeet")
 	sm.gui.displayAlertText("#00ff00Target thrown!", 2.5)
 	sm.audio.play("Blueprint - Build")
@@ -549,9 +651,15 @@ function Grav.client_onUpdate( self, dt )
 	local equipped = self.tool:isEquipped()
 
 	if self.isLocal then
-		if self.target and not sm.exists(self.target) then
-			self.target = nil
-			self.network:sendToServer( "sv_targetSelect", nil )
+		if self.target then
+			local x, y = sm.localPlayer.getMouseDelta()
+			local sensitivity = sm.localPlayer.getAimSensitivity() * 100
+			self.network:sendToServer("sv_syncMouseDelta", { x * sensitivity, y * sensitivity })
+
+			if not sm.exists(self.target) then
+				self.target = nil
+				self.network:sendToServer( "sv_targetSelect", nil )
+			end
 		end
 
 		if self.mode == "Copy/Paste Object"  then
@@ -649,7 +757,6 @@ function Grav.client_onEquip( self, animate )
 	setTpAnimation( self.tpAnimations, "pickup", 0.0001 )
 
 	if self.isLocal then
-		-- Sets Grav renderable, change this to change the mesh
 		self.tool:setFpRenderables( currentRenderablesFp )
 		swapFpAnimation( self.fpAnimations, "unequip", "equip", 0.2 )
 
@@ -675,6 +782,7 @@ function Grav.client_onUnequip( self, animate )
 			swapFpAnimation( self.fpAnimations, "equip", "unequip", 0.2 )
 		end
 
+		sm.camera.setCameraState(0)
 		self.network:sendToServer("sv_updateEquipped", false)
 	end
 end
@@ -682,7 +790,8 @@ end
 function Grav.cl_onPrimaryUse( self, state )
 	if state ~= 1 then return end
 
-	self[self.modes[self.mode].onPrimary]( self )
+	local func = self[self.modes[self.mode].onPrimary]
+	if func then func( self ) end
 end
 
 function Grav.cl_onSecondaryUse( self, state )
@@ -692,22 +801,32 @@ function Grav.cl_onSecondaryUse( self, state )
 	if func then func( self ) end
 end
 
-function Grav.client_onEquippedUpdate( self, primaryState, secondaryState, forceBuild )
-	if primaryState ~= self.prevPrimaryState then
-		self:cl_onPrimaryUse( primaryState )
-		self.prevPrimaryState = primaryState
+function Grav.client_onEquippedUpdate( self, lmb, rmb, f )
+	if lmb ~= self.prevlmb then
+		self:cl_onPrimaryUse( lmb )
+		self.prevlmb = lmb
 	end
 
-	if secondaryState ~= self.prevSecondaryState then
-		self:cl_onSecondaryUse( secondaryState )
-		self.prevSecondaryState = secondaryState
+	if rmb ~= self.prevrmb then
+		self:cl_onSecondaryUse( rmb )
+		self.prevrmb = rmb
 	end
 
-	if forceBuild and self.canTriggerFb then
-		self.canTriggerFb = false
-		self.gui:open()
-	elseif not forceBuild then
-		self.canTriggerFb = true
+	local func = self[self.modes[self.mode].onEquipped]
+	local guiToggleEnabled = true
+	if func then
+		guiToggleEnabled = func( self, lmb, rmb, f )
+	end
+
+	if guiToggleEnabled == true then
+		if f and self.canTriggerFb then
+			self.canTriggerFb = false
+			self.gui:open()
+		elseif not f then
+			self.canTriggerFb = true
+		end
+	elseif self.gui:isActive() then
+		self.gui:close()
 	end
 
 	return true, true
