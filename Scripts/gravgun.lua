@@ -65,6 +65,8 @@ dofile( "$SURVIVAL_DATA/Scripts/game/survival_constants.lua" )
 ---@field isLocal boolean
 ---@field copyTarget Body|Character
 ---@field copyTargetGui GuiInterface
+---@field oldUuid Uuid
+---@field newUuid Uuid
 Grav = class()
 
 Grav.raycastRange = 1000 --meters
@@ -73,7 +75,7 @@ Grav.maxHover = 50
 Grav.lineColour = sm.color.new(0,1,1)
 Grav.modes = {
 	["Gravity Gun"] = {
-		onEquipped = "cl_mode_grav_onEquipped"
+		onEquipped = "cl_mode_grav"
 	},
 	["Tumbler"] = {
 		onPrimary = "cl_mode_tumble"
@@ -91,23 +93,20 @@ Grav.modes = {
 	["Block Replacer"] = {
 		onPrimary = "cl_mode_blockReplace"
 	},
-}
-Grav.dropDown = {
-	"Gravity Gun",
-	"Tumbler",
-	"Copy/Paste Object",
-	"Delete Object",
-	"Teleport",
-	"Block Replacer"
+	["World clear"] = {
+		onEquipped = "cl_mode_clear"
+	},
 }
 
 local camAdjust = sm.vec3.new(0,0,0.575)
+--[[
 local shapesInG = {}
 for k, v in pairs(_G) do
 	if type(v) == "Uuid" and sm.item.isBlock(v) then
 		shapesInG[sm.shape.getShapeTitle(v)] = v
 	end
 end
+]]
 
 local renderables = {
     "$CONTENT_DATA/Objects/mongiconnect.rend"
@@ -328,6 +327,36 @@ function Grav:sv_replaceBlocks( args )
 	)
 end
 
+function Grav:sv_clear( mode )
+	if mode == 1 then
+		for k, body in pairs(sm.body.getAllBodies()) do
+			for j, shape in pairs(body:getCreationShapes()) do
+				if sm.item.isBlock(shape.uuid) then
+					shape:destroyShape()
+				else
+					shape:destroyPart()
+				end
+			end
+		end
+	elseif mode == 2 then
+		for k, body in pairs(sm.body.getAllBodies()) do
+			if not body:isStatic() then
+				for j, shape in pairs(body:getCreationShapes()) do
+					if sm.item.isBlock(shape.uuid) then
+						shape:destroyShape()
+					else
+						shape:destroyPart()
+					end
+				end
+			end
+		end
+	elseif mode == 3 then
+		for k, unit in pairs(sm.unit.getAllUnits()) do
+			unit:destroy()
+		end
+	end
+end
+
 
 
 function Grav.client_onCreate( self )
@@ -355,18 +384,24 @@ function Grav.client_onCreate( self )
 			backgroundAlpha = 0,
 		}
 	)
-	self.gui:createDropDown( "mode_dropdown", "cl_gui_modeDropDown", self.dropDown )
-	self.gui:setTextAcceptedCallback( "tumble_duration", "cl_gui_tumbleDuration" )
 
 	local options = {}
-	for k, v in pairs(shapesInG) do
+	for k, v in pairs(self.modes) do
 		options[#options+1] = k
 	end
+	self.gui:createDropDown( "mode_dropdown", "cl_gui_modeDropDown", options )
+	self.gui:setTextAcceptedCallback( "tumble_duration", "cl_gui_tumbleDuration" )
+
 	self.oldUuid = blk_wood1
 	self.newUuid = blk_concrete1
 	--[[
-	self.gui:createDropDown( "uuidOld", "cl_gui_oldUuid", options )
-	self.gui:createDropDown( "uuidNew", "cl_gui_newUuid", options )
+	local _options = {}
+	for k, v in pairs(shapesInG) do
+		_options[#_options+1] = k
+	end
+
+	self.gui:createDropDown( "uuidOld", "cl_gui_oldUuid", _options )
+	self.gui:createDropDown( "uuidNew", "cl_gui_newUuid", _options )
 	self.gui:setSelectedDropDownItem( "uuidOld", sm.shape.getShapeTitle(self.oldUuid) )
 	self.gui:setSelectedDropDownItem( "uuidNew", sm.shape.getShapeTitle(self.newUuid) )
 	self.gui:setVisible( "uuidOld", false )
@@ -412,14 +447,14 @@ function Grav:cl_gui_tumbleDuration( widget, text )
 end
 
 function Grav:cl_gui_oldUuid( selected )
-	self.oldUuid = shapesInG[selected]
+	--self.oldUuid = shapesInG[selected]
 end
 
 function Grav:cl_gui_newUuid( selected )
-	self.newUuid = shapesInG[selected]
+	--self.newUuid = shapesInG[selected]
 end
 
-function Grav:cl_mode_grav_onEquipped( lmb, rmb, f )
+function Grav:cl_mode_grav( lmb, rmb, f )
 	if self.target then
 		if rmb == 1 then
 			self.blockF = true
@@ -643,6 +678,39 @@ function Grav:cl_mode_blockReplace()
 		)
 	end
 end
+
+function Grav:cl_mode_clear( lmb, rmb, f )
+	local ico_lmb = sm.gui.getKeyBinding("Create", true)
+	local ico_rmb = sm.gui.getKeyBinding("Attack", true)
+	sm.gui.setInteractionText(
+		ico_lmb.."Clear all bodies\t",
+		ico_rmb.."Clear all dynamic bodies",
+		""
+	)
+	sm.gui.setInteractionText(ico_lmb.. " + "..ico_rmb.."Clear all units", "")
+
+	if lmb == 1 and rmb == 1 then
+		sm.gui.displayAlertText("#00ff00All units cleared!", 2.5)
+		sm.audio.play("Blueprint - Delete")
+		self.network:sendToServer("sv_clear", 3)
+		return true
+	end
+
+	if lmb == 1 then
+		sm.gui.displayAlertText("#00ff00All bodies cleared!", 2.5)
+		sm.audio.play("Blueprint - Delete")
+		self.network:sendToServer("sv_clear", 1)
+	end
+
+	if rmb == 1 then
+		sm.gui.displayAlertText("#00ff00All dynamic bodies cleared!", 2.5)
+		sm.audio.play("Blueprint - Delete")
+		self.network:sendToServer("sv_clear", 2)
+	end
+
+	return true
+end
+
 
 
 function Grav:client_onToggle()
