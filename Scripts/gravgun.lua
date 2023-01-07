@@ -490,7 +490,7 @@ function Grav:cl_mode_grav_onEquipped( lmb, rmb, f )
 
 				cam.setPosition(self.pos)
 				cam.setDirection(self.dir)
-			--[[elseif cam.getCameraState() ~= 0 then
+			elseif self.dir ~= nil then
 				cam.setCameraState(0)
 				self.network:sendToServer("sv_setRotState", {state = false})
 
