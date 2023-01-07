@@ -1,10 +1,14 @@
+local vec3_up = sm.vec3.new(0,0,1)
+local vec3_one = sm.vec3.one()
+local vec3_zero = sm.vec3.zero()
+local defaultBlockScale = vec3_one * 0.25
+
 Line_grav = class()
-local up = sm.vec3.new(0,0,1)
 function Line_grav:init( thickness, colour )
     self.effect = sm.effect.createEffect("ShapeRenderable")
 	self.effect:setParameter("uuid", sm.uuid.new("628b2d61-5ceb-43e9-8334-a4135566df7a"))
     self.effect:setParameter("color", colour)
-    self.effect:setScale( sm.vec3.one() * thickness )
+    self.effect:setScale( vec3_one * thickness )
 
     self.thickness = thickness
 	self.spinTime = 0
@@ -32,10 +36,10 @@ function Line_grav:update( startPos, endPos, dt, spinSpeed )
 	)
 	self.effect:setParameter("color", self.colour)
 
-	local rot = sm.vec3.getRotation(up, delta)
+	local rot = sm.vec3.getRotation(vec3_up, delta)
 	local speed = spinSpeed or 1
 	self.spinTime = self.spinTime + dt * speed
-	rot = rot * sm.quat.angleAxis( math.rad(self.spinTime), up )
+	rot = rot * sm.quat.angleAxis( math.rad(self.spinTime), vec3_up )
 
 	local distance = sm.vec3.new(self.thickness, self.thickness, length)
 
@@ -191,7 +195,7 @@ function Grav:server_onFixedUpdate()
 
 		if sv.rotState and not targetIsChar then
 			local mouseDelta = sv.mouseDelta
-			local charDir = sv.rotDirection:rotate(math.rad(mouseDelta.x), up)
+			local charDir = sv.rotDirection:rotate(math.rad(mouseDelta.x), vec3_up)
 			charDir = charDir:rotate(math.rad(mouseDelta.y), calculateRightVector(charDir))
 			local difference = (target.worldRotation * sm.vec3.new(1,0,0)):cross(charDir) --[[@as Vec3]]
 			sm.physics.applyTorque(target, ((difference * 2) - ( target.angularVelocity--[[@as Vec3]] * 0.3 )) * mass, true)
@@ -631,26 +635,57 @@ function Grav:cl_mode_delete()
 	sm.audio.play("Blueprint - Delete")
 end
 
+---@param obj Body
 function Grav:cl_deleteObject( obj )
 	local scale = 1
 	local referencePoint = obj:getCenterOfMassPosition()
-	local creation = { data = {}, pos = referencePoint, scale = 1 }
+	local creation = { data = {}, pos = referencePoint, scale = scale }
+
 	for k, shape in pairs(obj:getCreationShapes()) do
 		local uuid = shape.uuid
 		local effect = sm.effect.createEffect( "ShapeRenderable" )
 		effect:setParameter("uuid", uuid)
 		effect:setParameter("color", shape.color)
-		local box = sm.item.isBlock(uuid) and shape:getBoundingBox() or sm.vec3.one() * 0.25
-		effect:setScale( box * scale )
-		--effect:setParameter( "boundingBox", shape:getBoundingBox() )
+		local box = sm.item.isBlock(uuid) and shape:getBoundingBox() or defaultBlockScale
+		effect:setScale(box * scale)
 		effect:setRotation(shape.worldRotation)
 
 		creation.data[#creation.data+1] = {
 			effect = effect,
 			box = box,
-			pos = (shape.worldPosition - referencePoint) * scale
+			pos = (shape.worldPosition - referencePoint)
 		}
 	end
+
+	--[[
+	for k, joint in pairs(obj:getCreationJoints()) do
+		local uuid = joint.uuid
+		local effect = sm.effect.createEffect( "ShapeRenderable" )
+		effect:setParameter("uuid", uuid)
+		effect:setParameter("color", joint.color)
+
+		local shapeA = joint.shapeA
+		local posA = shapeA.worldPosition
+		local posB
+		if joint.shapeB then
+			posB = joint.shapeB.worldPosition
+		else
+			posB = posA + joint.zAxis
+		end
+
+		local pos = (posA + posB) * 0.5
+		local dir = sm.vec3.closestAxis((posB - posA):normalize())
+		local box = defaultBlockScale
+		effect:setScale(box * scale)
+		effect:setRotation(sm.vec3.getRotation(vec3_up, dir))
+
+		creation.data[#creation.data+1] = {
+			effect = effect,
+			box = box,
+			pos = (pos - referencePoint + (joint.type == "bearing" and dir * 0.125 or vec3_zero))
+		}
+	end
+	]]
 
 	self.deleteEffects[#self.deleteEffects+1] = creation
 end
@@ -813,19 +848,22 @@ function Grav.client_onUpdate( self, dt )
 		self.line.effect:stop()
 	end
 
-	if #self.deleteEffects > 0 then
-		for k, creation in pairs(self.deleteEffects) do
-			creation.scale = creation.scale - dt * 5
-			if creation.scale <= 0 then
-				for i, data in pairs(creation.data) do
-					data.effect:destroy()
-				end
-				table.remove(self.deleteEffects, k)
-			else
-				for i, data in pairs(creation.data) do
-					local effect = data.effect
-					effect:setPosition( creation.pos + data.pos * creation.scale )
-					effect:setScale( data.box * creation.scale )
+	for k, creation in pairs(self.deleteEffects) do
+		creation.scale = creation.scale - dt * 5
+		if creation.scale <= 0 then
+			for i, data in pairs(creation.data) do
+				data.effect:destroy()
+			end
+			table.remove(self.deleteEffects, k)
+		else
+			local scale = creation.scale
+			local creationPos = creation.pos
+			for i, data in pairs(creation.data) do
+				local effect = data.effect
+				effect:setPosition( creationPos + data.pos * scale )
+				effect:setScale( data.box * scale )
+
+				if not effect:isPlaying() then
 					effect:start()
 				end
 			end
