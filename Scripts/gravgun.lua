@@ -169,8 +169,8 @@ function Grav:sv_syncMouseDelta( mouseDelta )
 end
 
 function Grav:server_onFixedUpdate()
-	local target = self.sv.target
 	local sv = self.sv
+	local target = sv.target
 	if not target or not sm.exists(target) or not sv.equipped then return end
 
 	--thanks 00Fant for the math
@@ -182,7 +182,7 @@ function Grav:server_onFixedUpdate()
 	local targetIsChar = type(target) == "Character"
 	local force = pos - (targetIsChar and target.worldPosition or target:getCenterOfMassPosition())
 	local mass = target.mass
-	force = ((force  * 2) - ( target.velocity * 0.3 )) * mass
+	force = ((force  * 2) - ( target.velocity--[[@as Vec3]] * 0.3 )) * mass
 
 	if targetIsChar and target:isTumbling() then
 		target:applyTumblingImpulse( force )
@@ -193,8 +193,8 @@ function Grav:server_onFixedUpdate()
 			local mouseDelta = sv.mouseDelta
 			local charDir = sv.rotDirection:rotate(math.rad(mouseDelta.x), up)
 			charDir = charDir:rotate(math.rad(mouseDelta.y), calculateRightVector(charDir))
-			local difference = (target.worldRotation * sm.vec3.new(1,0,0)):cross(charDir)
-			sm.physics.applyTorque(target, ((difference * 2) - ( target.angularVelocity * 0.3 )) * mass, true)
+			local difference = (target.worldRotation * sm.vec3.new(1,0,0)):cross(charDir) --[[@as Vec3]]
+			sm.physics.applyTorque(target, ((difference * 2) - ( target.angularVelocity--[[@as Vec3]] * 0.3 )) * mass, true)
 		end
 	end
 end
@@ -390,6 +390,7 @@ function Grav.client_onCreate( self )
 		options[#options+1] = k
 	end
 	self.gui:createDropDown( "mode_dropdown", "cl_gui_modeDropDown", options )
+	self.gui:setSelectedDropDownItem( "mode_dropdown", self.mode )
 	self.gui:setTextAcceptedCallback( "tumble_duration", "cl_gui_tumbleDuration" )
 
 	self.oldUuid = blk_wood1
