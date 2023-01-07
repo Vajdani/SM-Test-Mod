@@ -8,6 +8,7 @@ function Line_grav:init( thickness, colour )
 
     self.thickness = thickness
 	self.spinTime = 0
+	self.colour = sm.color.new(0,0,0)
 end
 
 ---@param startPos Vec3
@@ -24,13 +25,12 @@ function Line_grav:update( startPos, endPos, dt, spinSpeed )
 	end
 
 	self.dt_sum = (self.dt_sum or 0) + dt
-	self.effect:setParameter("color",
-		sm.color.new(
-			math.abs( math.cos(self.dt_sum) ),
-			math.abs( math.sin(self.dt_sum) ),
-			math.abs( math.sin(self.dt_sum + 0.5) )
-		)
+	self.colour = sm.color.new(
+		math.abs( math.cos(self.dt_sum) ),
+		math.abs( math.sin(self.dt_sum) ),
+		math.abs( math.sin(self.dt_sum + 0.5) )
 	)
+	self.effect:setParameter("color", self.colour)
 
 	local rot = sm.vec3.getRotation(up, delta)
 	local speed = spinSpeed or 1
@@ -53,9 +53,19 @@ dofile( "$GAME_DATA/Scripts/game/AnimationUtil.lua" )
 dofile( "$SURVIVAL_DATA/Scripts/util.lua" )
 dofile( "$SURVIVAL_DATA/Scripts/game/survival_constants.lua" )
 
-Grav = class()
 ---@class Grav : ToolClass
 ---@field line table
+---@field gui GuiInterface
+---@field fpAnimations table
+---@field tpAnimations table
+---@field deleteEffects table
+---@field normalFireMode table
+---@field aimBlendSpeed number
+---@field blendTime number
+---@field isLocal boolean
+---@field copyTarget Body|Character
+---@field copyTargetGui GuiInterface
+Grav = class()
 
 Grav.raycastRange = 1000 --meters
 Grav.minHover = 1 --meters
@@ -100,7 +110,7 @@ for k, v in pairs(_G) do
 end
 
 local renderables = {
-    "$GAME_DATA/Character/Char_Tools/Char_connecttool/char_connecttool.rend",
+    "$CONTENT_DATA/Objects/mongiconnect.rend"
 }
 
 local renderablesTp = {
@@ -480,7 +490,7 @@ function Grav:cl_mode_grav_onEquipped( lmb, rmb, f )
 
 				cam.setPosition(self.pos)
 				cam.setDirection(self.dir)
-			elseif cam.getCameraState() ~= 0 then
+			--[[elseif cam.getCameraState() ~= 0 then
 				cam.setCameraState(0)
 				self.network:sendToServer("sv_setRotState", {state = false})
 
@@ -721,6 +731,12 @@ function Grav.client_onUpdate( self, dt )
 		if equipped then
 			local startPos = self.tool:isInFirstPersonView() and self.tool:getFpBonePos( "pipe" )  or self.tool:getTpBonePos( "pipe" )
 			self.line:update( startPos, type(self.target) == "Character" and self.target.worldPosition or self.target:getCenterOfMassPosition(), dt, 100 )
+
+			local col = self.line.colour
+			self.tool:setTpColor(col)
+			if self.isLocal then
+				self.tool:setFpColor(col)
+			end
 		elseif self.line.effect:isPlaying() then
 			self.line.effect:stop()
 		end
@@ -762,17 +778,20 @@ function Grav.client_onEquip( self, animate )
 
 	for k,v in pairs( renderablesTp ) do currentRenderablesTp[#currentRenderablesTp+1] = v end
 	for k,v in pairs( renderablesFp ) do currentRenderablesFp[#currentRenderablesFp+1] = v end
-	for k,v in pairs( renderables ) do currentRenderablesTp[#currentRenderablesTp+1] = v end
-	for k,v in pairs( renderables ) do currentRenderablesFp[#currentRenderablesFp+1] = v end
-	self:loadAnimations()
+	for k,v in pairs( renderables ) do
+		currentRenderablesTp[#currentRenderablesTp+1] = v
+		currentRenderablesFp[#currentRenderablesFp+1] = v
+	end
 
 	self.tool:setTpRenderables( currentRenderablesTp )
-	setTpAnimation( self.tpAnimations, "pickup", 0.0001 )
-
 	if self.isLocal then
 		self.tool:setFpRenderables( currentRenderablesFp )
-		swapFpAnimation( self.fpAnimations, "unequip", "equip", 0.2 )
+	end
 
+	self:loadAnimations()
+	setTpAnimation( self.tpAnimations, "pickup", 0.0001 )
+	if self.isLocal then
+		swapFpAnimation( self.fpAnimations, "unequip", "equip", 0.2 )
 		self.network:sendToServer("sv_updateEquipped", true)
 	end
 end
@@ -973,7 +992,7 @@ function Grav:updateFP(crouch, sprint, equipped, dt)
 	if equipped then
 		if sprint and self.fpAnimations.currentAnimation ~= "sprintInto" and self.fpAnimations.currentAnimation ~= "sprintIdle" then
 			swapFpAnimation( self.fpAnimations, "sprintExit", "sprintInto", 0.0 )
-		elseif not self.tool:isSprinting() and ( self.fpAnimations.currentAnimation == "sprintIdle" or self.fpAnimations.currentAnimation == "sprintInto" ) then
+		elseif not sprint and ( self.fpAnimations.currentAnimation == "sprintIdle" or self.fpAnimations.currentAnimation == "sprintInto" ) then
 			swapFpAnimation( self.fpAnimations, "sprintInto", "sprintExit", 0.0 )
 		end
 	end

@@ -23,18 +23,8 @@
       },
       {
          "name": "tool_gravgun",
-         "previewRenderable": "$GAME_DATA/Character/Char_Tools/char_connecttool_preview.rend",
-         "previewRotation": [
-            1,
-            0,
-            0,
-            0,
-            0,
-            -1,
-            0,
-            1,
-            0
-         ],
+         "previewRenderable": "$CONTENT_DATA/Objects/mongiconnect.rend",
+         "previewRotation": [ 1, 0, 0, 0, 1, 0, 0, 0, 1 ],
          "script": {
             "class": "Grav",
             "data": {},
