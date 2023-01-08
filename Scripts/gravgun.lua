@@ -72,7 +72,6 @@ dofile( "$SURVIVAL_DATA/Scripts/game/survival_constants.lua" )
 ---@field oldUuid Uuid
 ---@field newUuid Uuid
 Grav = class()
-
 Grav.raycastRange = 1000 --meters
 Grav.minHover = 1 --meters
 Grav.maxHover = 50
@@ -100,6 +99,9 @@ Grav.modes = {
 	["World clear"] = {
 		onEquipped = "cl_mode_clear"
 	},
+	["Split and Explode"] = {
+		onPrimary = "cl_mode_split"
+	}
 }
 
 local camAdjust = sm.vec3.new(0,0,0.575)
@@ -358,6 +360,65 @@ function Grav:sv_clear( mode )
 		for k, unit in pairs(sm.unit.getAllUnits()) do
 			unit:destroy()
 		end
+	end
+end
+
+---@param body Body
+function Grav:sv_split( body )
+	self.network:sendToClients("cl_split", body)
+
+	local center = body:getCenterOfMassPosition()
+	for k, shape in pairs(body:getCreationShapes()) do
+		--[[
+		local pos = shape.worldPosition
+		local rot = shape.worldRotation
+		local mass = shape.mass
+		local uuid = shape.uuid
+		local colour = shape.color
+		local size = shape:getBoundingBox() * 4
+		]]
+
+		shape:destroyShape()
+
+		--[[
+		local newShape
+		if sm.item.isBlock(uuid) then
+			print(size)
+			local size_clamped = sm.vec3.new(
+				sm.util.clamp(size.x, 1, 69420),
+				sm.util.clamp(size.y, 1, 69420),
+				sm.util.clamp(size.z, 1, 69420)
+			)
+			newShape = sm.shape.createBlock(uuid, size_clamped, pos, rot, true, true)
+		else
+			newShape = sm.shape.createPart(uuid, pos, rot, true, true)
+		end
+		newShape:setColor(colour)
+
+		sm.physics.applyImpulse(newShape, (pos - center):normalize() * mass * 20, true)
+		]]
+	end
+end
+
+---@param body Body
+function Grav:cl_split( body )
+	local center = body:getCenterOfMassPosition()
+	for k, shape in pairs(body:getCreationShapes()) do
+		local pos = shape.worldPosition
+		local rot = shape.worldRotation
+		local mass = shape.mass
+		local uuid = shape.uuid
+		local colour = shape.color
+
+		sm.debris.createDebris(
+			uuid,
+			pos,
+			rot,
+			(pos - center):normalize() * 10,
+			vec3_zero,
+			colour,
+			1
+		)
 	end
 end
 
@@ -745,6 +806,13 @@ function Grav:cl_mode_clear( lmb, rmb, f )
 	end
 
 	return true
+end
+
+function Grav:cl_mode_split()
+	local hit, result = sm.localPlayer.getRaycast( self.raycastRange )
+	if hit and result.type == "body" then
+		self.network:sendToServer("sv_split", result:getBody())
+	end
 end
 
 
