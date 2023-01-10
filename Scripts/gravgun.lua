@@ -56,10 +56,12 @@ end
 dofile( "$GAME_DATA/Scripts/game/AnimationUtil.lua" )
 dofile( "$SURVIVAL_DATA/Scripts/util.lua" )
 dofile( "$SURVIVAL_DATA/Scripts/game/survival_constants.lua" )
+dofile( "$SURVIVAL_DATA/Scripts/game/survival_harvestable.lua" )
 
 ---@class Grav : ToolClass
 ---@field line table
 ---@field gui GuiInterface
+---@field guis table
 ---@field fpAnimations table
 ---@field tpAnimations table
 ---@field deleteEffects table
@@ -111,6 +113,10 @@ Grav.modes = {
 	["Split and Explode"] = {
 		onPrimary = "cl_mode_split",
 		colour = sm.color.new(0,0,1)
+	},
+	["Scan"] = {
+		onPrimary = "cl_mode_scan",
+		colour = sm.color.new(0.5,0,0.5)
 	}
 }
 
@@ -459,6 +465,7 @@ function Grav.client_onCreate( self )
 	self.canTriggerFb = true
 	self.tumbleDuration = 40
 
+	self.guis = {}
 	self.gui = sm.gui.createGuiFromLayout("$CONTENT_DATA/Gui/gravgun.layout", false,
 		{
 			isHud = false,
@@ -851,6 +858,70 @@ function Grav:cl_mode_split()
 	end
 end
 
+function Grav:cl_mode_scan()
+	self.network:sendToServer("sv_scan", self.tool:getPosition())
+end
+
+local charIdToName = {
+	[tostring(unit_woc)] = "Woc",
+	[tostring(unit_tapebot)] = "Tapebot",
+	[tostring(unit_tapebot_red)] = "Red Tapebot",
+	[tostring(unit_tapebot_taped_1)] = "Tapebot",
+	[tostring(unit_tapebot_taped_2)] = "Tapebot",
+	[tostring(unit_tapebot_taped_3)] = "Tapebot",
+	[tostring(unit_totebot_green)] = "Green Totebot",
+	[tostring(unit_haybot)] = "Haybot",
+	[tostring(unit_farmbot)] = "Farmbot",
+	[tostring(unit_worm)] = "Glowbug"
+}
+
+---@param objs SphereContacts
+function Grav:cl_mode_scan_recieve(objs)
+	local ignoreChar = self.tool:getOwner().character
+
+	for k, char in pairs(objs.characters) do
+		if char ~= ignoreChar then
+			local gui = sm.gui.createWorldIconGui(32, 32, "$GAME_DATA/Gui/Layouts/Hud/Hud_WorldIcon.layout", false)
+			gui:setImage("Icon", "gui_icon_popup_alert.png")
+			gui:setHost(char)
+			gui:setMaxRenderDistance(20)
+			gui:setRequireLineOfSight(false)
+			gui:open()
+
+			local text = sm.gui.createNameTagGui()
+			local col = char.color
+			local name = charIdToName[tostring(char:getCharacterType())] or "unkown"
+			text:setText("Text", "#"..col:getHexStr():sub(1, 6)..name)
+			text:setHost(char)
+			text:setRequireLineOfSight(false)
+			text:setMaxRenderDistance(20)
+			text:open()
+
+			self.guis[#self.guis+1] = { gui = gui, text = text, colour = col, host = char }
+		end
+	end
+
+	for k, hvs in pairs(objs.harvestables) do
+		local uuid = hvs.uuid
+		print(uuid)
+		if isAnyOf(uuid, {hvs_lootcrate, hvs_lootcrateepic, hvs_loot}) then
+			print("a")
+			local gui = sm.gui.createWorldIconGui(32, 32, "$GAME_DATA/Gui/Layouts/Hud/Hud_WorldIcon.layout", false)
+			gui:setImage("Icon", "gui_icon_popup_alert.png")
+			gui:setWorldPosition(hvs.worldPosition)
+			gui:setMaxRenderDistance(20)
+			gui:setRequireLineOfSight(false)
+			gui:open()
+
+			self.guis[#self.guis+1] = { gui = gui, host = hvs }
+		end
+	end
+end
+
+function Grav:sv_scan(pos)
+	self.network:sendToClient(self.tool:getOwner(), "cl_mode_scan_recieve", sm.physics.getSphereContacts(pos, 10))
+end
+
 
 
 function Grav:client_onToggle()
@@ -890,6 +961,23 @@ function Grav.client_onUpdate( self, dt )
 			if not sm.exists(self.target) then
 				self.target = nil
 				self.network:sendToServer( "sv_targetSelect", nil )
+			end
+		end
+
+		for k, data in pairs(self.guis) do
+			local host = data.host
+			if not sm.exists(host) then
+				data.gui:destroy()
+				if data.text then
+					data.text:destroy()
+				end
+				self.guis[k] = nil
+			elseif type(host) == "Character" then
+				local col = host.color
+				if col ~= data.colour then
+					data.text:setText("Text", "#"..col:getHexStr():sub(1, 6)..charIdToName[tostring(host:getCharacterType())])
+					data.colour = col
+				end
 			end
 		end
 
