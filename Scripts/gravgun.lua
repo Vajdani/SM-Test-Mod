@@ -904,7 +904,6 @@ function Grav:cl_mode_scan_recieve(objs)
 	for k, hvs in pairs(objs.harvestables) do
 		local uuid = hvs.uuid
 		if isAnyOf(uuid, {hvs_lootcrate, hvs_lootcrateepic, hvs_loot}) then
-			print("a")
 			local gui = sm.gui.createWorldIconGui(32, 32, "$GAME_DATA/Gui/Layouts/Hud/Hud_WorldIcon.layout", false)
 			gui:setImage("Icon", "gui_icon_popup_alert.png")
 			gui:setWorldPosition(hvs.worldPosition)
