@@ -78,29 +78,39 @@ Grav.maxHover = 50
 Grav.lineColour = sm.color.new(0,1,1)
 Grav.modes = {
 	["Gravity Gun"] = {
-		onEquipped = "cl_mode_grav"
+		onEquipped = "cl_mode_grav",
+		onToggle = "cl_mode_grav_hoverDec",
+		onReload = "cl_mode_grav_hoverInc",
+		colour = sm.color.new(1,1,1)
 	},
 	["Tumbler"] = {
-		onPrimary = "cl_mode_tumble"
+		onPrimary = "cl_mode_tumble",
+		colour = sm.color.new(1,0,0)
 	},
 	["Copy/Paste Object"] = {
 		onPrimary = "cl_mode_copyrightInfringement",
-		onSecondary = "cl_mode_copyrightInfringement_reset"
+		onSecondary = "cl_mode_copyrightInfringement_reset",
+		colour = sm.color.new(1,1,0)
 	},
 	["Delete Object"] = {
-		onPrimary = "cl_mode_delete"
+		onPrimary = "cl_mode_delete",
+		colour = sm.color.new(0,0,0)
 	},
 	["Teleport"] = {
-		onPrimary = "cl_mode_teleport"
+		onPrimary = "cl_mode_teleport",
+		colour = sm.color.new(0,1,1)
 	},
 	["Block Replacer"] = {
-		onPrimary = "cl_mode_blockReplace"
+		onPrimary = "cl_mode_blockReplace",
+		colour = sm.color.new(1,1,0.5)
 	},
 	["World clear"] = {
-		onEquipped = "cl_mode_clear"
+		onEquipped = "cl_mode_clear",
+		colour = sm.color.new(0,1,0)
 	},
 	["Split and Explode"] = {
-		onPrimary = "cl_mode_split"
+		onPrimary = "cl_mode_split",
+		colour = sm.color.new(0,0,1)
 	}
 }
 
@@ -405,19 +415,27 @@ function Grav:cl_split( body )
 	local center = body:getCenterOfMassPosition()
 	for k, shape in pairs(body:getCreationShapes()) do
 		local pos = shape.worldPosition
-		local rot = shape.worldRotation
-		local mass = shape.mass
-		local uuid = shape.uuid
-		local colour = shape.color
-
 		sm.debris.createDebris(
-			uuid,
+			shape.uuid,
 			pos,
-			rot,
+			shape.worldRotation,
 			(pos - center):normalize() * 10,
 			vec3_zero,
-			colour,
-			1
+			shape.color,
+			5
+		)
+	end
+
+	for k, joint in pairs(body:getJoints()) do
+		local pos = joint.worldPosition
+		sm.debris.createDebris(
+			joint.uuid,
+			pos,
+			joint.localRotation,
+			(pos - center):normalize() * 10,
+			vec3_zero,
+			joint.color,
+			5
 		)
 	end
 end
@@ -430,13 +448,15 @@ function Grav.client_onCreate( self )
 	self.line = Line_grav()
 	self.line:init( 0.05, self.lineColour )
 	self.deleteEffects = {}
+	self.mode = "Gravity Gun"
+
+	self:cl_updateColour()
 
 	self:loadAnimations()
 
     if not self.isLocal then return end
 	self.hoverRange = 5
 	self.canTriggerFb = true
-	self.mode = "Gravity Gun"
 	self.tumbleDuration = 40
 
 	self.gui = sm.gui.createGuiFromLayout("$CONTENT_DATA/Gui/gravgun.layout", false,
@@ -496,6 +516,8 @@ function Grav:cl_gui_modeDropDown( selected )
 	local visible = selected == "Block Replacer"
 	self.gui:setVisible( "uuidOld", visible )
 	self.gui:setVisible( "uuidNew", visible )
+
+	self.network:sendToServer("sv_updateColour", self.mode)
 end
 
 function Grav:cl_gui_tumbleDuration( widget, text )
@@ -626,6 +648,20 @@ function Grav:cl_mode_grav( lmb, rmb, f )
 	end
 
 	return true
+end
+
+function Grav:cl_mode_grav_hoverInc()
+	self.hoverRange = self.hoverRange < self.maxHover and self.hoverRange + 1 or self.maxHover
+	sm.gui.displayAlertText("Hover range: #df7f00"..self.hoverRange, 2.5)
+	sm.audio.play("Button on")
+	self.network:sendToServer("sv_updateRange", self.hoverRange)
+end
+
+function Grav:cl_mode_grav_hoverDec()
+	self.hoverRange = self.hoverRange > self.minHover and self.hoverRange - 1 or self.minHover
+	sm.gui.displayAlertText("Hover range: #df7f00"..self.hoverRange, 2.5)
+	sm.audio.play("Button off")
+	self.network:sendToServer("sv_updateRange", self.hoverRange)
 end
 
 function Grav:cl_mode_tumble()
@@ -818,19 +854,19 @@ end
 
 
 function Grav:client_onToggle()
-	self.hoverRange = self.hoverRange > self.minHover and self.hoverRange - 1 or self.minHover
-	sm.gui.displayAlertText("Hover range: #df7f00"..self.hoverRange, 2.5)
-	sm.audio.play("Button off")
-	self.network:sendToServer("sv_updateRange", self.hoverRange)
+	local func = self[self.modes[self.mode].onToggle]
+	if func then
+		func( self )
+	end
 
 	return true
 end
 
 function Grav:client_onReload()
-	self.hoverRange = self.hoverRange < self.maxHover and self.hoverRange + 1 or self.maxHover
-	sm.gui.displayAlertText("Hover range: #df7f00"..self.hoverRange, 2.5)
-	sm.audio.play("Button on")
-	self.network:sendToServer("sv_updateRange", self.hoverRange)
+	local func = self[self.modes[self.mode].onReload]
+	if func then
+		func( self )
+	end
 
 	return true
 end
@@ -963,11 +999,31 @@ function Grav.client_onEquip( self, animate )
 		self.tool:setFpRenderables( currentRenderablesFp )
 	end
 
+	self:cl_updateColour()
+
 	self:loadAnimations()
 	setTpAnimation( self.tpAnimations, "pickup", 0.0001 )
 	if self.isLocal then
 		swapFpAnimation( self.fpAnimations, "unequip", "equip", 0.2 )
 		self.network:sendToServer("sv_updateEquipped", true)
+	end
+end
+
+function Grav:sv_updateColour(mode)
+	self.network:sendToClients("cl_updateColour", mode)
+end
+
+function Grav:cl_updateColour(mode)
+	if mode then
+		self.mode = mode
+	end
+
+	local col = self.modes[self.mode].colour
+	if not col then return end
+
+	self.tool:setTpColor(col)
+	if self.isLocal then
+		self.tool:setFpColor(col)
 	end
 end
 
