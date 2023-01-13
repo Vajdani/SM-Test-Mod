@@ -18,7 +18,7 @@ local camChildUuid = sm.uuid.new("28e4e591-1a4f-4f0b-a2c4-416212ff94f3")
 function CamParent:server_onCreate()
     self.sv = {}
     self.sv.canChangeIndexTimer = Timer()
-    self.sv.canChangeIndexTimer:start( 10 )
+    self.sv.canChangeIndexTimer:start( 20 )
 end
 
 function CamParent:server_onFixedUpdate()
@@ -71,6 +71,7 @@ function CamParent:client_getAvailableParentConnectionCount( connectionType )
 end
 
 function CamParent:client_onUpdate( dt )
+    ---@type Character, Shape
     local seatChar, seat = self:getSeatedCharacter()
     local noSeatChar = seatChar == nil
     local char = sm.localPlayer.getPlayer().character
@@ -91,12 +92,12 @@ function CamParent:client_onUpdate( dt )
     local lerpTime = dt * 10
     local newPos = camHost.worldPosition - seat.up * 5
     sm.camera.setPosition( sm.vec3.lerp( sm.camera.getPosition(), newPos, lerpTime ) )
-    sm.camera.setDirection( sm.vec3.lerp( sm.camera.getDirection(), camHost.worldPosition - newPos, lerpTime ) )
+    sm.camera.setDirection( sm.vec3.lerp( sm.camera.getDirection(), seat.up, lerpTime ) )
 end
 
 function CamParent:client_canInteract()
     local int = sm.localPlayer.getPlayer().character:getLockingInteractable()
-    return int  ~= nil and int:hasSeat()
+    return int ~= nil and int:hasSeat()
 end
 
 function CamParent:client_onInteract( char, state )

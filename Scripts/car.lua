@@ -392,7 +392,7 @@ function Car:client_onAction( action, state )
         elseif action == 18 then --Right click
             --self.network:sendToServer("sv_toggleAi")
         elseif action == 19 then --Left click
-            self.cameraMode = self.cameraMode < 3 and self.cameraMode + 1 or 1
+            self.cameraMode = self.cameraMode < --[[3]] 2 and self.cameraMode + 1 or 1
             if self.cameraMode == 1 then
                 sm.camera.setCameraState(0)
             elseif sm.camera.getCameraState() ~= 3 then

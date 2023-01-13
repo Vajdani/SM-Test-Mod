@@ -521,5 +521,31 @@ function Amogus:client_onEquippedUpdate( primaryState, secondaryState )
 		self.prevSecondaryState = secondaryState
 	end
 
+	if self.modIndex == 1 then
+		local char = self.owner.character
+		local pos = sm.camera.getPosition()
+		local hit, result = sm.physics.raycast( pos, pos + char.direction * 100, char )
+
+		if hit then
+			sm.gui.setInteractionText(
+				sm.gui.getKeyBinding("Create", true).."Create explosion\t",
+				sm.gui.getKeyBinding("Attack", true).."Create implosion",
+				""
+			)
+		end
+	elseif self.modIndex == 2 then
+		local char = self.owner.character
+		local pos = sm.camera.getPosition()
+		local hit, result = sm.physics.raycast( pos, pos + char.direction * 100, char )
+
+		sm.gui.setInteractionText(
+			sm.gui.getKeyBinding("Create", true).."Spawn black hole\t",
+			#self.cl_blackholes > 0 and sm.gui.getKeyBinding("Attack", true).."Detonate black hole(s)" or "",
+			""
+		)
+	else
+		sm.gui.setInteractionText("", sm.gui.getKeyBinding("Create", true).."Throw explosive", "")
+	end
+
 	return true, true
 end

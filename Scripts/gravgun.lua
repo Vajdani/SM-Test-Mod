@@ -1,3 +1,5 @@
+local BETA = false
+
 local vec3_up = sm.vec3.new(0,0,1)
 local vec3_one = sm.vec3.one()
 local vec3_zero = sm.vec3.zero()
@@ -74,8 +76,8 @@ dofile( "$SURVIVAL_DATA/Scripts/game/survival_harvestable.lua" )
 ---@field oldUuid Uuid
 ---@field newUuid Uuid
 Grav = class()
-Grav.raycastRange = 1000 --meters
-Grav.minHover = 1 --meters
+Grav.raycastRange = 1000
+Grav.minHover = 1
 Grav.maxHover = 50
 Grav.lineColour = sm.color.new(0,1,1)
 Grav.modes = {
@@ -86,28 +88,32 @@ Grav.modes = {
 		colour = sm.color.new(1,1,1)
 	},
 	["Tumbler"] = {
-		onPrimary = "cl_mode_tumble",
+		onEquipped = "cl_mode_tumble",
 		colour = sm.color.new(1,0,0)
 	},
 	["Copy/Paste Object"] = {
-		onPrimary = "cl_mode_copyrightInfringement",
+		onEquipped = "cl_mode_copyrightInfringement",
+		onPrimary = "cl_mode_copyrightInfringement_onClick",
 		onSecondary = "cl_mode_copyrightInfringement_reset",
 		colour = sm.color.new(1,1,0)
 	},
 	["Delete Object"] = {
-		onPrimary = "cl_mode_delete",
+		onEquipped = "cl_mode_delete",
 		colour = sm.color.new(0,0,0)
 	},
 	["Teleport"] = {
-		onPrimary = "cl_mode_teleport",
+		onEquipped = "cl_mode_teleport",
 		colour = sm.color.new(0,1,1)
 	},
+	--[[
 	["Block Replacer"] = {
 		onPrimary = "cl_mode_blockReplace",
 		colour = sm.color.new(1,1,0.5)
 	},
+	]]
 	["World clear"] = {
 		onEquipped = "cl_mode_clear",
+		onToggle = "cl_mode_clear_units",
 		colour = sm.color.new(0,1,0)
 	},
 	["Split and Explode"] = {
@@ -115,7 +121,8 @@ Grav.modes = {
 		colour = sm.color.new(0,0,1)
 	},
 	["Scan"] = {
-		onPrimary = "cl_mode_scan",
+		onPrimary = "cl_mode_scan_onClick",
+		onEquipped = "cl_mode_scan",
 		colour = sm.color.new(0.5,0,0.5)
 	}
 }
@@ -195,7 +202,6 @@ function Grav:server_onFixedUpdate()
 	local target = sv.target
 	if not target or not sm.exists(target) or not sv.equipped then return end
 
-	--thanks 00Fant for the math
 	---@type Character
 	local char = self.tool:getOwner().character
 	local dir = sv.rotState and sv.rotDirection or char.direction
@@ -256,7 +262,8 @@ function Grav:sv_pasteTarget( pos )
 		target = self.sv.copyTarget
 	end
 
-	if type(target) == "string" then
+	local type = type(target)
+	if type == "string" then
 		sm.creation.importFromString(
 			self.tool:getOwner().character:getWorld(),
 			target,
@@ -264,8 +271,10 @@ function Grav:sv_pasteTarget( pos )
 			sm.quat.identity(),
 			true
 		)
-	else
+	elseif type == "Uuid" then
 		sm.unit.createUnit(target, pos)
+	else
+		sm.harvestable.create(target[1], pos, sm.vec3.getRotation(sm.vec3.new(0,1,0), vec3_up))
 	end
 end
 
@@ -279,14 +288,15 @@ end
 
 function Grav:sv_deleteObject( obj )
 	local override, data, pos = false, nil, nil
-	if type(obj) == "table" then
+	local type = type(obj)
+	if type == "table" then
 		override = obj.override
 		pos = obj.pos
 		obj = obj.obj
-		data = type(obj) == "Body" and sm.creation.exportToString( obj, false, true ) or obj:getCharacterType()
+		data = type == "Body" and sm.creation.exportToString( obj, false, true ) or obj:getCharacterType()
 	end
 
-	if type(obj) == "Body" then
+	if type == "Body" then
 		if not override then
 			self.network:sendToClients("cl_deleteObject", obj)
 		end
@@ -298,6 +308,8 @@ function Grav:sv_deleteObject( obj )
 				shape:destroyPart()
 			end
 		end
+	elseif type == "Harvestable" then
+		obj:destroy()
 	else
 		obj:getUnit():destroy()
 	end
@@ -456,8 +468,6 @@ function Grav.client_onCreate( self )
 	self.deleteEffects = {}
 	self.mode = "Gravity Gun"
 
-	self:cl_updateColour()
-
 	self:loadAnimations()
 
     if not self.isLocal then return end
@@ -466,6 +476,9 @@ function Grav.client_onCreate( self )
 	self.tumbleDuration = 40
 
 	self.guis = {}
+
+	--cringe gui
+	--[[
 	self.gui = sm.gui.createGuiFromLayout("$CONTENT_DATA/Gui/gravgun.layout", false,
 		{
 			isHud = false,
@@ -484,6 +497,28 @@ function Grav.client_onCreate( self )
 	self.gui:createDropDown( "mode_dropdown", "cl_gui_modeDropDown", options )
 	self.gui:setSelectedDropDownItem( "mode_dropdown", self.mode )
 	self.gui:setTextAcceptedCallback( "tumble_duration", "cl_gui_tumbleDuration" )
+	]]
+
+	self.gui = sm.gui.createGuiFromLayout("$CONTENT_DATA/Gui/gravgun2.layout", false,
+		{
+			isHud = false,
+			isInteractive = true,
+			needsCursor = true,
+			hidesHotbar = false,
+			isOverlapped = false,
+			backgroundAlpha = 0,
+		}
+	)
+	self.gui:setText("Name", "Tool Gun Mode")
+	self.gui:setText("SubTitle", "Select mode")
+	self.gui:setText("Interaction", "hi")
+
+	local options = {}
+	for k, v in pairs(self.modes) do
+		options[#options+1] = k
+	end
+	self.gui:createDropDown( "keys", "cl_gui_modeDropDown", options )
+	self.gui:setSelectedDropDownItem( "keys", self.mode )
 
 	self.oldUuid = blk_wood1
 	self.newUuid = blk_concrete1
@@ -574,8 +609,8 @@ function Grav:cl_mode_grav( lmb, rmb, f )
 	end
 
 	if self.target then
-		local canRotate = type(self.target) == "Body"
-		if f then
+		local canRotate = type(self.target) == "Body" and BETA
+		if f and BETA then
 			sm.gui.setInteractionText(
 				sm.gui.getKeyBinding("Create", true).."Drop target\t",
 				sm.gui.getKeyBinding("Attack", true).."Throw target",
@@ -671,19 +706,43 @@ function Grav:cl_mode_grav_hoverDec()
 	self.network:sendToServer("sv_updateRange", self.hoverRange)
 end
 
-function Grav:cl_mode_tumble()
+function Grav:cl_mode_tumble(lmb)
 	local hit, result = sm.localPlayer.getRaycast( self.raycastRange )
-	if not hit then return end
+	if not hit then return true end
 
 	local target = result:getCharacter()
-	if not target then return end
+	if not target then return true end
 
-	self.network:sendToServer( "sv_targetTumble", target )
-	sm.gui.displayAlertText("#00ff00Target tumbled!", 2.5)
-	sm.audio.play("Blueprint - Open")
+	sm.gui.setInteractionText("", sm.gui.getKeyBinding("Create", true), "Tumble mob")
+
+	if lmb == 1 then
+		self.network:sendToServer( "sv_targetTumble", target )
+		sm.gui.displayAlertText("#00ff00Target tumbled!", 2.5)
+		sm.audio.play("Blueprint - Open")
+	end
 end
 
-function Grav:cl_mode_copyrightInfringement( override )
+function Grav:cl_mode_copyrightInfringement()
+	if self.copyTarget then
+		sm.gui.setInteractionText("", sm.gui.getKeyBinding("Attack", true), "Clear copy target")
+	end
+
+	local start = sm.localPlayer.getRaycastStart()
+	local endPos = start + sm.localPlayer.getDirection() * 50
+	local hit, result = sm.physics.raycast( start, endPos, sm.localPlayer.getPlayer().character )
+
+	if not hit then return true end
+
+	local target = result:getBody() or result:getCharacter() or result:getHarvestable()
+	local isChar = type(target) == "Character"
+	if target == nil or isChar and target:isPlayer() then return true end
+
+	if not self.copyTarget then
+		sm.gui.setInteractionText("", sm.gui.getKeyBinding("Create", true), "Set copy target")
+	end
+end
+
+function Grav:cl_mode_copyrightInfringement_onClick( override )
 	local start = sm.localPlayer.getRaycastStart()
 	local endPos = start + sm.localPlayer.getDirection() * 50
 	local hit, result = sm.physics.raycast( start, endPos, sm.localPlayer.getPlayer().character )
@@ -695,7 +754,7 @@ function Grav:cl_mode_copyrightInfringement( override )
 		return
 	end
 
-	local target = result:getBody() or result:getCharacter()
+	local target = result:getBody() or result:getCharacter() or result:getHarvestable()
 	local isChar = type(target) == "Character"
 	if target == nil or isChar and target:isPlayer() then return end
 
@@ -703,6 +762,8 @@ function Grav:cl_mode_copyrightInfringement( override )
 		self.copyTarget = target
 		if isChar then
 			self.network:sendToServer("sv_setCopyTarget", target:getCharacterType())
+		elseif type(target) == "Harvestable" then
+			self.network:sendToServer("sv_setCopyTarget", { target.uuid })
 		else
 			self.network:sendToServer("sv_setCopyTarget", target)
 			self.copyTargetBodies = target:getCreationBodies()
@@ -727,16 +788,22 @@ function Grav:cl_mode_copyrightInfringement_reset()
 	sm.audio.play("Blueprint - Delete")
 end
 
-function Grav:cl_mode_delete()
+function Grav:cl_mode_delete(lmb)
 	local hit, result = sm.localPlayer.getRaycast( self.raycastRange )
-	if not hit then return end
+	if not hit then return true end
 
-	local target = result:getBody() or result:getCharacter()
-	if not target or type(target) == "Character" and target:isPlayer() then return end
+	local target = result:getBody() or result:getCharacter() or result:getHarvestable()
+	if not target or type(target) == "Character" and target:isPlayer() then return true end
 
-	self.network:sendToServer("sv_deleteObject", target)
-	sm.gui.displayAlertText("Object deleted!", 2.5)
-	sm.audio.play("Blueprint - Delete")
+	sm.gui.setInteractionText("", sm.gui.getKeyBinding("Create", true), "Delete object")
+
+	if lmb == 1 then
+		self.network:sendToServer("sv_deleteObject", target)
+		sm.gui.displayAlertText("Object deleted!", 2.5)
+		sm.audio.play("Blueprint - Delete")
+	end
+
+	return true
 end
 
 ---@param obj Body
@@ -794,15 +861,30 @@ function Grav:cl_deleteObject( obj )
 	self.deleteEffects[#self.deleteEffects+1] = creation
 end
 
-function Grav:cl_mode_teleport()
-	if self.teleportObject then
-		local hit, result = sm.localPlayer.getRaycast( self.raycastRange )
-		if not hit then return end
-		self.network:sendToServer("sv_deleteObject", { obj = self.teleportObject, override = true, pos = result.pointWorld })
-		self.teleportObject = nil
+function Grav:cl_mode_teleport(lmb)
+	local hit, result = sm.localPlayer.getRaycast( self.raycastRange )
+	if not hit then return true end
+
+	local target = result:getBody() or result:getCharacter()
+	if not target and not self.teleportObject then return true end
+
+	if not self.teleportObject then
+		sm.gui.setInteractionText("", sm.gui.getKeyBinding("Create", true), "Set teleport target")
 	else
-		self.teleportObject = self:cl_mode_copyrightInfringement( true )
+		sm.gui.setInteractionText("", sm.gui.getKeyBinding("Create", true), "Teleport target to position")
 	end
+
+	if lmb == 1 then
+		if self.teleportObject then
+			if not hit then return true end
+			self.network:sendToServer("sv_deleteObject", { obj = self.teleportObject, override = true, pos = result.pointWorld })
+			self.teleportObject = nil
+		else
+			self.teleportObject = self:cl_mode_copyrightInfringement_onClick( true )
+		end
+	end
+
+	return true
 end
 
 function Grav:cl_mode_blockReplace()
@@ -827,14 +909,17 @@ function Grav:cl_mode_clear( lmb, rmb, f )
 		ico_rmb.."Clear all dynamic bodies",
 		""
 	)
-	sm.gui.setInteractionText(ico_lmb.. " + "..ico_rmb.."Clear all units", "")
+	--sm.gui.setInteractionText(ico_lmb.. " + "..ico_rmb.."Clear all units", "")
+	sm.gui.setInteractionText("", sm.gui.getKeyBinding("NextCreateRotation", true), "Clear all units")
 
+	--[[
 	if lmb == 1 and rmb == 1 then
 		sm.gui.displayAlertText("#00ff00All units cleared!", 2.5)
 		sm.audio.play("Blueprint - Delete")
 		self.network:sendToServer("sv_clear", 3)
 		return true
 	end
+	]]
 
 	if lmb == 1 then
 		sm.gui.displayAlertText("#00ff00All bodies cleared!", 2.5)
@@ -851,6 +936,12 @@ function Grav:cl_mode_clear( lmb, rmb, f )
 	return true
 end
 
+function Grav:cl_mode_clear_units()
+	sm.gui.displayAlertText("#00ff00All units cleared!", 2.5)
+	sm.audio.play("Blueprint - Delete")
+	self.network:sendToServer("sv_clear", 3)
+end
+
 function Grav:cl_mode_split()
 	local hit, result = sm.localPlayer.getRaycast( self.raycastRange )
 	if hit and result.type == "body" then
@@ -859,6 +950,12 @@ function Grav:cl_mode_split()
 end
 
 function Grav:cl_mode_scan()
+	sm.gui.setInteractionText("", sm.gui.getKeyBinding("Create", true), "Scan for mobs and loot")
+
+	return true
+end
+
+function Grav:cl_mode_scan_onClick()
 	self.network:sendToServer("sv_scan", self.tool:getPosition())
 end
 
@@ -979,18 +1076,19 @@ function Grav.client_onUpdate( self, dt )
 			end
 		end
 
-		if self.mode == "Copy/Paste Object"  then
+		local char = sm.localPlayer.getPlayer().character
+		if char then
 			if self.copyTarget and sm.exists(self.copyTarget) then
 				self.copyTargetGui:setWorldPosition(type(self.copyTarget) == "Body" and self.copyTarget:getCenterOfMassPosition() or self.copyTarget.worldPosition)
 				if not self.copyTargetGui:isActive() then self.copyTargetGui:open() end
 
-				if self.copyTargetBodies and self.tool:isEquipped() then
+				if self.copyTargetBodies and equipped then
 					sm.visualization.setCreationBodies( self.copyTargetBodies )
 					sm.visualization.setCreationFreePlacement( true )
 
 					local start = sm.localPlayer.getRaycastStart()
 					local endPos = start + sm.localPlayer.getDirection() * 50
-					local hit, result = sm.physics.raycast( start, endPos, sm.localPlayer.getPlayer().character )
+					local hit, result = sm.physics.raycast( start, endPos, char )
 					sm.visualization.setCreationFreePlacementPosition( hit and result.pointWorld or endPos )
 					sm.visualization.setCreationValid( true )
 					sm.visualization.setCreationVisible( true )
@@ -998,15 +1096,15 @@ function Grav.client_onUpdate( self, dt )
 			elseif self.copyTargetGui:isActive() then
 				self.copyTargetGui:close()
 			end
-		elseif self.mode == "Teleport" then
+
 			if self.teleportObject and sm.exists(self.teleportObject) then
-				if self.tool:isEquipped() and type(self.teleportObject) == "Body" then
+				if equipped and type(self.teleportObject) == "Body" then
 					sm.visualization.setCreationBodies( self.teleportObject:getCreationBodies() )
 					sm.visualization.setCreationFreePlacement( true )
 
 					local start = sm.localPlayer.getRaycastStart()
 					local endPos = start + sm.localPlayer.getDirection() * 50
-					local hit, result = sm.physics.raycast( start, endPos, sm.localPlayer.getPlayer().character )
+					local hit, result = sm.physics.raycast( start, endPos, char )
 					sm.visualization.setCreationFreePlacementPosition( hit and result.pointWorld or endPos )
 					sm.visualization.setCreationValid( true )
 					sm.visualization.setCreationVisible( true )

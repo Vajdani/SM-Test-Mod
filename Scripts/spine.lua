@@ -53,7 +53,7 @@ function Spine:client_onUpdate( dt )
     char:setNameTag( "I'd rather buy winrar" )]]
 
     if self.boosting then
-        self.boostsum = self.boostsum + dt * 10
+        self.boostsum = self.boostsum + dt * 50
         self.dt_sum = self.dt_sum + dt * (1 + self.boostsum)
         local dir = sm.vec3.new( 0, self.dt_sum, 0 ) * 100
         self.tool:updateJoint( "jnt_spine1", dir, 1 )
@@ -107,7 +107,7 @@ function Spine:server_onCreate()
     self.sv_boosting = false
     self.sv_boosthover = sm.vec3.zero()
     self.sv_boostTimer = Timer()
-    self.sv_boostTimer:start( 5 * 40 )
+    self.sv_boostTimer:start( 2 * 40 )
 end
 
 function Spine:sv_updateSpin( spin )
@@ -141,16 +141,4 @@ function Spine:server_onFixedUpdate()
     if self.sv_spinning then
         sm.physics.applyImpulse(char, vec3_up * char.mass / 1.5)
     end
-end
-
-
---Thanks Nick
-function getYawPitch( direction )
-    return math.atan2(direction.y, direction.x) - math.pi/2, math.asin(direction.z)
-end
-
---Thanks QMark
-function calculateRightVector(vector)
-    local yaw = math.atan2(vector.y, vector.x) - math.pi / 2
-    return sm.vec3.new(math.cos(yaw), math.sin(yaw), 0)
 end

@@ -118,7 +118,7 @@
       },
       {
          "uuid": "ca50b410-a53b-46a8-a1c6-a16ae7608229",
-         "previewRenderable": "$GAME_DATA/Character/Char_Tools/char_spudgun_preview.rend",
+         "previewRenderable": "$SURVIVAL_DATA/Character/Char_Glowstick/char_glowstick.rend",
          "previewRotation": [
             1,
             0,

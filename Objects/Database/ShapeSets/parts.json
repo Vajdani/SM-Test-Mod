@@ -77,6 +77,7 @@
             "classname": "idtest",
             "filename": "$CONTENT_DATA/Scripts/idtest.lua"
          },
+         "showInInventory": false,
          "uuid": "b60e07fe-21fa-4089-84dd-ddd1f186ed40"
       },
       {
@@ -156,6 +157,7 @@
             "classname": "ChildCount",
             "filename": "$CONTENT_DATA/Scripts/childcount.lua"
          },
+         "showInInventory": false,
          "uuid": "0ffd7e02-1e8d-4bf4-8f82-c6a7a61e4047"
       },
       {
@@ -507,6 +509,7 @@
             "data": {},
             "filename": "$CONTENT_DATA/Scripts/logicgate.lua"
          },
+         "showInInventory": false,
          "uuid": "d39f2adc-363f-4db4-a37e-8eb308752ff1"
       },
       {
@@ -587,6 +590,7 @@
             "data": {},
             "filename": "$CONTENT_DATA/Scripts/stickygrenade.lua"
          },
+         "showInInventory": false,
          "uuid": "8d955bd1-4a39-432e-9eb3-0ec8f620a9c8"
       },
       {
@@ -788,7 +792,7 @@
             "y": 1,
             "z": 3
          },
-         "name": "obj_plantables_banana",
+         "name": "peen",
          "physicsMaterial": "Fruit",
          "ratings": {
             "buoyancy": 4,
@@ -827,7 +831,7 @@
          },
          "color": "ff33ff",
          "flammable": false,
-         "name": "idtest",
+         "name": "chat",
          "physicsMaterial": "Mechanical",
          "ratings": {
             "buoyancy": 2,
@@ -896,6 +900,7 @@
             "classname": "Chat",
             "filename": "$CONTENT_DATA/Scripts/chat.lua"
          },
+         "showInInventory": false,
          "uuid": "fbf99cf1-a3be-49f7-b60e-189064b3f073"
       },
       {
@@ -1139,7 +1144,6 @@
             "x": 8,
             "y": 4,
             "z": 6
-            //,"col": "$CONTENT_DATA/Objects/Mesh/tank_hull.fbx"
          },
          "color": "ffffff",
          "name": "tank",
@@ -1151,6 +1155,16 @@
          "renderable": {
             "lodList": [
                {
+                  "animationList": [
+                     {
+                        "file": "$CONTENT_DATA/Objects/Mesh/tank.fbx",
+                        "name": "turret_rotate"
+                     },
+                     {
+                        "file": "$CONTENT_DATA/Objects/Mesh/tank.fbx",
+                        "name": "barrel_rotate"
+                     }
+                  ],
                   "maxViewDistance": 1000.0,
                   "mesh": "$CONTENT_DATA/Objects/Mesh/tank.fbx",
                   "subMeshList": [
@@ -1162,22 +1176,11 @@
                            "$GAME_DATA/Textures/Default/default_nor.tga"
                         ]
                      }
-                  ],
-                  "animationList": [
-                     {
-                        "name": "turret_rotate",
-                        "file": "$CONTENT_DATA/Objects/Mesh/tank.fbx"
-                     },
-                     {
-                        "name": "barrel_rotate",
-                        "file": "$CONTENT_DATA/Objects/Mesh/tank.fbx"
-                     }
                   ]
                }
             ]
          },
          "rotationSet": "PropY",
-         "sticky": "-Y",
          "scripted": {
             "classname": "Tank",
             "filename": "$CONTENT_DATA/Scripts/tank.lua",
@@ -1215,43 +1218,40 @@
                "ragdollFile": "$GAME_DATA/Character/seat_ragdoll.json"
             }
          },
+         "sticky": "-Y",
          "uuid": "8c1117e9-8488-44f3-940f-d52fde7cc80f"
       },
       {
-         "scripted" : {
-            "classname": "BM",
-            "filename": "$CONTENT_DATA/Scripts/buildmode.lua"
+         "color": "9f2600",
+         "density": 1250.0,
+         "hull": {
+            "col": "$CHALLENGE_DATA/Objects/Collision/obj_challenge_interactive_mapinspector.obj",
+            "x": 4,
+            "y": 8,
+            "z": 4
          },
-         "color" : "9f2600",
-         "density" : 1250.0,
-         "hull" : {
-            "col" : "$CHALLENGE_DATA/Objects/Collision/obj_challenge_interactive_mapinspector.obj",
-            "x" : 4,
-            "y" : 8,
-            "z" : 4
+         "name": "buildmode",
+         "physicsMaterial": "Metal",
+         "qualityLevel": 0,
+         "ratings": {
+            "friction": 4
          },
-         "name" : "obj_challenge_interactive_mapinspector",
-         "physicsMaterial" : "Metal",
-         "qualityLevel" : 0,
-         "ratings" : {
-            "friction" : 4
-         },
-         "renderable" : {
-            "lodList" : [
+         "renderable": {
+            "lodList": [
                {
-                  "mesh" : "$CHALLENGE_DATA/Objects/Mesh/interactive/obj_interactive_mapinspector.fbx",
-                  "subMeshList" : [
+                  "mesh": "$CHALLENGE_DATA/Objects/Mesh/interactive/obj_interactive_mapinspector.fbx",
+                  "subMeshList": [
                      {
-                        "material" : "DifAsgNor",
-                        "textureList" : [
+                        "material": "DifAsgNor",
+                        "textureList": [
                            "$CHALLENGE_DATA/Objects/Textures/interactive/obj_interactive_mapinspector_dif.tga",
                            "$CHALLENGE_DATA/Objects/Textures/interactive/obj_interactive_mapinspector_asg.tga",
                            "$CHALLENGE_DATA/Objects/Textures/interactive/obj_interactive_mapinspector_nor.tga"
                         ]
                      },
                      {
-                        "material" : "DifAsg",
-                        "textureList" : [
+                        "material": "DifAsg",
+                        "textureList": [
                            "$CHALLENGE_DATA/Objects/Textures/interactive/obj_interactive_mapinspector_screen_dif.tga",
                            "$CHALLENGE_DATA/Objects/Textures/interactive/obj_interactive_mapinspector_screen_asg.tga",
                            ""
@@ -1261,9 +1261,13 @@
                }
             ]
          },
-         "rotationSet" : "PropY",
-         "sticky" : "-Y",
-         "uuid" : "6ca42dd6-0f2f-4abe-9aee-e1acb2bfcf40"
+         "rotationSet": "PropY",
+         "scripted": {
+            "classname": "BM",
+            "filename": "$CONTENT_DATA/Scripts/buildmode.lua"
+         },
+         "sticky": "-Y",
+         "uuid": "6ca42dd6-0f2f-4abe-9aee-e1acb2bfcf40"
       }
    ]
 }

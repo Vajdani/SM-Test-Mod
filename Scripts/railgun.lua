@@ -667,6 +667,10 @@ function Railgun.cl_onSecondaryUse( self, state )
 end
 
 function Railgun.client_onEquippedUpdate( self, primaryState, secondaryState )
+	if self.cl.ammo < 1 then
+		sm.gui.setProgressFraction((sm.game.getCurrentTick() - self.cl.shootTick) / self.rechargeTicks)
+	end
+
 	if primaryState ~= self.prevPrimaryState then
 		self:cl_onPrimaryUse( primaryState )
 		self.prevPrimaryState = primaryState

@@ -3,5 +3,150 @@
 	{
 		"title": "Most Reflective Block",
 		"description": "Reflectionsssssssssssssssssssssss."
+	},
+	"b60e07fe-21fa-4089-84dd-ddd1f186ed40":
+	{
+		"title": "Mod ID tester",
+		"description": "Crashes the game if the mod id isnt correct."
+	},
+	"0ffd7e02-1e8d-4bf4-8f82-c6a7a61e4047":
+	{
+		"title": "Child count display",
+		"description": "Shows a number above its children."
+	},
+	"f80662df-711e-459b-9508-63013d9d35ad":
+	{
+		"title": "Mob Detector",
+		"description": "Detects mobs."
+	},
+	"0bb7ee9e-cc3d-43c9-81a7-80aeffb27aff":
+	{
+		"title": "Aim Block",
+		"description": "Connect two bearings and a seat to this block. Colour one of the bearings white(this will be left/right), and the other black(this will be up/down). Doesnt work well in strict follow cam. Connect a switch to enable/disable it."
+	},
+	"a876813a-20d5-4b3c-96d1-0c424eac6d31":
+	{
+		"title": "Drone",
+		"description": "Flying funny green logic gate."
+	},
+	"d39f2adc-363f-4db4-a37e-8eb308752ff1":
+	{
+		"title": "Logic gate replica in LUA",
+		"description": ""
+	},
+	"8d955bd1-4a39-432e-9eb3-0ec8f620a9c8":
+	{
+		"title": "Sticky Grenade",
+		"description": "Dont place."
+	},
+	"dfd07634-1449-46e4-8e32-fa5b29d00675":
+	{
+		"title": "Camera Manager",
+		"description": "Connect a seat and a white button to this block, then connect it to a few Camera Waypoints. Get in the seat, and activate the Camera Manager by activating the slot that the block is in. After thats done, the camera positions can be cycled through with the white button."
+	},
+	"28e4e591-1a4f-4f0b-a2c4-416212ff94f3":
+	{
+		"title": "Camera Waypoint",
+		"description": "Connect it to a Camera Manager to add it as a camera position option."
+	},
+	"056cd6ce-c035-47cf-8c94-f74c95e7155e":
+	{
+		"title": "Poopoo",
+		"description": "doodoo"
+	},
+	"3c302da3-988a-4ab6-8b49-55dc14f7d8c5":
+	{
+		"title": "Peen",
+		"description": "haha"
+	},
+	"fbf99cf1-a3be-49f7-b60e-189064b3f073":
+	{
+		"title": "Chat block",
+		"description": "Talk with an advanced AI and engage in meaningful conversations."
+	},
+	"847cfa29-ede1-4f81-8e6c-f58df1db7c66":
+	{
+		"title": "Hovering platform",
+		"description": "Can be built upon to create hovering vehicles and more! Left click to cycle between camera modes, scroll up/down to zoom in/out."
+	},
+	"87c3a2f6-d6d7-48cc-b801-f0220461bf50":
+	{
+		"title": "Sticky Wheel replica",
+		"description": "this sucks ass"
+	},
+	"6f346cef-4e6c-4d32-8dae-9e9c3e04230f":
+	{
+		"title": "Block Gun",
+		"description": "This block can turn any creation into a handheld gun! Place it on anything, tune the settings, set the firing position, and its ready to be held!(Must use the Block Gun Tool)"
+	},
+	"f1e1c0f4-1008-4ca5-a49f-a05ec55625d7":
+	{
+		"title": "Titan",
+		"description": "Unfinished titanfall titan. Very glitchy."
+	},
+	"8c1117e9-8488-44f3-940f-d52fde7cc80f":
+	{
+		"title": "Tank",
+		"description": "WASD to move, left click to fire explosives, right click to fire potates."
+	},
+	"6ca42dd6-0f2f-4abe-9aee-e1acb2bfcf40":
+	{
+		"title": "Build Mode",
+		"description": "Ripoff of TrailMakers' building system. Unfinished and glitchy."
+	},
+	"92a363c9-6979-4f60-b609-74bad78d2a11":
+	{
+		"title": "Possession",
+		"description": "Left click on mobs to take control of them. This only actually works on mechanics which can be spawned by presing Q. Right click to cancel possession."
+	},
+	"3aa15a68-ce9b-4df8-a821-f232d22ce73a":
+	{
+		"title": "Tool Gun",
+		"description": "Includes various utility tools. Press F to choose between them."
+	},
+	"72c717c3-9eab-4a77-80e0-690ab171abfe":
+	{
+		"title": "ULTRAKILL Railgun",
+		"description": "Press R to switch between the Electric and Malicious mode."
+	},
+	"f5faff4d-feaa-4839-a60d-43637ecd619c":
+	{
+		"title": "Tools of Destruction",
+		"description": "Cycle between them with R."
+	},
+	"19855dce-6047-44d0-bf3a-062d11c38a34":
+	{
+		"title": "Fly Tool",
+		"description": "Left click to fly up, right click to activate boost."
+	},
+	"e8b3adcb-06cb-46d9-b539-a3ca84824cca":
+	{
+		"title": "Pooper",
+		"description": "Crouch to poo"
+	},
+	"ca50b410-a53b-46a8-a1c6-a16ae7608229":
+	{
+		"title": "Molotov",
+		"description": "Left click to throw molotov cocktails."
+	},
+	"7d4e8cdc-107b-474c-a13b-aab8266f0d53":
+	{
+		"title": "ACM Laser Tool",
+		"description": ""
+	},
+	"afcd0fef-f25b-474d-8496-00096f8f6cef":
+	{
+		"title": "Shield",
+		"description": "Left click to toggle, automatically parries all incoming projectiles."
+	},
+	"d95078dc-a3fa-4c68-b3f4-d896d71b0a72":
+	{
+		"title": "Amogus",
+		"description": "Press R to cycle between modes."
+	},
+	"5b625f4e-baf2-4a49-b7c5-e2779e974471":
+	{
+		"title": "Block Gun Tool",
+		"description": "Look at a creation with a Block Gun part on it, and press F to pick it up and hold it. Guns can be discarded by pressing F again. Left click to shoot, right click to aim."
 	}
 }
