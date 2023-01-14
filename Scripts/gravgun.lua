@@ -1,5 +1,6 @@
 local BETA = false
-
+local ico_lmb = sm.gui.getKeyBinding("Create", true)
+local ico_rmb = sm.gui.getKeyBinding("Attack", true)
 local vec3_up = sm.vec3.new(0,0,1)
 local vec3_one = sm.vec3.one()
 local vec3_zero = sm.vec3.zero()
@@ -63,7 +64,7 @@ dofile( "$SURVIVAL_DATA/Scripts/game/survival_harvestable.lua" )
 ---@class Grav : ToolClass
 ---@field line table
 ---@field gui GuiInterface
----@field guis table
+---@field scanUIs table
 ---@field fpAnimations table
 ---@field tpAnimations table
 ---@field deleteEffects table
@@ -168,10 +169,6 @@ function Grav:server_onCreate()
 	self.sv.mouseDelta = { x = 0, y = 0 }
 end
 
-function Grav:server_onDestroy()
-	DEFAULT_TUMBLE_TICK_TIME = 40
-end
-
 function Grav:sv_targetSelect( target )
 	self.sv.target = target
 	self.network:sendToClients( "cl_targetSelect", target )
@@ -249,10 +246,6 @@ function Grav:sv_targetTumble( target )
 	target:setTumbling( true )
 end
 
-function Grav:sv_modifyTumbleDurationGlobal( num )
-	DEFAULT_TUMBLE_TICK_TIME = num * 40
-end
-
 function Grav:sv_pasteTarget( pos )
 	local target
 	if type(pos) == "table" then
@@ -324,19 +317,6 @@ function Grav:sv_replaceBlocks( args )
 	local body = args.body
 	local new, old = tostring(args.new), tostring(args.old)
 	if new == old then return end
-	--[[
-	local replaceID = tostring(blk_bricks)
-	local newId = tostring(blk_wood1)
-	local creation = sm.creation.exportToString(body, false, true)
-	creation = creation:gsub(replaceID, newId)
-
-	sm.creation.importFromString(
-		body:getWorld(),
-		creation,
-		body.worldPosition + sm.vec3.new(0,0,10),
-		sm.quat.identity()
-	)
-	]]
 
 	local creation = sm.creation.exportToTable( body, false, true )
 	for k, v in pairs(creation.bodies) do
@@ -473,32 +453,8 @@ function Grav.client_onCreate( self )
     if not self.isLocal then return end
 	self.hoverRange = 5
 	self.canTriggerFb = true
-	self.tumbleDuration = 40
 
-	self.guis = {}
-
-	--cringe gui
-	--[[
-	self.gui = sm.gui.createGuiFromLayout("$CONTENT_DATA/Gui/gravgun.layout", false,
-		{
-			isHud = false,
-			isInteractive = true,
-			needsCursor = true,
-			hidesHotbar = false,
-			isOverlapped = false,
-			backgroundAlpha = 0,
-		}
-	)
-
-	local options = {}
-	for k, v in pairs(self.modes) do
-		options[#options+1] = k
-	end
-	self.gui:createDropDown( "mode_dropdown", "cl_gui_modeDropDown", options )
-	self.gui:setSelectedDropDownItem( "mode_dropdown", self.mode )
-	self.gui:setTextAcceptedCallback( "tumble_duration", "cl_gui_tumbleDuration" )
-	]]
-
+	self.scanUIs = {}
 	self.gui = sm.gui.createGuiFromLayout("$CONTENT_DATA/Gui/gravgun2.layout", false,
 		{
 			isHud = false,
@@ -562,20 +518,6 @@ function Grav:cl_gui_modeDropDown( selected )
 	self.network:sendToServer("sv_updateColour", self.mode)
 end
 
-function Grav:cl_gui_tumbleDuration( widget, text )
-	local num = tonumber(text)
-	if num == nil then
-		sm.gui.displayAlertText("#ff0000Please only enter numbers!", 2.5)
-		sm.audio.play("RaftShark")
-		self.gui:setText( "tumble_duration", tostring(self.tumbleDuration/40) )
-
-		return
-	end
-
-	self.tumbleDuration = num
-	self.network:sendToServer("sv_modifyTumbleDurationGlobal", self.tumbleDuration)
-end
-
 function Grav:cl_gui_oldUuid( selected )
 	--self.oldUuid = shapesInG[selected]
 end
@@ -612,8 +554,8 @@ function Grav:cl_mode_grav( lmb, rmb, f )
 		local canRotate = type(self.target) == "Body" and BETA
 		if f and BETA then
 			sm.gui.setInteractionText(
-				sm.gui.getKeyBinding("Create", true).."Drop target\t",
-				sm.gui.getKeyBinding("Attack", true).."Throw target",
+				ico_lmb.."Drop target\t",
+				ico_rmb.."Throw target",
 				""
 			)
 			if canRotate then
@@ -621,8 +563,8 @@ function Grav:cl_mode_grav( lmb, rmb, f )
 			end
 		else
 			sm.gui.setInteractionText(
-				sm.gui.getKeyBinding("Create", true).."Drop target\t",
-				sm.gui.getKeyBinding("Attack", true).."Throw target",
+				ico_lmb.."Drop target\t",
+				ico_rmb.."Throw target",
 				""
 			)
 			sm.gui.setInteractionText(
@@ -632,15 +574,6 @@ function Grav:cl_mode_grav( lmb, rmb, f )
 				""
 			)
 		end
-
-		--[[
-		if self.locked == true then
-			sm.localPlayer.setDirection(self.dir)
-			sm.localPlayer.setLockedControls(false)
-			self.locked = false
-			self.dir = nil
-		end
-		]]
 
 		if canRotate then
 			local cam = sm.camera
@@ -661,12 +594,6 @@ function Grav:cl_mode_grav( lmb, rmb, f )
 
 				self.dir = nil
 				self.pos = nil
-				--[[
-				if self.dir then
-					sm.localPlayer.setLockedControls(true)
-					self.locked = true
-				end
-				]]
 			end
 		end
 
@@ -680,7 +607,7 @@ function Grav:cl_mode_grav( lmb, rmb, f )
 	if not target or type(target) == "Body" and not target:isDynamic() then return true end
 
 	if not self.target then
-		sm.gui.setInteractionText("", sm.gui.getKeyBinding("Create", true), "Pick up target")
+		sm.gui.setInteractionText("", ico_lmb, "Pick up target")
 		if lmb == 1  then
 			self.target = target
 			self.network:sendToServer( "sv_targetSelect", target )
@@ -713,7 +640,7 @@ function Grav:cl_mode_tumble(lmb)
 	local target = result:getCharacter()
 	if not target then return true end
 
-	sm.gui.setInteractionText("", sm.gui.getKeyBinding("Create", true), "Tumble mob")
+	sm.gui.setInteractionText("", ico_lmb, "Tumble mob")
 
 	if lmb == 1 then
 		self.network:sendToServer( "sv_targetTumble", target )
@@ -724,7 +651,7 @@ end
 
 function Grav:cl_mode_copyrightInfringement()
 	if self.copyTarget then
-		sm.gui.setInteractionText("", sm.gui.getKeyBinding("Attack", true), "Clear copy target")
+		sm.gui.setInteractionText("", ico_rmb, "Clear copy target")
 	end
 
 	local start = sm.localPlayer.getRaycastStart()
@@ -738,7 +665,7 @@ function Grav:cl_mode_copyrightInfringement()
 	if target == nil or isChar and target:isPlayer() then return true end
 
 	if not self.copyTarget then
-		sm.gui.setInteractionText("", sm.gui.getKeyBinding("Create", true), "Set copy target")
+		sm.gui.setInteractionText("", ico_lmb, "Set copy target")
 	end
 end
 
@@ -795,7 +722,7 @@ function Grav:cl_mode_delete(lmb)
 	local target = result:getBody() or result:getCharacter() or result:getHarvestable()
 	if not target or type(target) == "Character" and target:isPlayer() then return true end
 
-	sm.gui.setInteractionText("", sm.gui.getKeyBinding("Create", true), "Delete object")
+	sm.gui.setInteractionText("", ico_lmb, "Delete object")
 
 	if lmb == 1 then
 		self.network:sendToServer("sv_deleteObject", target)
@@ -869,9 +796,9 @@ function Grav:cl_mode_teleport(lmb)
 	if not target and not self.teleportObject then return true end
 
 	if not self.teleportObject then
-		sm.gui.setInteractionText("", sm.gui.getKeyBinding("Create", true), "Set teleport target")
+		sm.gui.setInteractionText("", ico_lmb, "Set teleport target")
 	else
-		sm.gui.setInteractionText("", sm.gui.getKeyBinding("Create", true), "Teleport target to position")
+		sm.gui.setInteractionText("", ico_lmb, "Teleport target to position")
 	end
 
 	if lmb == 1 then
@@ -902,24 +829,12 @@ function Grav:cl_mode_blockReplace()
 end
 
 function Grav:cl_mode_clear( lmb, rmb, f )
-	local ico_lmb = sm.gui.getKeyBinding("Create", true)
-	local ico_rmb = sm.gui.getKeyBinding("Attack", true)
 	sm.gui.setInteractionText(
 		ico_lmb.."Clear all bodies\t",
 		ico_rmb.."Clear all dynamic bodies",
 		""
 	)
-	--sm.gui.setInteractionText(ico_lmb.. " + "..ico_rmb.."Clear all units", "")
 	sm.gui.setInteractionText("", sm.gui.getKeyBinding("NextCreateRotation", true), "Clear all units")
-
-	--[[
-	if lmb == 1 and rmb == 1 then
-		sm.gui.displayAlertText("#00ff00All units cleared!", 2.5)
-		sm.audio.play("Blueprint - Delete")
-		self.network:sendToServer("sv_clear", 3)
-		return true
-	end
-	]]
 
 	if lmb == 1 then
 		sm.gui.displayAlertText("#00ff00All bodies cleared!", 2.5)
@@ -950,7 +865,7 @@ function Grav:cl_mode_split()
 end
 
 function Grav:cl_mode_scan()
-	sm.gui.setInteractionText("", sm.gui.getKeyBinding("Create", true), "Scan for mobs and loot")
+	sm.gui.setInteractionText("", ico_lmb, "Scan for mobs and loot")
 
 	return true
 end
@@ -994,7 +909,7 @@ function Grav:cl_mode_scan_recieve(objs)
 			text:setMaxRenderDistance(20)
 			text:open()
 
-			self.guis[#self.guis+1] = { gui = gui, text = text, colour = col, host = char }
+			self.scanUIs[#self.scanUIs+1] = { gui = gui, text = text, colour = col, host = char }
 		end
 	end
 
@@ -1008,7 +923,7 @@ function Grav:cl_mode_scan_recieve(objs)
 			gui:setRequireLineOfSight(false)
 			gui:open()
 
-			self.guis[#self.guis+1] = { gui = gui, host = hvs }
+			self.scanUIs[#self.scanUIs+1] = { gui = gui, host = hvs }
 		end
 	end
 end
@@ -1059,14 +974,14 @@ function Grav.client_onUpdate( self, dt )
 			end
 		end
 
-		for k, data in pairs(self.guis) do
+		for k, data in pairs(self.scanUIs) do
 			local host = data.host
 			if not sm.exists(host) then
 				data.gui:destroy()
 				if data.text then
 					data.text:destroy()
 				end
-				self.guis[k] = nil
+				self.scanUIs[k] = nil
 			elseif type(host) == "Character" then
 				local col = host.color
 				if col ~= data.colour then
@@ -1282,8 +1197,6 @@ end
 
 
 
-
---fuck off
 function Grav.loadAnimations( self )
 
 	self.tpAnimations = createTpAnimations(
@@ -1296,7 +1209,6 @@ function Grav.loadAnimations( self )
 	)
 	local movementAnimations = {
 		idle = "connecttool_idle",
-		--idleRelaxed = "connecttool_relax",
 
 		sprint = "connecttool_sprint",
 		runFwd = "connecttool_run_fwd",
