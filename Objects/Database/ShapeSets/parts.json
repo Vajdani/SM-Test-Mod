@@ -1268,6 +1268,59 @@
          },
          "sticky": "-Y",
          "uuid": "6ca42dd6-0f2f-4abe-9aee-e1acb2bfcf40"
+      },
+      {
+         "color": "ff0000",
+         "density": 1250.0,
+         "box": {
+            "x": 2,
+            "y": 2,
+            "z": 3
+         },
+         "name": "amogusnpc",
+         "physicsMaterial": "Mechanical",
+         "ratings": {
+            "friction": 0
+         },
+         "renderable": {
+            "lodList": [
+               {
+                  "animationList": [
+                     {
+                        "name": "run",
+                        "file": "$CONTENT_DATA/Objects/Mesh/amogusnpc.fbx",
+                        "looping": true
+                     }
+                  ],
+                  "mesh": "$CONTENT_DATA/Objects/Mesh/amogusnpc.fbx",
+                  "subMeshMap": {
+                     "visor": {
+                        "material": "SkelAnimDifAsgNor",
+                        "textureList": [
+                           "$CONTENT_DATA/Objects/Textures/cyan.png",
+                           "$GAME_DATA/Textures/Default/default_asg.tga",
+                           "$GAME_DATA/Textures/Default/default_nor.tga"
+                        ]
+                     },
+                     "body": {
+                        "material": "SkelAnimDifAsgNor",
+                        "textureList": [
+                           "$CONTENT_DATA/Tools/transparent1024x1024.tga",
+                           "$GAME_DATA/Textures/Default/default_asg.tga",
+                           "$GAME_DATA/Textures/Default/default_nor.tga"
+                        ]
+                     }
+                  }
+               }
+            ]
+         },
+         "rotationSet": "PropZ",
+         "scripted": {
+            "classname": "sus",
+            "filename": "$CONTENT_DATA/Scripts/amogusnpc.lua"
+         },
+         "sticky": "-Z",
+         "uuid": "06d24542-f6ac-455f-9bfd-1d82764fe750"
       }
    ]
 }

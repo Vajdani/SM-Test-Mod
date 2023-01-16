@@ -730,15 +730,17 @@ function Car:getCreationMass( body )
     self.sv_mass = mass
 end
 
+---@param trigger AreaTrigger
 function Car:isLiquid( trigger )
-    if trigger and sm.exists(trigger) then
-        local userdata = trigger:getUserData()
-        if userdata then
-            for k, v in pairs(userdata) do
-                if isAnyOf(k, {"water", "chemical", "oil"}) and v == true then
-                    return true
-                end
-            end
+    if not trigger or not sm.exists(trigger) then return false end
+
+    local userdata = trigger:getUserData()
+    if not userdata then return false end
+
+    local liquids = { water = true, chemical = true, oil = true }
+    for k, v in pairs(userdata) do
+        if liquids[k] == true and v == true then
+            return true
         end
     end
 
