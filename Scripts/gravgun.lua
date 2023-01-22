@@ -281,15 +281,17 @@ end
 
 function Grav:sv_deleteObject( obj )
 	local override, data, pos = false, nil, nil
-	local type = type(obj)
-	if type == "table" then
+	local _type = type(obj)
+	if _type == "table" then
 		override = obj.override
 		pos = obj.pos
 		obj = obj.obj
-		data = type == "Body" and sm.creation.exportToString( obj, false, true ) or obj:getCharacterType()
+
+		_type = type(obj)
+		data = _type == "Body" and sm.creation.exportToString( obj, false, true ) or obj:getCharacterType()
 	end
 
-	if type == "Body" then
+	if _type == "Body" then
 		if not override then
 			self.network:sendToClients("cl_deleteObject", obj)
 		end
@@ -301,7 +303,7 @@ function Grav:sv_deleteObject( obj )
 				shape:destroyPart()
 			end
 		end
-	elseif type == "Harvestable" then
+	elseif _type == "Harvestable" then
 		obj:destroy()
 	else
 		obj:getUnit():destroy()
