@@ -356,7 +356,7 @@ function Grav:sv_clear( mode )
 		end
 	elseif mode == 2 then
 		for k, body in pairs(sm.body.getAllBodies()) do
-			if not body:isStatic() then
+			if body:isDynamic() then
 				for j, shape in pairs(body:getCreationShapes()) do
 					if sm.item.isBlock(shape.uuid) then
 						shape:destroyShape()
