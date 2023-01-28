@@ -125,6 +125,10 @@ Grav.modes = {
 		onPrimary = "cl_mode_scan_onClick",
 		onEquipped = "cl_mode_scan",
 		colour = sm.color.new(0.5,0,0.5)
+	},
+	["sussy wussy bussy"] = {
+		onEquipped = "cl_scalableWedge",
+		onToggle = "cl_scalableWedge_rotate"
 	}
 }
 
@@ -504,6 +508,8 @@ function Grav.client_onCreate( self )
 	self.teleportObject = nil
 
 	self.blockF = false
+
+	self.wedgeRot = 0
 end
 
 function Grav:client_onDestroy()
@@ -934,6 +940,90 @@ function Grav:sv_scan(pos)
 	self.network:sendToClient(self.tool:getOwner(), "cl_mode_scan_recieve", sm.physics.getSphereContacts(pos, 10))
 end
 
+function Grav:cl_scalableWedge(lmb, rmb, f)
+	local hit, result = sm.localPlayer.getRaycast(20)
+	local canDrag = hit and result.type == "body" and sm.item.isBlock(result:getShape().uuid)
+	if canDrag then
+		if self.shape then
+			sm.gui.setInteractionText("Let go of", ico_lmb , "to place wedge")
+			sm.gui.setInteractionText("", ico_rmb, "Cancel")
+		else
+			sm.gui.setInteractionText("", ico_lmb, "Start placing wedge")
+		end
+	end
+
+	if lmb == 1 then
+		if canDrag then
+			self.shape = result:getShape()
+			self.localPos = self.shape:getClosestBlockLocalPosition(result.pointWorld) + result.normalLocal
+		end
+	elseif lmb == 2 and self.shape and canDrag then
+		local pos = self.localPos
+		local hitShape = self.shape
+		if hit and result.type == "body" and self.shape.body == result:getBody() then
+			hitShape = result:getShape()
+			pos = hitShape:getClosestBlockLocalPosition(result.pointWorld) + result.normalLocal
+		end
+
+		local startPos = self:getPos(self.shape, self.localPos)
+		local endPos = self:getPos(hitShape, pos)
+		sm.particle.createParticle("paint_smoke", startPos)
+		sm.particle.createParticle("paint_smoke", endPos, sm.quat.identity(), sm.color.new(0,0,0))
+
+		if not self.wedge then
+			self.wedge = sm.effect.createEffect("ShapeRenderable")
+			self.wedge:setParameter("uuid", obj_industrial_stairwedge)
+			self.wedge:setParameter("visualization", true)
+			self.wedge:start()
+		end
+
+		local scale = self:clampScale(pos - self.localPos)
+		self.wedge:setPosition((startPos + (hitShape.worldRotation * scale) * 0.125))
+		self.wedge:setRotation(hitShape.worldRotation * sm.quat.angleAxis(math.rad(90 * self.wedgeRot), hitShape:transformDirection(vec3_up)))
+		self.wedge:setScale((self:absVec3(scale) + sm.vec3.one()) * 0.25)
+	elseif lmb == 3 then
+		self.shape = nil
+		self.localPos = nil
+
+		if self.wedge then
+			self.wedge:destroy()
+			self.wedge = nil
+		end
+	end
+
+	if rmb == 2 then
+		self.shape = nil
+		self.localPos = nil
+
+		if self.wedge then
+			self.wedge:destroy()
+			self.wedge = nil
+		end
+	end
+
+	return true
+end
+
+function Grav:cl_scalableWedge_rotate()
+	self.wedgeRot = self.wedgeRot < 3 and self.wedgeRot + 1 or 0
+end
+
+---@return Vec3
+function Grav:getPos(target, position)
+	local A = position * 0.25 --target:getClosestBlockLocalPosition( position )/4
+	local B = target.localPosition/4 - sm.vec3.one() * 0.125
+	local C = target:getBoundingBox()
+	return target:transformLocalPoint( A-(B+C*0.5) )
+end
+
+---@return Vec3
+function Grav:absVec3(vec3)
+	return sm.vec3.new(math.abs(vec3.x), math.abs(vec3.y), math.abs(vec3.z))
+end
+
+function Grav:clampScale(vec3)
+	return sm.vec3.new(sm.util.clamp(vec3.x, -16, 16), sm.util.clamp(vec3.y, -16, 16), sm.util.clamp(vec3.z, -16, 16))
+end
 
 
 function Grav:client_onToggle()

@@ -293,6 +293,8 @@ function Car:client_onCreate()
 
     self.cl_data = nil
     self.effects = {}
+
+    self:getCreationBodies(self.shape.body)
 end
 
 function Car:client_onDestroy()
@@ -423,6 +425,11 @@ function Car:client_onUpdate( dt )
     if not self.cl_data then return end
 
     local shape = self.shape
+    local body = self.shape.body
+    if body:hasChanged(sm.game.getCurrentTick() - 1) then
+        self:getCreationBodies(body)
+    end
+
     local dir_forward = shape.up
     local dir_left = shape.right
     local dir_up = shape.at
@@ -456,16 +463,18 @@ function Car:client_onUpdate( dt )
 
             local lerp = dt * self.cl_data.cameraFollowSpeed
             if self.cameraMode == 3 then
-                local hit, result = sm.physics.raycast(worldPos, newPos, shape.body)
-                if hit then newPos = result.pointWorld + dir_forward * 0.25 end
+                local hit, result = sm.physics.raycast(newPos, worldPos)
+                local camCollide = hit and self.creationBodies[result:getBody().id] ~= true
+                if camCollide then newPos = result.pointWorld + dir_forward * 0.25 end
 
-                sm.camera.setPosition(hit and newPos or sm.vec3.lerp( sm.camera.getPosition(), newPos, lerp ))
+                sm.camera.setPosition(camCollide and newPos or sm.vec3.lerp(sm.camera.getPosition(), newPos, lerp))
                 sm.camera.setRotation(shape.worldRotation * camRotAdjust * sm.quat.angleAxis(-math.rad(15), vec3_x))
             elseif self.cameraMode == 2 then
-                local hit, result = sm.physics.raycast(worldPos, newPos, shape.body)
-                if hit then newPos = result.pointWorld + dir_forward * 0.25 end
+                local hit, result = sm.physics.raycast(newPos, worldPos)
+                local camCollide = hit and self.creationBodies[result:getBody().id] ~= true
+                if camCollide then newPos = result.pointWorld + dir_forward * 0.25 end
 
-                sm.camera.setPosition(hit and newPos or sm.vec3.lerp(sm.camera.getPosition(), newPos, lerp))
+                sm.camera.setPosition(camCollide and newPos or sm.vec3.lerp(sm.camera.getPosition(), newPos, lerp))
                 sm.camera.setDirection(
                     sm.vec3.lerp(
                         sm.camera.getDirection(),
@@ -728,6 +737,13 @@ function Car:getCreationMass( body )
     end
 
     self.sv_mass = mass
+end
+
+function Car:getCreationBodies( body )
+    self.creationBodies = {}
+    for k, v in pairs(body:getCreationBodies()) do
+        self.creationBodies[v.id] = true
+    end
 end
 
 ---@param trigger AreaTrigger
