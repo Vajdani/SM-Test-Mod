@@ -755,7 +755,7 @@ end
 function Car:getCreationBodies( body )
     self.creationBodies = {}
     for k, v in pairs(body:getCreationBodies()) do
-        self.creationBodies[v.id] = v --true
+        self.creationBodies[v.id] = true --v
     end
 end
 
