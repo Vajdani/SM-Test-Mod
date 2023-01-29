@@ -1,6 +1,7 @@
 local BETA = false
 local ico_lmb = sm.gui.getKeyBinding("Create", true)
 local ico_rmb = sm.gui.getKeyBinding("Attack", true)
+local ico_q = sm.gui.getKeyBinding("NextCreateRotation", true)
 local vec3_up = sm.vec3.new(0,0,1)
 local vec3_one = sm.vec3.one()
 local vec3_zero = sm.vec3.zero()
@@ -104,6 +105,7 @@ Grav.modes = {
 	},
 	["Teleport"] = {
 		onEquipped = "cl_mode_teleport",
+		onToggle = "cl_mode_teleport_resetPlayer",
 		colour = sm.color.new(0,1,1)
 	},
 	--[[
@@ -414,34 +416,16 @@ function Grav:sv_split( body )
 	end
 end
 
----@param body Body
-function Grav:cl_split( body )
-	local center = body:getCenterOfMassPosition()
-	for k, shape in pairs(body:getCreationShapes()) do
-		local pos = shape.worldPosition
-		sm.debris.createDebris(
-			shape.uuid,
-			pos,
-			shape.worldRotation,
-			(pos - center):normalize() * 10,
-			vec3_zero,
-			shape.color,
-			5
-		)
-	end
+function Grav:sv_scan(pos)
+	self.network:sendToClient(self.tool:getOwner(), "cl_mode_scan_recieve", sm.physics.getSphereContacts(pos, 10))
+end
 
-	for k, joint in pairs(body:getJoints()) do
-		local pos = joint.worldPosition
-		sm.debris.createDebris(
-			joint.uuid,
-			pos,
-			joint.localRotation,
-			(pos - center):normalize() * 10,
-			vec3_zero,
-			joint.color,
-			5
-		)
-	end
+function Grav:sv_resetOwner()
+	self.tool:getOwner().character:setWorldPosition(vec3_up * 100)
+end
+
+function Grav:sv_updateColour(mode)
+	self.network:sendToClients("cl_updateColour", mode)
 end
 
 
@@ -796,8 +780,10 @@ function Grav:cl_deleteObject( obj )
 	self.deleteEffects[#self.deleteEffects+1] = creation
 end
 
-function Grav:cl_mode_teleport(lmb)
-	local hit, result = sm.localPlayer.getRaycast( self.raycastRange )
+function Grav:cl_mode_teleport(lmb, rmb)
+	sm.gui.setInteractionText("", ico_q, "Teleport yourself to spawn")
+
+	local hit, result = sm.localPlayer.getRaycast( 50 )
 	if not hit then return true end
 
 	local target = result:getBody() or result:getCharacter()
@@ -806,7 +792,11 @@ function Grav:cl_mode_teleport(lmb)
 	if not self.teleportObject then
 		sm.gui.setInteractionText("", ico_lmb, "Set teleport target")
 	else
-		sm.gui.setInteractionText("", ico_lmb, "Teleport target to position")
+		sm.gui.setInteractionText(
+			ico_lmb.." Teleport target to position\t",
+			ico_rmb.." Clear teleport target",
+			""
+		)
 	end
 
 	if lmb == 1 then
@@ -819,7 +809,15 @@ function Grav:cl_mode_teleport(lmb)
 		end
 	end
 
+	if rmb == 2 then
+		self.teleportObject = nil
+	end
+
 	return true
+end
+
+function Grav:cl_mode_teleport_resetPlayer()
+	self.network:sendToServer("sv_resetOwner")
 end
 
 function Grav:cl_mode_blockReplace()
@@ -842,7 +840,7 @@ function Grav:cl_mode_clear( lmb, rmb, f )
 		ico_rmb.."Clear all dynamic bodies",
 		""
 	)
-	sm.gui.setInteractionText("", sm.gui.getKeyBinding("NextCreateRotation", true), "Clear all units")
+	sm.gui.setInteractionText("", ico_q, "Clear all units")
 
 	if lmb == 1 then
 		sm.gui.displayAlertText("#00ff00All bodies cleared!", 2.5)
@@ -869,6 +867,36 @@ function Grav:cl_mode_split()
 	local hit, result = sm.localPlayer.getRaycast( self.raycastRange )
 	if hit and result.type == "body" then
 		self.network:sendToServer("sv_split", result:getBody())
+	end
+end
+
+---@param body Body
+function Grav:cl_split( body )
+	local center = body:getCenterOfMassPosition()
+	for k, shape in pairs(body:getCreationShapes()) do
+		local pos = shape.worldPosition
+		sm.debris.createDebris(
+			shape.uuid,
+			pos,
+			shape.worldRotation,
+			(pos - center):normalize() * 10,
+			vec3_zero,
+			shape.color,
+			5
+		)
+	end
+
+	for k, joint in pairs(body:getJoints()) do
+		local pos = joint.worldPosition
+		sm.debris.createDebris(
+			joint.uuid,
+			pos,
+			joint.localRotation,
+			(pos - center):normalize() * 10,
+			vec3_zero,
+			joint.color,
+			5
+		)
 	end
 end
 
@@ -934,10 +962,6 @@ function Grav:cl_mode_scan_recieve(objs)
 			self.scanUIs[#self.scanUIs+1] = { gui = gui, host = hvs }
 		end
 	end
-end
-
-function Grav:sv_scan(pos)
-	self.network:sendToClient(self.tool:getOwner(), "cl_mode_scan_recieve", sm.physics.getSphereContacts(pos, 10))
 end
 
 function Grav:cl_scalableWedge(lmb, rmb, f)
@@ -1198,10 +1222,6 @@ function Grav.client_onEquip( self, animate )
 		swapFpAnimation( self.fpAnimations, "unequip", "equip", 0.2 )
 		self.network:sendToServer("sv_updateEquipped", true)
 	end
-end
-
-function Grav:sv_updateColour(mode)
-	self.network:sendToClients("cl_updateColour", mode)
 end
 
 function Grav:cl_updateColour(mode)
