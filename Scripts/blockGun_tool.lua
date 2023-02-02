@@ -821,7 +821,7 @@ function BG_tool.cl_onPrimaryUse( self, state )
 end
 
 function BG_tool.cl_onSecondaryUse( self, state )
-	local aiming = isAnyOf(state, { 1, 2 })
+	local aiming = isAnyOf(state, { 1, 2 }) and self.gun.data.canAim
 	if aiming ~= self.aiming then
 		self.aiming = aiming
 		self.tpAnimations.animations.idle.time = 0
