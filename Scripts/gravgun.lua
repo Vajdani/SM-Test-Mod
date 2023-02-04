@@ -659,6 +659,8 @@ function Grav:cl_mode_copyrightInfringement()
 	if not self.copyTarget then
 		sm.gui.setInteractionText("", ico_lmb, "Set copy target")
 	end
+
+	return true
 end
 
 function Grav:cl_mode_copyrightInfringement_onClick( override )
