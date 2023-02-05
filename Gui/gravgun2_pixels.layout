@@ -1,35 +1,35 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <MyGUI type="Layout" version="3.2.0">
-    <Widget type="Widget" skin="PanelEmpty" name="BackPanel" position_real="0 0 1 1">
-        <Widget type="Widget" skin="BackgroundEngineNoUpgrade" name="MainPanelNoUpgrade" position_real="0.3697916666666667 0.26851851851851855 0.2604166666666667 0.46296296296296297">
+    <Widget type="Widget" skin="PanelEmpty" position="0 0 1920 1080" name="BackPanel">
+        <Widget type="Widget" skin="BackgroundEngineNoUpgrade" position="710 290 500 500" name="MainPanelNoUpgrade">
             <Property key="NeedKey" value="false"/>
             <Property key="NeedMouse" value="true"/>
             <Property key="InheritsAlpha" value="false"/>
-            <Widget type="TextBox" skin="TextBox" name="Name" position_real="0.1 0.1 0.8 0.08">
+            <Widget type="TextBox" skin="TextBox" position="50 50 400 40" name="Name">
                 <Property key="Caption" value="Name Of the Interactable"/>
                 <Property key="FontName" value="SM_HeaderLarge_Wide"/>
                 <Property key="TextAlign" value="Center"/>
             </Widget>
-            <Widget type="TextBox" skin="TextBox" name="SubTitle" position_real="0.1 0.18 0.8 0.06">
+            <Widget type="TextBox" skin="TextBox" position="50 90 400 30" name="SubTitle">
                 <Property key="TextAlign" value="Center"/>
                 <Property key="TextColour" value="1 0.803922 0.247059"/>
                 <Property key="FontName" value="SM_SubHeader"/>
                 <Property key="Caption" value="Change What?"/>
             </Widget>
-            <Widget type="Canvas" skin="Canvas" name="modes" position_real="0.1 0.3 0.8 0.1"/>
-            <Widget type="Canvas" skin="Canvas" name="panel_blockReplace" position_real="0.02 0.6 0.96 0.2">
-                <Widget type="TextBox" skin="TextBox" position_real="0 0 0.4895833333333333 0.5">
+            <Widget type="Canvas" skin="Canvas" position="50 150 400 50" name="modes"/>
+            <Widget type="Canvas" skin="Canvas" position="10 300 480 100" name="panel_blockReplace">
+                <Widget type="TextBox" skin="TextBox" position="0 0 235 50">
                     <Property key="Caption" value="Blocks to replace"/>
                     <Property key="FontName" value="SM_ItemTitle"/>
                     <Property key="TextAlign" value="Center"/>
                 </Widget>
-                <Widget type="TextBox" skin="TextBox" position_real="0.5104166666666666 0 0.4895833333333333 0.5">
+                <Widget type="TextBox" skin="TextBox" position="245 0 235 50">
                     <Property key="Caption" value="New blocks"/>
                     <Property key="FontName" value="SM_ItemTitle"/>
                     <Property key="TextAlign" value="Center"/>
                 </Widget>
-                <Widget type="Canvas" skin="Canvas" name="uuidOld" position_real="0 0.5 0.4895833333333333 0.5"/>
-                <Widget type="Canvas" skin="Canvas" name="uuidNew" position_real="0.5104166666666666 0.5 0.4895833333333333 0.5"/>
+                <Widget type="Canvas" skin="Canvas" position="0 50 235 50" name="uuidOld"/>
+                <Widget type="Canvas" skin="Canvas" position="245 50 235 50" name="uuidNew"/>
             </Widget>
         </Widget>
     </Widget>

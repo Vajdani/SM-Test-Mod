@@ -108,12 +108,6 @@ Grav.modes = {
 		onToggle = "cl_mode_teleport_resetPlayer",
 		colour = sm.color.new(0,1,1)
 	},
-	--[[
-	["Block Replacer"] = {
-		onPrimary = "cl_mode_blockReplace",
-		colour = sm.color.new(1,1,0.5)
-	},
-	]]
 	["World clear"] = {
 		onEquipped = "cl_mode_clear",
 		onToggle = "cl_mode_clear_units",
@@ -127,27 +121,52 @@ Grav.modes = {
 		onPrimary = "cl_mode_scan_onClick",
 		onEquipped = "cl_mode_scan",
 		colour = sm.color.new(0.5,0,0.5)
-	},
-	["sussy wussy bussy"] = {
-		onEquipped = "cl_scalableWedge",
-		onToggle = "cl_scalableWedge_rotate"
 	}
 }
 
+if BETA == true then
+	Grav.modes["Scalable Wedge Test"] = {
+		onEquipped = "cl_scalableWedge",
+		onToggle = "cl_scalableWedge_rotate"
+	}
+	Grav.modes["Block Replacer"] = {
+		onPrimary = "cl_mode_blockReplace",
+		colour = sm.color.new(1,1,0.5)
+	}
+end
+
 local camAdjust = sm.vec3.new(0,0,0.575)
---[[
-local shapesInG = {}
-for k, v in pairs(_G) do
-	if type(v) == "Uuid" and sm.item.isBlock(v) then
-		shapesInG[sm.shape.getShapeTitle(v)] = v
+
+if Grav.allShapes == nil and BETA == true then
+	Grav.allShapes = {}
+	Grav.allShapeNames = {}
+	local dbPaths = {
+		"$GAME_DATA/Objects/Database/shapesets.json",
+		"$SURVIVAL_DATA/Objects/Database/shapesets.json",
+		"$CHALLENGE_DATA/Objects/Database/shapesets.json"
+	}
+
+	for k, dbPath in pairs(dbPaths) do
+		local sets = sm.json.open(dbPath).shapeSetList
+		for _k, setPath in pairs(sets) do
+			local openedSet = sm.json.open(setPath)
+			local shapes = openedSet.blockList or openedSet.partList
+			for __k, shape in pairs(shapes) do
+				local uuid = sm.uuid.new(shape.uuid)
+				if sm.item.isBlock(uuid) then
+					local name = sm.shape.getShapeTitle(uuid)
+
+					Grav.allShapes[name] = uuid
+					Grav.allShapeNames[#Grav.allShapeNames+1] = name
+				end
+			end
+		end
 	end
 end
-]]
 
 local renderables = {
     "$CONTENT_DATA/Objects/mongiconnect.rend"
 }
-
 local renderablesTp = {
     "$GAME_DATA/Character/Char_Male/Animations/char_male_tp_connecttool.rend",
     "$GAME_DATA/Character/Char_Tools/Char_connecttool/char_connecttool_tp_animlist.rend"
@@ -160,7 +179,7 @@ sm.tool.preloadRenderables( renderables )
 sm.tool.preloadRenderables( renderablesTp )
 sm.tool.preloadRenderables( renderablesFp )
 
-
+-- #region Server
 function Grav:server_onCreate()
 	self.sv = {}
 	self.sv.target = nil
@@ -427,6 +446,7 @@ end
 function Grav:sv_updateColour(mode)
 	self.network:sendToClients("cl_updateColour", mode)
 end
+-- #endregion
 
 
 
@@ -463,26 +483,20 @@ function Grav.client_onCreate( self )
 	for k, v in pairs(self.modes) do
 		options[#options+1] = k
 	end
-	self.gui:createDropDown( "keys", "cl_gui_modeDropDown", options )
-	self.gui:setSelectedDropDownItem( "keys", self.mode )
+	self.gui:createDropDown( "modes", "cl_gui_modeDropDown", options )
+	self.gui:setSelectedDropDownItem( "modes", self.mode )
 
-	self.oldUuid = blk_wood1
-	self.newUuid = blk_concrete1
-	--[[
-	local _options = {}
-	for k, v in pairs(shapesInG) do
-		_options[#_options+1] = k
+	if BETA == true then
+		self.oldUuid = blk_wood1
+		self.newUuid = blk_concrete1
+		self.gui:createDropDown( "uuidOld", "cl_gui_oldUuid", self.allShapeNames )
+		self.gui:createDropDown( "uuidNew", "cl_gui_newUuid", self.allShapeNames )
+		self.gui:setSelectedDropDownItem( "uuidOld", sm.shape.getShapeTitle(self.oldUuid) )
+		self.gui:setSelectedDropDownItem( "uuidNew", sm.shape.getShapeTitle(self.newUuid) )
+		self.gui:setVisible( "panel_blockReplace", false )
+		--self.gui:setMeshPreview( "meshOld", self.oldUuid )
+		--self.gui:setMeshPreview( "meshNew", self.newUuid )
 	end
-
-	self.gui:createDropDown( "uuidOld", "cl_gui_oldUuid", _options )
-	self.gui:createDropDown( "uuidNew", "cl_gui_newUuid", _options )
-	self.gui:setSelectedDropDownItem( "uuidOld", sm.shape.getShapeTitle(self.oldUuid) )
-	self.gui:setSelectedDropDownItem( "uuidNew", sm.shape.getShapeTitle(self.newUuid) )
-	self.gui:setVisible( "uuidOld", false )
-	self.gui:setVisible( "uuidNew", false )
-	--self.gui:setMeshPreview( "meshOld", self.oldUuid )
-	--self.gui:setMeshPreview( "meshNew", self.newUuid )
-	]]
 
 	self.copyTarget = nil
 	self.copyTargetBodies = nil
@@ -504,18 +518,17 @@ function Grav:cl_gui_modeDropDown( selected )
 	self.mode = selected
 
 	local visible = selected == "Block Replacer"
-	self.gui:setVisible( "uuidOld", visible )
-	self.gui:setVisible( "uuidNew", visible )
+	self.gui:setVisible( "panel_blockReplace", visible )
 
 	self.network:sendToServer("sv_updateColour", self.mode)
 end
 
 function Grav:cl_gui_oldUuid( selected )
-	--self.oldUuid = shapesInG[selected]
+	self.oldUuid = self.allShapes[selected]
 end
 
 function Grav:cl_gui_newUuid( selected )
-	--self.newUuid = shapesInG[selected]
+	self.newUuid = self.allShapes[selected]
 end
 
 function Grav:cl_mode_grav( lmb, rmb, f )
@@ -543,8 +556,8 @@ function Grav:cl_mode_grav( lmb, rmb, f )
 	end
 
 	if self.target then
-		local canRotate = type(self.target) == "Body" and BETA
-		if f and BETA then
+		local canRotate = type(self.target) == "Body" and BETA == true
+		if f and BETA == true then
 			sm.gui.setInteractionText(
 				ico_lmb.."Drop target\t",
 				ico_rmb.."Throw target",
@@ -1051,27 +1064,22 @@ function Grav:clampScale(vec3)
 	return sm.vec3.new(sm.util.clamp(vec3.x, -16, 16), sm.util.clamp(vec3.y, -16, 16), sm.util.clamp(vec3.z, -16, 16))
 end
 
-
-function Grav:client_onToggle()
-	local func = self[self.modes[self.mode].onToggle]
-	if func then
-		func( self )
-	end
-
-	return true
-end
-
-function Grav:client_onReload()
-	local func = self[self.modes[self.mode].onReload]
-	if func then
-		func( self )
-	end
-
-	return true
-end
-
 function Grav:cl_targetSelect( target )
 	self.target = target
+end
+
+function Grav:cl_updateColour(mode)
+	if mode then
+		self.mode = mode
+	end
+
+	local col = self.modes[self.mode].colour
+	if not col then return end
+
+	self.tool:setTpColor(col)
+	if self.isLocal then
+		self.tool:setFpColor(col)
+	end
 end
 
 function Grav.client_onUpdate( self, dt )
@@ -1226,20 +1234,6 @@ function Grav.client_onEquip( self, animate )
 	end
 end
 
-function Grav:cl_updateColour(mode)
-	if mode then
-		self.mode = mode
-	end
-
-	local col = self.modes[self.mode].colour
-	if not col then return end
-
-	self.tool:setTpColor(col)
-	if self.isLocal then
-		self.tool:setFpColor(col)
-	end
-end
-
 function Grav.client_onUnequip( self, animate )
 	if not sm.exists( self.tool ) then return end
 
@@ -1263,6 +1257,7 @@ function Grav.client_onUnequip( self, animate )
 	end
 end
 
+-- #region input
 function Grav.cl_onPrimaryUse( self, state )
 	if state ~= 1 then return end
 
@@ -1309,10 +1304,27 @@ function Grav.client_onEquippedUpdate( self, lmb, rmb, f )
 	return true, true
 end
 
+function Grav:client_onToggle()
+	local func = self[self.modes[self.mode].onToggle]
+	if func then
+		func( self )
+	end
 
+	return true
+end
 
+function Grav:client_onReload()
+	local func = self[self.modes[self.mode].onReload]
+	if func then
+		func( self )
+	end
+
+	return true
+end
+-- #endregion
+
+-- #region animations
 function Grav.loadAnimations( self )
-
 	self.tpAnimations = createTpAnimations(
 		self.tool,
 		{
@@ -1469,3 +1481,4 @@ function Grav:updateFP(crouch, sprint, equipped, dt)
 	self.tool:updateCamera( 2.8, 30.0, sm.vec3.new( 0.65, 0.0, 0.05 ), self.aimWeight )
 	self.tool:updateFpCamera( 30.0, sm.vec3.new( 0.0, 0.0, 0.0 ), self.aimWeight, bobbing )
 end
+-- #endregion
