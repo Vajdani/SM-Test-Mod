@@ -655,13 +655,19 @@ function Grav:cl_mode_tumble(lmb)
 end
 
 function Grav:cl_mode_copyrightInfringement()
-	if self.copyTarget then
-		sm.gui.setInteractionText("", ico_rmb, "Clear copy target")
-	end
-
 	local start = sm.localPlayer.getRaycastStart()
-	local endPos = start + sm.localPlayer.getDirection() * 50
+	local endPos = start + sm.localPlayer.getDirection() * self.raycastRange
 	local hit, result = sm.physics.raycast( start, endPos, sm.localPlayer.getPlayer().character )
+
+	local displayed = ""
+	if self.copyTarget then
+		if hit then
+			displayed = displayed..ico_lmb.."Paste target\t"
+		end
+		displayed = displayed..ico_rmb.."Clear target"
+
+		sm.gui.setInteractionText(displayed, "")
+	end
 
 	if not hit then return true end
 
@@ -670,7 +676,7 @@ function Grav:cl_mode_copyrightInfringement()
 	if target == nil or isChar and target:isPlayer() then return true end
 
 	if not self.copyTarget then
-		sm.gui.setInteractionText("", ico_lmb, "Set copy target")
+		sm.gui.setInteractionText("", ico_lmb, "Set target")
 	end
 
 	return true
@@ -678,10 +684,10 @@ end
 
 function Grav:cl_mode_copyrightInfringement_onClick( override )
 	local start = sm.localPlayer.getRaycastStart()
-	local endPos = start + sm.localPlayer.getDirection() * 50
+	local endPos = start + sm.localPlayer.getDirection() * self.raycastRange
 	local hit, result = sm.physics.raycast( start, endPos, sm.localPlayer.getPlayer().character )
 
-	if self.copyTarget and not override then
+	if self.copyTarget and not override and hit then
 		sm.gui.displayAlertText("Pasted Object!", 2.5)
 		sm.audio.play("Blueprint - Open")
 		self.network:sendToServer("sv_pasteTarget", hit and result.pointWorld or endPos)
@@ -796,23 +802,22 @@ function Grav:cl_deleteObject( obj )
 end
 
 function Grav:cl_mode_teleport(lmb, rmb)
-	sm.gui.setInteractionText("", ico_q, "Teleport yourself to spawn")
+	self:cl_mode_teleport_organs(lmb, rmb)
+	self:cl_mode_teleport_skin()
 
-	local hit, result = sm.localPlayer.getRaycast( 50 )
+	return true
+end
+
+function Grav:cl_mode_teleport_organs(lmb, rmb)
+	if rmb == 2 then
+		self.teleportObject = nil
+	end
+
+	local hit, result = sm.localPlayer.getRaycast( self.raycastRange )
 	if not hit then return true end
 
 	local target = result:getBody() or result:getCharacter()
 	if not target and not self.teleportObject then return true end
-
-	if not self.teleportObject then
-		sm.gui.setInteractionText("", ico_lmb, "Set teleport target")
-	else
-		sm.gui.setInteractionText(
-			ico_lmb.." Teleport target to position\t",
-			ico_rmb.." Clear teleport target",
-			""
-		)
-	end
 
 	if lmb == 1 then
 		if self.teleportObject then
@@ -823,12 +828,27 @@ function Grav:cl_mode_teleport(lmb, rmb)
 			self.teleportObject = self:cl_mode_copyrightInfringement_onClick( true )
 		end
 	end
+end
 
-	if rmb == 2 then
-		self.teleportObject = nil
+function Grav:cl_mode_teleport_skin()
+	local hit, result = sm.localPlayer.getRaycast( self.raycastRange )
+	local target = result:getBody() or result:getCharacter()
+
+	local displayed = ""
+	if hit and target and not self.teleportObject then
+		sm.gui.setInteractionText("", ico_lmb, "Set target")
 	end
 
-	return true
+	if self.teleportObject then
+		if hit then
+			displayed = displayed..ico_lmb.." Teleport target to position\t"
+		end
+		displayed = displayed..ico_rmb.."Clear target"
+
+		sm.gui.setInteractionText(displayed, "")
+	end
+
+	sm.gui.setInteractionText("", ico_q, "Teleport yourself to spawn")
 end
 
 function Grav:cl_mode_teleport_resetPlayer()
@@ -1128,11 +1148,14 @@ function Grav.client_onUpdate( self, dt )
 					sm.visualization.setCreationFreePlacement( true )
 
 					local start = sm.localPlayer.getRaycastStart()
-					local endPos = start + sm.localPlayer.getDirection() * 50
+					local endPos = start + sm.localPlayer.getDirection() * self.raycastRange
 					local hit, result = sm.physics.raycast( start, endPos, char )
-					sm.visualization.setCreationFreePlacementPosition( hit and result.pointWorld or endPos )
-					sm.visualization.setCreationValid( true )
-					sm.visualization.setCreationVisible( true )
+
+					if hit then
+						sm.visualization.setCreationFreePlacementPosition( result.pointWorld )
+						sm.visualization.setCreationValid( true )
+						sm.visualization.setCreationVisible( true )
+					end
 				end
 			elseif self.copyTargetGui:isActive() then
 				self.copyTargetGui:close()
@@ -1144,11 +1167,14 @@ function Grav.client_onUpdate( self, dt )
 					sm.visualization.setCreationFreePlacement( true )
 
 					local start = sm.localPlayer.getRaycastStart()
-					local endPos = start + sm.localPlayer.getDirection() * 50
+					local endPos = start + sm.localPlayer.getDirection() * self.raycastRange
 					local hit, result = sm.physics.raycast( start, endPos, char )
-					sm.visualization.setCreationFreePlacementPosition( hit and result.pointWorld or endPos )
-					sm.visualization.setCreationValid( true )
-					sm.visualization.setCreationVisible( true )
+
+					if hit then
+						sm.visualization.setCreationFreePlacementPosition( result.pointWorld )
+						sm.visualization.setCreationValid( true )
+						sm.visualization.setCreationVisible( true )
+					end
 				end
 			elseif self.teleportObject ~= nil then
 				self.teleportObject = nil
