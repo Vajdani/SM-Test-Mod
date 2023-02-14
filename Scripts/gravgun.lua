@@ -2,6 +2,7 @@ local BETA = false
 local ico_lmb = sm.gui.getKeyBinding("Create", true)
 local ico_rmb = sm.gui.getKeyBinding("Attack", true)
 local ico_q = sm.gui.getKeyBinding("NextCreateRotation", true)
+local gui_intText = sm.gui.setInteractionText
 local vec3_up = sm.vec3.new(0,0,1)
 local vec3_one = sm.vec3.one()
 local vec3_zero = sm.vec3.zero()
@@ -126,12 +127,20 @@ Grav.modes = {
 
 if BETA == true then
 	Grav.modes["Scalable Wedge Test"] = {
-		onEquipped = "cl_scalableWedge",
-		onToggle = "cl_scalableWedge_rotate"
+		onEquipped = "cl_mode_scalableWedge",
+		onToggle = "cl_mode_scalableWedge_rotate",
+		colour = sm.color.new(0.5,1,0.5)
 	}
 	Grav.modes["Block Replacer"] = {
 		onPrimary = "cl_mode_blockReplace",
 		colour = sm.color.new(1,1,0.5)
+	}
+	Grav.modes["Ragdoll Shitter"] = {
+		onFixed = "cl_mode_dollShitter_update",
+		onEquipped = "cl_mode_dollShitter_equipped",
+		onPrimary = "cl_mode_dollShitter_fire",
+		onToggle = "sv_wipeDolls",
+		colour = sm.color.new(1,0.5,0.5)
 	}
 end
 
@@ -192,6 +201,8 @@ function Grav:server_onCreate()
 	self.sv.rotState = false
 	self.sv.rotDirection = nil
 	self.sv.mouseDelta = { x = 0, y = 0 }
+
+	self.sv.dolls = {}
 end
 
 function Grav:sv_targetSelect( target )
@@ -221,6 +232,15 @@ end
 
 function Grav:server_onFixedUpdate()
 	local sv = self.sv
+	for k, data in pairs(sv.dolls) do
+		local char = data.unit:getCharacter()
+		if char and not data.appliedImpulse then
+			char:setTumbling(true)
+			char:applyTumblingImpulse(data.dir * 25 * char.mass)
+			data.appliedImpulse = true
+		end
+	end
+
 	local target = sv.target
 	if not target or not sm.exists(target) or not sv.equipped then return end
 
@@ -446,6 +466,30 @@ end
 function Grav:sv_updateColour(mode)
 	self.network:sendToClients("cl_updateColour", mode)
 end
+
+function Grav:sv_spawnDoll()
+	local owner = self.tool:getOwner().character
+	local dir = owner.direction
+	local unit = sm.unit.createUnit(unit_mechanic, owner.worldPosition + dir * 2)
+
+	self.sv.dolls[#self.sv.dolls+1] = { unit = unit, dir = dir, appliedImpulse = false }
+end
+
+function Grav:sv_tossDoll(doll)
+	doll:applyTumblingImpulse(self.tool:getOwner().character.direction * 25 * doll.mass)
+end
+
+
+function Grav:sv_wipeDolls()
+	for k, data in pairs(self.sv.dolls) do
+		local unit = data.unit
+		if sm.exists(unit) then
+			unit:destroy()
+		end
+	end
+
+	self.sv.dolls = {}
+end
 -- #endregion
 
 
@@ -456,7 +500,9 @@ function Grav.client_onCreate( self )
 	self.line = Line_grav()
 	self.line:init( 0.05, self.lineColour )
 	self.deleteEffects = {}
+
 	self.mode = "Gravity Gun"
+	self.modeData = self.modes[self.mode]
 
 	self:loadAnimations()
 
@@ -508,6 +554,8 @@ function Grav.client_onCreate( self )
 	self.blockF = false
 
 	self.wedgeRot = 0
+
+	self.dollshitTimer = 0
 end
 
 function Grav:client_onDestroy()
@@ -558,21 +606,21 @@ function Grav:cl_mode_grav( lmb, rmb, f )
 	if self.target then
 		local canRotate = type(self.target) == "Body" and BETA == true
 		if f and BETA == true then
-			sm.gui.setInteractionText(
+			gui_intText(
 				ico_lmb.."Drop target\t",
 				ico_rmb.."Throw target",
 				""
 			)
 			if canRotate then
-				sm.gui.setInteractionText("<p textShadow='false' bg='gui_keybinds_bg' color='#ffffff' spacing='9'>Move your mouse to rotate the creation</p>")
+				gui_intText("<p textShadow='false' bg='gui_keybinds_bg' color='#ffffff' spacing='9'>Move your mouse to rotate the creation</p>")
 			end
 		else
-			sm.gui.setInteractionText(
+			gui_intText(
 				ico_lmb.."Drop target\t",
 				ico_rmb.."Throw target",
 				""
 			)
-			sm.gui.setInteractionText(
+			gui_intText(
 				sm.gui.getKeyBinding("NextCreateRotation", true).."Decrease distance\t",
 				sm.gui.getKeyBinding("Reload", true).."Increase distance\t",
 				canRotate and sm.gui.getKeyBinding("ForceBuild", true).."Hold to Rotate Target" or "",
@@ -612,7 +660,7 @@ function Grav:cl_mode_grav( lmb, rmb, f )
 	if not target or type(target) == "Body" and not target:isDynamic() then return true end
 
 	if not self.target then
-		sm.gui.setInteractionText("", ico_lmb, "Pick up target")
+		gui_intText("", ico_lmb, "Pick up target")
 		if lmb == 1  then
 			self.target = target
 			self.network:sendToServer( "sv_targetSelect", target )
@@ -645,7 +693,7 @@ function Grav:cl_mode_tumble(lmb)
 	local target = result:getCharacter()
 	if not target then return true end
 
-	sm.gui.setInteractionText("", ico_lmb, "Tumble mob")
+	gui_intText("", ico_lmb, "Tumble mob")
 
 	if lmb == 1 then
 		self.network:sendToServer( "sv_targetTumble", target )
@@ -666,7 +714,7 @@ function Grav:cl_mode_copyrightInfringement()
 		end
 		displayed = displayed..ico_rmb.."Clear target"
 
-		sm.gui.setInteractionText(displayed, "")
+		gui_intText(displayed, "")
 	end
 
 	if not hit then return true end
@@ -676,7 +724,7 @@ function Grav:cl_mode_copyrightInfringement()
 	if target == nil or isChar and target:isPlayer() then return true end
 
 	if not self.copyTarget then
-		sm.gui.setInteractionText("", ico_lmb, "Set target")
+		gui_intText("", ico_lmb, "Set target")
 	end
 
 	return true
@@ -735,7 +783,7 @@ function Grav:cl_mode_delete(lmb)
 	local target = result:getBody() or result:getCharacter() or result:getHarvestable()
 	if not target or type(target) == "Character" and target:isPlayer() then return true end
 
-	sm.gui.setInteractionText("", ico_lmb, "Delete object")
+	gui_intText("", ico_lmb, "Delete object")
 
 	if lmb == 1 then
 		self.network:sendToServer("sv_deleteObject", target)
@@ -836,7 +884,7 @@ function Grav:cl_mode_teleport_skin()
 
 	local displayed = ""
 	if hit and target and not self.teleportObject then
-		sm.gui.setInteractionText("", ico_lmb, "Set target")
+		gui_intText("", ico_lmb, "Set target")
 	end
 
 	if self.teleportObject then
@@ -845,10 +893,10 @@ function Grav:cl_mode_teleport_skin()
 		end
 		displayed = displayed..ico_rmb.."Clear target"
 
-		sm.gui.setInteractionText(displayed, "")
+		gui_intText(displayed, "")
 	end
 
-	sm.gui.setInteractionText("", ico_q, "Teleport yourself to spawn")
+	gui_intText("", ico_q, "Teleport yourself to spawn")
 end
 
 function Grav:cl_mode_teleport_resetPlayer()
@@ -870,12 +918,12 @@ function Grav:cl_mode_blockReplace()
 end
 
 function Grav:cl_mode_clear( lmb, rmb, f )
-	sm.gui.setInteractionText(
+	gui_intText(
 		ico_lmb.."Clear all bodies\t",
 		ico_rmb.."Clear all dynamic bodies",
 		""
 	)
-	sm.gui.setInteractionText("", ico_q, "Clear all units")
+	gui_intText("", ico_q, "Clear all units")
 
 	if lmb == 1 then
 		sm.gui.displayAlertText("#00ff00All bodies cleared!", 2.5)
@@ -936,7 +984,7 @@ function Grav:cl_split( body )
 end
 
 function Grav:cl_mode_scan()
-	sm.gui.setInteractionText("", ico_lmb, "Scan for mobs and loot")
+	gui_intText("", ico_lmb, "Scan for mobs and loot")
 
 	return true
 end
@@ -999,15 +1047,15 @@ function Grav:cl_mode_scan_recieve(objs)
 	end
 end
 
-function Grav:cl_scalableWedge(lmb, rmb, f)
+function Grav:cl_mode_scalableWedge(lmb, rmb, f)
 	local hit, result = sm.localPlayer.getRaycast(20)
 	local canDrag = hit and result.type == "body" and sm.item.isBlock(result:getShape().uuid)
 	if canDrag then
 		if self.shape then
-			sm.gui.setInteractionText("Let go of", ico_lmb , "to place wedge")
-			sm.gui.setInteractionText("", ico_rmb, "Cancel")
+			gui_intText("Let go of", ico_lmb , "to place wedge")
+			gui_intText("", ico_rmb, "Cancel")
 		else
-			sm.gui.setInteractionText("", ico_lmb, "Start placing wedge")
+			gui_intText("", ico_lmb, "Start placing wedge")
 		end
 	end
 
@@ -1063,9 +1111,46 @@ function Grav:cl_scalableWedge(lmb, rmb, f)
 	return true
 end
 
-function Grav:cl_scalableWedge_rotate()
+function Grav:cl_mode_scalableWedge_rotate()
 	self.wedgeRot = self.wedgeRot < 3 and self.wedgeRot + 1 or 0
 end
+
+function Grav:cl_mode_dollShitter_fire()
+	if self.dollshitTimer > 0 then return end
+
+	self.dollshitTimer = 0.2
+	self.network:sendToServer("sv_spawnDoll")
+end
+
+function Grav:cl_mode_dollShitter_equipped(lmb, rmb, f)
+	if lmb == 2  then
+		self:cl_mode_dollShitter_fire()
+	end
+
+	local displayed = ico_lmb.."Fire Ragdoll\t"
+	local hit, result = sm.localPlayer.getRaycast(self.raycastRange)
+	if hit then
+		local target = result:getCharacter()
+		if target and target:getCharacterType() == unit_mechanic then
+			displayed = displayed..ico_rmb.."Toss Ragdoll"
+
+			if rmb == 1 then
+				self.network:sendToServer("sv_tossDoll", target)
+			end
+		end
+	end
+
+	gui_intText(displayed, "")
+	gui_intText("", ico_q, "Clear all ragdolls")
+
+	return true
+end
+
+function Grav:cl_mode_dollShitter_update(dt)
+	self.dollshitTimer = math.max(self.dollshitTimer - dt, 0)
+end
+
+
 
 ---@return Vec3
 function Grav:getPos(target, position)
@@ -1091,9 +1176,10 @@ end
 function Grav:cl_updateColour(mode)
 	if mode then
 		self.mode = mode
+		self.modeData = self.modes[self.mode]
 	end
 
-	local col = self.modes[self.mode].colour
+	local col = self.modeData.colour
 	if not col then return end
 
 	self.tool:setTpColor(col)
@@ -1226,6 +1312,12 @@ function Grav.client_onUpdate( self, dt )
 	end
 end
 
+function Grav:client_onFixedUpdate(dt)
+	if not self.isLocal then return end
+
+	self:callModeFunction(self.modeData.onFixed, dt)
+end
+
 function Grav.client_onEquip( self, animate )
 	if animate then
 		sm.audio.play( "PotatoRifle - Equip", self.tool:getPosition() )
@@ -1287,15 +1379,13 @@ end
 function Grav.cl_onPrimaryUse( self, state )
 	if state ~= 1 then return end
 
-	local func = self[self.modes[self.mode].onPrimary]
-	if func then func( self ) end
+	self:callModeFunction(self.modeData.onPrimary)
 end
 
 function Grav.cl_onSecondaryUse( self, state )
 	if state ~= 1 then return end
 
-	local func = self[self.modes[self.mode].onSecondary]
-	if func then func( self ) end
+	self:callModeFunction(self.modeData.onSecondary)
 end
 
 function Grav.client_onEquippedUpdate( self, lmb, rmb, f )
@@ -1309,12 +1399,7 @@ function Grav.client_onEquippedUpdate( self, lmb, rmb, f )
 		self.prevrmb = rmb
 	end
 
-	local func = self[self.modes[self.mode].onEquipped]
-	local guiToggleEnabled = true
-	if func then
-		guiToggleEnabled = func( self, lmb, rmb, f )
-	end
-
+	local guiToggleEnabled = self:callModeFunction(self.modeData.onEquipped, lmb, rmb, f)
 	if guiToggleEnabled == true then
 		if f and self.canTriggerFb and not self.blockF then
 			self.canTriggerFb = false
@@ -1331,21 +1416,28 @@ function Grav.client_onEquippedUpdate( self, lmb, rmb, f )
 end
 
 function Grav:client_onToggle()
-	local func = self[self.modes[self.mode].onToggle]
-	if func then
-		func( self )
-	end
+	self:callModeFunction(self.modeData.onToggle)
 
 	return true
 end
 
 function Grav:client_onReload()
-	local func = self[self.modes[self.mode].onReload]
-	if func then
-		func( self )
-	end
+	self:callModeFunction(self.modeData.onReload)
 
 	return true
+end
+
+
+function Grav:callModeFunction(funcName, _1, _2, _3)
+	local func = self[funcName]
+	if not func then return true end
+
+	if funcName:sub(1,2) == "sv" then
+		self.network:sendToServer(funcName)
+		return true
+	else
+		return func( self, _1, _2, _3 )
+	end
 end
 -- #endregion
 
