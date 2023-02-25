@@ -122,6 +122,14 @@ Grav.modes = {
 		onPrimary = "cl_mode_scan_onClick",
 		onEquipped = "cl_mode_scan",
 		colour = sm.color.new(0.5,0,0.5)
+	},
+	["Export mods with recipes"] = {
+		onPrimary = "cl_mode_modRecipes",
+		colour = sm.color.new(0.25,0.3,0.69)
+	},
+	["Export CG's with recipes"] = {
+		onPrimary = "cl_mode_cgRecipes",
+		colour = sm.color.new(0.75,0.9,0.420)
 	}
 }
 
@@ -143,14 +151,6 @@ if BETA == true then
 		onPrimary = "cl_mode_dollShitter_fire",
 		onToggle = "sv_wipeDolls",
 		colour = sm.color.new(1,0.5,0.5)
-	}
-	Grav.modes["Export mods with recipes"] = {
-		onPrimary = "cl_mode_modRecipes",
-		colour = sm.color.new(0.25,0.3,0.69)
-	}
-	Grav.modes["Export CG's with recipes"] = {
-		onPrimary = "cl_mode_cgRecipes",
-		colour = sm.color.new(0.75,0.9,0.420)
 	}
 end
 
@@ -622,7 +622,7 @@ function Grav:cl_mode_grav( lmb, rmb, f )
 				""
 			)
 			if canRotate then
-				gui_intText("<p textShadow='false' bg='gui_keybinds_bg' color='#ffffff' spacing='9'>Move your mouse to rotate the creation</p>")
+				gui_intText("<img bg='gui_keybinds_bg' spacing='2'>$GAME_DATA/Gui/Editor/ed_icon_translate.png</img><p textShadow='false' bg='gui_keybinds_bg' color='#ffffff' spacing='9'>Move your mouse to rotate the creation</p>")
 			end
 		else
 			gui_intText(
@@ -1168,7 +1168,7 @@ function Grav:cl_mode_modRecipes()
 	ModDatabase.loadDescriptions()
 
 	for uuid, desc in pairs(ModDatabase.databases.descriptions) do
-		if desc.type ~= "Custom Game" then
+		if desc.type == "Blocks and Parts" then
 			local key = "$CONTENT_"..uuid
 			local success, exists = pcall(fileExists, key)
 			if success == true and exists == true then
@@ -1176,7 +1176,7 @@ function Grav:cl_mode_modRecipes()
 				if fileExists(recipes) then
 					if fileExists(recipes.."craftbot.json") or fileExists(recipes.."workbench.json") or fileExists(recipes.."hideout.json") then
 						print("Mod found with recipes!", desc.name)
-						foundMods[#foundMods+1] = "https://steamcommunity.com/workshop/filedetails/?id="..desc.fileId
+						foundMods[#foundMods+1] = "link: https://steamcommunity.com/workshop/filedetails/?id="..desc.fileId..", name: "..desc.name
 					end
 				end
 			end
@@ -1203,7 +1203,7 @@ function Grav:cl_mode_cgRecipes()
 				for k, dependency in pairs(desc.dependencies) do
 					if dependency.fileId == 2504530003 then
 						print("Custom Game found with recipe support!", desc.name)
-						foundMods[#foundMods+1] = "https://steamcommunity.com/workshop/filedetails/?id="..desc.fileId
+						foundMods[#foundMods+1] = "link: https://steamcommunity.com/workshop/filedetails/?id="..desc.fileId..", name: "..desc.name
 					end
 				end
 			end
