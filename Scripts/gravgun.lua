@@ -131,16 +131,26 @@ if BETA == true then
 		onToggle = "cl_mode_scalableWedge_rotate",
 		colour = sm.color.new(0.5,1,0.5)
 	}
+	--[[
 	Grav.modes["Block Replacer"] = {
 		onPrimary = "cl_mode_blockReplace",
 		colour = sm.color.new(1,1,0.5)
 	}
+	]]
 	Grav.modes["Ragdoll Shitter"] = {
 		onFixed = "cl_mode_dollShitter_update",
 		onEquipped = "cl_mode_dollShitter_equipped",
 		onPrimary = "cl_mode_dollShitter_fire",
 		onToggle = "sv_wipeDolls",
 		colour = sm.color.new(1,0.5,0.5)
+	}
+	Grav.modes["Export mods with recipes"] = {
+		onPrimary = "cl_mode_modRecipes",
+		colour = sm.color.new(0.25,0.3,0.69)
+	}
+	Grav.modes["Export CG's with recipes"] = {
+		onPrimary = "cl_mode_cgRecipes",
+		colour = sm.color.new(0.75,0.9,0.420)
 	}
 end
 
@@ -1148,6 +1158,62 @@ end
 
 function Grav:cl_mode_dollShitter_update(dt)
 	self.dollshitTimer = math.max(self.dollshitTimer - dt, 0)
+end
+
+dofile("$CONTENT_40639a2c-bb9f-4d4f-b88c-41bfe264ffa8/Scripts/ModDatabase.lua")
+function Grav:cl_mode_modRecipes()
+	print("~~[EXPORTING MODS WITH RECIPES]~~")
+	local fileExists = sm.json.fileExists
+	local foundMods = {}
+	ModDatabase.loadDescriptions()
+
+	for uuid, desc in pairs(ModDatabase.databases.descriptions) do
+		if desc.type ~= "Custom Game" then
+			local key = "$CONTENT_"..uuid
+			local success, exists = pcall(fileExists, key)
+			if success == true and exists == true then
+				local recipes = key.."/CraftingRecipes/"
+				if fileExists(recipes) then
+					if fileExists(recipes.."craftbot.json") or fileExists(recipes.."workbench.json") or fileExists(recipes.."hideout.json") then
+						print("Mod found with recipes!", desc.name)
+						foundMods[#foundMods+1] = "https://steamcommunity.com/workshop/filedetails/?id="..desc.fileId
+					end
+				end
+			end
+		end
+	end
+
+	sm.json.save(foundMods, "$CONTENT_DATA/modsWithRecipes.json")
+	sm.gui.displayAlertText("Exported mods with recipes!", 2.5)
+
+	ModDatabase.unloadDescriptions()
+end
+
+function Grav:cl_mode_cgRecipes()
+	print("~~[EXPORTING CUSTOM GAMES WITH RECIPE SUPPORT]~~")
+	local fileExists = sm.json.fileExists
+	local foundMods = {}
+	ModDatabase.loadDescriptions()
+
+	for uuid, desc in pairs(ModDatabase.databases.descriptions) do
+		if desc.type == "Custom Game" then
+			local key = "$CONTENT_"..uuid
+			local success, exists = pcall(fileExists, key)
+			if success == true and exists == true and desc.dependencies then
+				for k, dependency in pairs(desc.dependencies) do
+					if dependency.fileId == 2504530003 then
+						print("Custom Game found with recipe support!", desc.name)
+						foundMods[#foundMods+1] = "https://steamcommunity.com/workshop/filedetails/?id="..desc.fileId
+					end
+				end
+			end
+		end
+	end
+
+	sm.json.save(foundMods, "$CONTENT_DATA/CGsWithRecipeSupport.json")
+	sm.gui.displayAlertText("Exported Custom Games with recipe support!", 2.5)
+
+	ModDatabase.unloadDescriptions()
 end
 
 
