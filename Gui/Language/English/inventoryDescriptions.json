@@ -148,5 +148,10 @@
 	{
 		"title": "Block Gun Tool",
 		"description": "Look at a creation with a Block Gun part on it, and press F to pick it up and hold it. Guns can be discarded by pressing F again. Left click to shoot, right click to aim."
+	},
+	"b5ab5809-f2c0-4053-9183-00256ea4d671":
+	{
+		"title": "Block Label",
+		"description": "Interact with the part and type in something to have it show up while hovering over it."
 	}
 }

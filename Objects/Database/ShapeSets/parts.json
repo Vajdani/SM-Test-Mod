@@ -1321,6 +1321,85 @@
          },
          "sticky": "-Z",
          "uuid": "06d24542-f6ac-455f-9bfd-1d82764fe750"
+      },
+      {
+         "box": {
+            "x": 1,
+            "y": 1,
+            "z": 1
+         },
+         "color": "df7f00",
+         "flammable": false,
+         "name": "labelblock",
+         "physicsMaterial": "Mechanical",
+         "ratings": {
+            "buoyancy": 2,
+            "density": 2,
+            "durability": 3,
+            "friction": 5
+         },
+         "renderable": {
+            "lodList": [
+               {
+                  "includes": [
+                     "POSITION",
+                     "UV0",
+                     "UV1",
+                     "NORMAL",
+                     "TANGENTS",
+                     "BLEND_INDICES",
+                     "BLEND_WEIGHTS"
+                  ],
+                  "mesh": "$GAME_DATA/Objects/Mesh/interactive/obj_interactive_logicgate_off.fbx",
+                  "minViewSize": 20,
+                  "pose0": "$GAME_DATA/Objects/Mesh/interactive/obj_interactive_logicgate_on.fbx",
+                  "subMeshMap": {
+                     "logicgate": {
+                        "material": "PoseAnimDifAsgNorAo",
+                        "textureList": [
+                           "$GAME_DATA/Objects/Textures/interactive/obj_interactive_logicgate_dif.tga",
+                           "$GAME_DATA/Objects/Textures/interactive/obj_interactive_logicgate_asg.tga",
+                           "$GAME_DATA/Objects/Textures/interactive/obj_interactive_logicgate_nor.tga",
+                           "$GAME_DATA/Objects/Textures/interactive/obj_interactive_logicgate_ao.tga"
+                        ]
+                     },
+                     "screen": {
+                        "custom": {
+                           "uv0": {
+                              "u": 0.166666670,
+                              "v": 0.16450
+                           }
+                        },
+                        "material": "UVAnimDifAsgNor",
+                        "textureList": [
+                           "$GAME_DATA/Objects/Textures/interactive/obj_interactive_logicgate_dif.tga",
+                           "$GAME_DATA/Objects/Textures/interactive/obj_interactive_logicgate_asg.tga",
+                           "$GAME_DATA/Objects/Textures/interactive/obj_interactive_logicgate_nor.tga"
+                        ]
+                     }
+                  }
+               },
+               {
+                  "mesh": "$GAME_DATA/Objects/Mesh/interactive/obj_interactive_logicgate_lod1.fbx",
+                  "subMeshMap": {
+                     "logicgate": {
+                        "material": "DifAsg",
+                        "textureList": [
+                           "$GAME_DATA/Objects/Textures/interactive/obj_interactive_logicgate_dif.tga",
+                           "$GAME_DATA/Objects/Textures/interactive/obj_interactive_logicgate_asg.tga",
+                           ""
+                        ]
+                     }
+                  }
+               }
+            ]
+         },
+         "rotationSet": "PropYZ",
+         "scripted": {
+            "classname": "Label",
+            "filename": "$CONTENT_DATA/Scripts/label.lua"
+         },
+         "uuid": "b5ab5809-f2c0-4053-9183-00256ea4d671"
       }
    ]
 }
