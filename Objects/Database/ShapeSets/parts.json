@@ -1270,13 +1270,13 @@
          "uuid": "6ca42dd6-0f2f-4abe-9aee-e1acb2bfcf40"
       },
       {
-         "color": "ff0000",
-         "density": 1250.0,
          "box": {
             "x": 2,
             "y": 2,
             "z": 3
          },
+         "color": "ff0000",
+         "density": 1250.0,
          "name": "amogusnpc",
          "physicsMaterial": "Mechanical",
          "ratings": {
@@ -1287,25 +1287,25 @@
                {
                   "animationList": [
                      {
-                        "name": "run",
                         "file": "$CONTENT_DATA/Objects/Mesh/amogusnpc.fbx",
-                        "looping": true
+                        "looping": true,
+                        "name": "run"
                      }
                   ],
                   "mesh": "$CONTENT_DATA/Objects/Mesh/amogusnpc.fbx",
                   "subMeshMap": {
-                     "visor": {
-                        "material": "SkelAnimDifAsgNor",
-                        "textureList": [
-                           "$CONTENT_DATA/Objects/Textures/cyan.png",
-                           "$GAME_DATA/Textures/Default/default_asg.tga",
-                           "$GAME_DATA/Textures/Default/default_nor.tga"
-                        ]
-                     },
                      "body": {
                         "material": "SkelAnimDifAsgNor",
                         "textureList": [
                            "$CONTENT_DATA/Tools/transparent1024x1024.tga",
+                           "$GAME_DATA/Textures/Default/default_asg.tga",
+                           "$GAME_DATA/Textures/Default/default_nor.tga"
+                        ]
+                     },
+                     "visor": {
+                        "material": "SkelAnimDifAsgNor",
+                        "textureList": [
+                           "$CONTENT_DATA/Objects/Textures/cyan.png",
                            "$GAME_DATA/Textures/Default/default_asg.tga",
                            "$GAME_DATA/Textures/Default/default_nor.tga"
                         ]
@@ -1400,6 +1400,121 @@
             "filename": "$CONTENT_DATA/Scripts/label.lua"
          },
          "uuid": "b5ab5809-f2c0-4053-9183-00256ea4d671"
+      },
+      {
+         "box": {
+            "x": 2,
+            "y": 2,
+            "z": 2
+         },
+         "color": "df7f00",
+         "flammable": false,
+         "name": "RocketLauncher",
+         "physicsMaterial": "Mechanical",
+         "ratings": {
+            "buoyancy": 2,
+            "density": 2,
+            "durability": 3,
+            "friction": 5
+         },
+         "renderable": "$CONTENT_DATA/Objects/Renderables/RocketLauncher.rend",
+         "rotationSet": "PropY",
+         "scripted": {
+            "classname": "RocketLauncher",
+            "filename": "$CONTENT_DATA/Scripts/RocketLauncher.lua"
+         },
+         "sticky": "-Y",
+         "uuid": "7be9f5e4-cf75-41ab-b332-d536113ce055"
+      },
+      {
+         "box": {
+            "x": 1,
+            "y": 1,
+            "z": 1
+         },
+         "color": "df7f00",
+         "name": "RocketLauncher_Rocket",
+         "physicsMaterial": "Mechanical",
+         "renderable": {
+            "lodList": [
+               {
+                  "mesh": "$CONTENT_DATA/Objects/Mesh/RocketLauncher_Rocket.fbx",
+                  "subMeshList": [
+                     {
+                        "material": "DifAsgNor",
+                        "textureList": [
+                           "$CONTENT_DATA/Objects/Textures/RocketLauncher.png",
+                           "$GAME_DATA/Textures/Default/default_asg.tga",
+                           "$GAME_DATA/Textures/Default/default_nor.tga"
+                        ]
+                     }
+                  ]
+               }
+            ]
+         },
+         "rotationSet": "PropY",
+         "showInInventory": false,
+         "uuid": "6aa659cf-b9fe-4eb8-983c-cd2182fa35fc"
+      },
+      {
+         "box": {
+            "x": 1,
+            "y": 1,
+            "z": 1
+         },
+         "color": "df7f00",
+         "name": "RocketLauncher_BarrelFull",
+         "physicsMaterial": "Mechanical",
+         "renderable": {
+            "lodList": [
+               {
+                  "mesh": "$CONTENT_DATA/Objects/Mesh/RocketLauncher_BarrelFull.fbx",
+                  "subMeshList": [
+                     {
+                        "material": "DifAsgNor",
+                        "textureList": [
+                           "$CONTENT_DATA/Objects/Textures/RocketLauncher.png",
+                           "$GAME_DATA/Textures/Default/default_asg.tga",
+                           "$GAME_DATA/Textures/Default/default_nor.tga"
+                        ]
+                     }
+                  ]
+               }
+            ]
+         },
+         "rotationSet": "PropY",
+         "showInInventory": false,
+         "uuid": "23498502-aeb4-48c1-b77a-dd649a384bd7"
+      },
+      {
+         "box": {
+            "x": 1,
+            "y": 1,
+            "z": 1
+         },
+         "color": "df7f00",
+         "name": "RocketLauncher_Barrel",
+         "physicsMaterial": "Mechanical",
+         "renderable": {
+            "lodList": [
+               {
+                  "mesh": "$CONTENT_DATA/Objects/Mesh/RocketLauncher_Barrel.fbx",
+                  "subMeshList": [
+                     {
+                        "material": "DifAsgNor",
+                        "textureList": [
+                           "$CONTENT_DATA/Objects/Textures/RocketLauncher.png",
+                           "$GAME_DATA/Textures/Default/default_asg.tga",
+                           "$GAME_DATA/Textures/Default/default_nor.tga"
+                        ]
+                     }
+                  ]
+               }
+            ]
+         },
+         "rotationSet": "PropY",
+         "showInInventory": false,
+         "uuid": "343e2817-69a6-4879-bebc-277f7940b814"
       }
    ]
 }

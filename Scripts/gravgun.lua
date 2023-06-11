@@ -152,6 +152,10 @@ if BETA == true then
 		onToggle = "sv_wipeDolls",
 		colour = sm.color.new(1,0.5,0.5)
 	}
+	Grav.modes["Arc Tester"] = {
+		onEquipped = "cl_mode_arctester",
+		colour = sm.color.new(0.1,0.25,0.9)
+	}
 end
 
 local camAdjust = sm.vec3.new(0,0,0.575)
@@ -243,11 +247,16 @@ end
 function Grav:server_onFixedUpdate()
 	local sv = self.sv
 	for k, data in pairs(sv.dolls) do
-		local char = data.unit:getCharacter()
-		if char and not data.appliedImpulse then
-			char:setTumbling(true)
-			char:applyTumblingImpulse(data.dir * 25 * char.mass)
-			data.appliedImpulse = true
+		local unit = data.unit
+		if unit and sm.exists(unit) then
+			local char = unit:getCharacter()
+			if char and not data.appliedImpulse then
+				char:setTumbling(true)
+				char:applyTumblingImpulse(data.dir * 25 * char.mass)
+				data.appliedImpulse = true
+			end
+		else
+			self.sv.dolls[k] = nil
 		end
 	end
 
@@ -1133,7 +1142,7 @@ function Grav:cl_mode_dollShitter_fire()
 end
 
 function Grav:cl_mode_dollShitter_equipped(lmb, rmb, f)
-	if lmb == 2  then
+	if lmb == 2 then
 		self:cl_mode_dollShitter_fire()
 	end
 
@@ -1214,6 +1223,51 @@ function Grav:cl_mode_cgRecipes()
 	sm.gui.displayAlertText("Exported Custom Games with recipe support!", 2.5)
 
 	ModDatabase.unloadDescriptions()
+end
+
+
+
+function visualizeArc(start, _end, dir, col)
+	local mid = start + dir
+	local cycles = 100
+	for i = 0, cycles do
+		sm.particle.createParticle(
+			"paint_smoke",
+			sm.vec3.bezier2(start, mid, _end, i / cycles),
+			sm.quat.identity(),
+			col
+		)
+	end
+end
+
+function Grav:cl_mode_arctester(lmb, rmb)
+	if lmb == 1 then
+		local hit, result = sm.localPlayer.getRaycast(100)
+		if hit then self.point = result.pointWorld end
+	end
+
+	if rmb == 1 then
+		if self.point then
+			self.point = nil
+			return
+		end
+	end
+
+	if self.point == nil then return true end
+
+	local tick = sm.game.getCurrentTick()
+	if tick % 4 == 0 then
+		local firePos = self.tool:getPosition()
+		local targetPos = self.point
+		local low, high = sm.projectile.solveBallisticArc(firePos, targetPos, 25, 10)
+		if tick % 8 == 0 and low then
+			visualizeArc(firePos, targetPos, low, sm.color.new(0,0,0))
+		elseif high then
+			visualizeArc(firePos, targetPos, high, sm.color.new(1,1,1))
+		end
+	end
+
+	return true
 end
 
 

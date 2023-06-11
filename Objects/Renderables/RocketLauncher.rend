@@ -1,0 +1,25 @@
+{
+   "lodList" : [
+      {
+         "mesh" : "$CONTENT_DATA/Objects/Mesh/RocketLauncher.fbx",
+         "subMeshMap" : {
+            "base": {
+               "material": "DifAsgNor",
+               "textureList": [
+                  "$CONTENT_DATA/Objects/Textures/RocketLauncher.png",
+                  "$GAME_DATA/Textures/Default/default_asg.tga",
+                  "$GAME_DATA/Textures/Default/default_nor.tga"
+               ]
+            },
+            "launcher": {
+               "material": "DifAsgNor",
+               "textureList": [
+                  "$CONTENT_DATA/Objects/Textures/RocketLauncher.png",
+                  "$GAME_DATA/Textures/Default/default_asg.tga",
+                  "$GAME_DATA/Textures/Default/default_nor.tga"
+               ]
+            }
+         }
+      }
+   ]
+}

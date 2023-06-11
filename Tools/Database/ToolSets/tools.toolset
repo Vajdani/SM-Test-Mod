@@ -212,6 +212,25 @@
             "file": "$CONTENT_DATA/Scripts/blockGun_tool.lua",
             "class": "BG_tool"
          }
+      },
+      {
+         "uuid": "70d96b0a-c245-48ba-bb3a-f2d657a2aa6d",
+         "previewRenderable": "$GAME_DATA/Character/Char_Tools/char_spudgun_preview.rend",
+         "previewRotation": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            -1,
+            0,
+            1,
+            0
+         ],
+         "script": {
+            "file": "$CONTENT_DATA/Scripts/MediGun.lua",
+            "class": "Medi"
+         }
       }
    ]
 }

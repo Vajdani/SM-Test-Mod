@@ -18,5 +18,16 @@
 		"parameterList": {
 			"weld=1": 0
 		}
+	},
+	"RocketLauncher - Shoot":
+	{
+		"effectList":
+		[
+			{
+				"type": "audio",
+				"name": "event:/char/npc/bots/enemies/farmbot/farmbot_shoot",
+				"delay": 0
+		   	}
+		]
 	}
 }
