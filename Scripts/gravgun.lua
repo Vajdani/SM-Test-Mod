@@ -1176,6 +1176,13 @@ function Grav:cl_mode_modRecipes()
 	local foundMods = {}
 	ModDatabase.loadDescriptions()
 
+	local function checkRecipeSets(desc, recipes)
+		if fileExists(recipes.."craftbot.json") or fileExists(recipes.."workbench.json") or fileExists(recipes.."hideout.json") then
+			print("Mod found with recipes!", desc.name)
+			foundMods[#foundMods+1] = "link: https://steamcommunity.com/workshop/filedetails/?id="..desc.fileId..", name: "..desc.name
+		end
+	end
+
 	for uuid, desc in pairs(ModDatabase.databases.descriptions) do
 		if desc.type == "Blocks and Parts" then
 			local key = "$CONTENT_"..uuid
@@ -1183,9 +1190,11 @@ function Grav:cl_mode_modRecipes()
 			if success == true and exists == true then
 				local recipes = key.."/CraftingRecipes/"
 				if fileExists(recipes) then
-					if fileExists(recipes.."craftbot.json") or fileExists(recipes.."workbench.json") or fileExists(recipes.."hideout.json") then
-						print("Mod found with recipes!", desc.name)
-						foundMods[#foundMods+1] = "link: https://steamcommunity.com/workshop/filedetails/?id="..desc.fileId..", name: "..desc.name
+					checkRecipeSets(desc, recipes)
+				else
+					recipes = key.."/Survival/CraftingRecipes/"
+					if fileExists(recipes) then
+						checkRecipeSets(desc, recipes)
 					end
 				end
 			end
@@ -1213,6 +1222,7 @@ function Grav:cl_mode_cgRecipes()
 					if dependency.fileId == 2504530003 then
 						print("Custom Game found with recipe support!", desc.name)
 						foundMods[#foundMods+1] = "link: https://steamcommunity.com/workshop/filedetails/?id="..desc.fileId..", name: "..desc.name
+						break
 					end
 				end
 			end
