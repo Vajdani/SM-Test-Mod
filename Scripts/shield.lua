@@ -19,13 +19,13 @@ function Shield:server_onFixedUpdate()
     self.trigger:setWorldPosition(self.sv_owner.character.worldPosition)
 end
 
-function Shield:sv_onProjectile( trigger, hitPos, airTime, velocity, projectileUuid, source, damage, data, customData, hitNormal )
+function Shield:sv_onProjectile( trigger, hitPos, airTime, velocity, name, source, damage, data, normal, uuid )
     if self.sv_active then
         local player = self.sv_owner
         local char = player.character
         local dir = char.direction
         sm.projectile.projectileAttack(
-            projectileUuid,
+            uuid,
             damage * 1.5,
             char.worldPosition + dir,
             dir * velocity:length() * 1.5,

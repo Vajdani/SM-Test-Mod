@@ -1,0 +1,17 @@
+{
+   "lodList" : [
+      {
+         "mesh" : "$CONTENT_DATA/Objects/Mesh/GunnerShield.fbx",
+         "subMeshList" : [
+            {
+               "material" : "DifAsgNor",
+               "textureList" : [
+                  "$CONTENT_DATA/Objects/Textures/GunnerShield_dif.png",
+                  "$CONTENT_DATA/Objects/Textures/GunnerShield_asg.png",
+                  "$GAME_DATA/Textures/Default/default_nor.tga"
+               ]
+            }
+         ]
+      }
+   ]
+}

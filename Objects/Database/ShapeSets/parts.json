@@ -1515,6 +1515,32 @@
          "rotationSet": "PropY",
          "showInInventory": false,
          "uuid": "343e2817-69a6-4879-bebc-277f7940b814"
+      },
+      {
+         "autoTool": "0924fd4b-8a20-4b66-b900-5fc1324dc5a9",
+         "box": {
+            "x": 2,
+            "y": 1,
+            "z": 2
+         },
+         "color": "70c2ff",
+         "flammable": false,
+         "name": "GunnerShield",
+         "physicsMaterial": "Mechanical",
+         "ratings": {
+            "buoyancy": 2,
+            "density": 2,
+            "durability": 10,
+            "friction": 5
+         },
+         "renderable": "$CONTENT_DATA/Objects/Renderables/GunnerShield.rend",
+         "rotationSet": "PropY",
+         "scripted": {
+            "classname": "GunnerShield",
+            "filename": "$CONTENT_DATA/Scripts/GunnerShield.lua"
+         },
+         "sticky": "-Y",
+         "uuid": "2715b27d-0f4a-4f01-9d5a-91be9dd70672"
       }
    ]
 }

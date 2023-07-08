@@ -24,7 +24,17 @@
       {
          "name": "tool_gravgun",
          "previewRenderable": "$CONTENT_DATA/Objects/mongiconnect.rend",
-         "previewRotation": [ 1, 0, 0, 0, 1, 0, 0, 0, 1 ],
+         "previewRotation": [
+            1,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            1
+         ],
          "script": {
             "class": "Grav",
             "data": {},
@@ -117,7 +127,7 @@
          "uuid": "e8b3adcb-06cb-46d9-b539-a3ca84824cca"
       },
       {
-         "uuid": "ca50b410-a53b-46a8-a1c6-a16ae7608229",
+         "name": "molotov",
          "previewRenderable": "$SURVIVAL_DATA/Character/Char_Glowstick/char_glowstick.rend",
          "previewRotation": [
             1,
@@ -131,33 +141,14 @@
             0
          ],
          "script": {
-            "file": "$CONTENT_DATA/Scripts/molotov.lua",
-            "class": "Molotov"
-         }
-         //,"autoTool": true
-      },
-      {
-         "uuid": "7d4e8cdc-107b-474c-a13b-aab8266f0d53",
-         "previewRenderable": "$GAME_DATA/Character/Char_Tools/char_spudgun_preview.rend",
-         "previewRotation": [
-            1,
-            0,
-            0,
-            0,
-            0,
-            -1,
-            0,
-            1,
-            0
-         ],
-         "script": {
-            "file": "$CONTENT_DATA/Scripts/acm_tooltest.lua",
-            "class": "test"
+            "class": "Molotov",
+            "data": {},
+            "file": "$CONTENT_DATA/Scripts/molotov.lua"
          },
-         "showInInventory": false
+         "uuid": "ca50b410-a53b-46a8-a1c6-a16ae7608229"
       },
       {
-         "uuid": "afcd0fef-f25b-474d-8496-00096f8f6cef",
+         "name": "acm test",
          "previewRenderable": "$GAME_DATA/Character/Char_Tools/char_spudgun_preview.rend",
          "previewRotation": [
             1,
@@ -171,12 +162,36 @@
             0
          ],
          "script": {
-            "file": "$CONTENT_DATA/Scripts/shield.lua",
-            "class": "Shield"
-         }
+            "class": "test",
+            "data": {},
+            "file": "$CONTENT_DATA/Scripts/acm_tooltest.lua"
+         },
+         "showInInventory": false,
+         "uuid": "7d4e8cdc-107b-474c-a13b-aab8266f0d53"
       },
       {
-         "uuid": "d95078dc-a3fa-4c68-b3f4-d896d71b0a72",
+         "name": "shield",
+         "previewRenderable": "$GAME_DATA/Character/Char_Tools/char_spudgun_preview.rend",
+         "previewRotation": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            -1,
+            0,
+            1,
+            0
+         ],
+         "script": {
+            "class": "Shield",
+            "data": {},
+            "file": "$CONTENT_DATA/Scripts/shield.lua"
+         },
+         "uuid": "afcd0fef-f25b-474d-8496-00096f8f6cef"
+      },
+      {
+         "name": "amogus",
          "previewRenderable": "$CONTENT_DATA/Objects/sus.rend",
          "previewRotation": [
             1,
@@ -190,12 +205,14 @@
             0
          ],
          "script": {
-            "file": "$CONTENT_DATA/Scripts/amogus.lua",
-            "class": "Amogus"
-         }
+            "class": "Amogus",
+            "data": {},
+            "file": "$CONTENT_DATA/Scripts/amogus.lua"
+         },
+         "uuid": "d95078dc-a3fa-4c68-b3f4-d896d71b0a72"
       },
       {
-         "uuid": "5b625f4e-baf2-4a49-b7c5-e2779e974471",
+         "name": "blockgun",
          "previewRenderable": "$GAME_DATA/Character/Char_Tools/char_spudgun_preview.rend",
          "previewRotation": [
             1,
@@ -209,13 +226,15 @@
             0
          ],
          "script": {
-            "file": "$CONTENT_DATA/Scripts/blockGun_tool.lua",
-            "class": "BG_tool"
-         }
+            "class": "BG_tool",
+            "data": {},
+            "file": "$CONTENT_DATA/Scripts/blockGun_tool.lua"
+         },
+         "uuid": "5b625f4e-baf2-4a49-b7c5-e2779e974471"
       },
       {
-         "uuid": "70d96b0a-c245-48ba-bb3a-f2d657a2aa6d",
-         "previewRenderable": "$GAME_DATA/Character/Char_Tools/char_spudgun_preview.rend",
+         "name": "GunnerShield_handheld",
+         "previewRenderable": "$CONTENT_DATA/Objects/Renderables/GunnerShield_handheld.rend",
          "previewRotation": [
             1,
             0,
@@ -228,9 +247,12 @@
             0
          ],
          "script": {
-            "file": "$CONTENT_DATA/Scripts/MediGun.lua",
-            "class": "Medi"
-         }
+            "class": "GunnerShield_handheld",
+            "data": {},
+            "file": "$CONTENT_DATA/Scripts/GunnerShield.lua"
+         },
+         "uuid": "0924fd4b-8a20-4b66-b900-5fc1324dc5a9",
+         "autoTool": true
       }
    ]
 }

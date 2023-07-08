@@ -29,5 +29,31 @@
 				"delay": 0
 		   	}
 		]
+	},
+	"GunnerShield": {
+		"parameterList":
+		{
+			"minColor":[0.0, 0.0, 1.0, 0.0], 
+			"maxColor":[0.4, 0.4, 1.0, 0.7]
+		},
+		"effectList": [
+			{
+				"delay": 0,
+				"name": "GunnerShield",
+				"type": "particle"
+			},
+			{
+				"delay": 1.0,
+				"offset" : [ 0.0, 0.0, 0.0 ],
+				"name" : "$CONTENT_DATA/Effects/Renderables/GunnerShield_shield.rend",
+				"type" : "renderable",
+				"parameters" : [ "minColor", "maxColor" ]
+			},
+			{
+				"delay": 1.0,
+				"event": "activate",
+				"type": "luaEvent"
+			}
+		]
 	}
 }
