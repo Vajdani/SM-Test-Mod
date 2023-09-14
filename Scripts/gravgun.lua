@@ -1,7 +1,9 @@
-local BETA = false
+local BETA = true
 local ico_lmb = sm.gui.getKeyBinding("Create", true)
 local ico_rmb = sm.gui.getKeyBinding("Attack", true)
 local ico_q = sm.gui.getKeyBinding("NextCreateRotation", true)
+local ico_r = sm.gui.getKeyBinding("Reload", true)
+local ico_f = sm.gui.getKeyBinding("ForceBuild", true)
 local gui_intText = sm.gui.setInteractionText
 local vec3_up = sm.vec3.new(0,0,1)
 local vec3_one = sm.vec3.one()
@@ -552,13 +554,13 @@ function Grav.client_onCreate( self )
 	self.gui:setSelectedDropDownItem( "modes", self.mode )
 
 	if BETA == true then
-		self.oldUuid = blk_wood1
+		--[[self.oldUuid = blk_wood1
 		self.newUuid = blk_concrete1
 		self.gui:createDropDown( "uuidOld", "cl_gui_oldUuid", self.allShapeNames )
 		self.gui:createDropDown( "uuidNew", "cl_gui_newUuid", self.allShapeNames )
 		self.gui:setSelectedDropDownItem( "uuidOld", sm.shape.getShapeTitle(self.oldUuid) )
 		self.gui:setSelectedDropDownItem( "uuidNew", sm.shape.getShapeTitle(self.newUuid) )
-		self.gui:setVisible( "panel_blockReplace", false )
+		self.gui:setVisible( "panel_blockReplace", false )]]
 		--self.gui:setMeshPreview( "meshOld", self.oldUuid )
 		--self.gui:setMeshPreview( "meshNew", self.newUuid )
 	end
@@ -631,7 +633,8 @@ function Grav:cl_mode_grav( lmb, rmb, f )
 				""
 			)
 			if canRotate then
-				gui_intText("<img bg='gui_keybinds_bg' spacing='2'>$GAME_DATA/Gui/Editor/ed_icon_translate.png</img><p textShadow='false' bg='gui_keybinds_bg' color='#ffffff' spacing='9'>Move your mouse to rotate the creation</p>")
+				--gui_intText("<img bg='gui_keybinds_bg' spacing='2'>$GAME_DATA/Gui/Editor/ed_icon_translate.png</img><p textShadow='false' bg='gui_keybinds_bg' color='#ffffff' spacing='9'>Move your mouse to rotate the creation</p>")
+				gui_intText("<p textShadow='false' bg='gui_keybinds_bg' color='#ffffff' spacing='9'>Move your mouse to rotate the creation</p>")
 			end
 		else
 			gui_intText(
@@ -640,9 +643,9 @@ function Grav:cl_mode_grav( lmb, rmb, f )
 				""
 			)
 			gui_intText(
-				sm.gui.getKeyBinding("NextCreateRotation", true).."Decrease distance\t",
-				sm.gui.getKeyBinding("Reload", true).."Increase distance\t",
-				canRotate and sm.gui.getKeyBinding("ForceBuild", true).."Hold to Rotate Target" or "",
+				ico_q.."Decrease distance\t",
+				ico_r.."Increase distance\t",
+				canRotate and ico_f.."Hold to Rotate Target" or "",
 				""
 			)
 		end
@@ -658,11 +661,15 @@ function Grav:cl_mode_grav( lmb, rmb, f )
 					self.network:sendToServer("sv_setRotState", {state = true, dir = self.dir})
 				end
 
-				cam.setPosition(self.pos)
+				cam.setPosition(cam.getDefaultPosition())
 				cam.setDirection(self.dir)
 			elseif self.dir ~= nil then
 				cam.setCameraState(0)
 				self.network:sendToServer("sv_setRotState", {state = false})
+
+				sm.localPlayer.setLockedControls(true)
+				sm.localPlayer.setDirection(self.dir)
+				self.playerLocked = sm.game.getCurrentTick()
 
 				self.dir = nil
 				self.pos = nil
@@ -1446,6 +1453,11 @@ function Grav:client_onFixedUpdate(dt)
 	if not self.isLocal then return end
 
 	self:callModeFunction(self.modeData.onFixed, dt)
+
+	if self.playerLocked and self.playerLocked < sm.game.getCurrentTick() then
+		sm.localPlayer.setLockedControls(false)
+		self.playerLocked = nil
+	end
 end
 
 function Grav.client_onEquip( self, animate )
