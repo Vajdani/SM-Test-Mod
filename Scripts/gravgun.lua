@@ -1,4 +1,4 @@
-local BETA = true
+local BETA = false
 local ico_lmb = sm.gui.getKeyBinding("Create", true)
 local ico_rmb = sm.gui.getKeyBinding("Attack", true)
 local ico_q = sm.gui.getKeyBinding("NextCreateRotation", true)
@@ -74,12 +74,17 @@ dofile( "$SURVIVAL_DATA/Scripts/game/survival_harvestable.lua" )
 ---@field deleteEffects table
 ---@field normalFireMode table
 ---@field aimBlendSpeed number
+---@field jointWeight number
+---@field spineWeight number
 ---@field blendTime number
 ---@field isLocal boolean
 ---@field copyTarget Body|Character
 ---@field copyTargetGui GuiInterface
 ---@field oldUuid Uuid
 ---@field newUuid Uuid
+---@field prevrmb boolean
+---@field prevlmb boolean
+---@field canTriggerFb boolean
 Grav = class()
 Grav.raycastRange = 1000
 Grav.minHover = 1
@@ -132,6 +137,13 @@ Grav.modes = {
 	["Export CG's with recipes"] = {
 		onPrimary = "cl_mode_cgRecipes",
 		colour = sm.color.new(0.75,0.9,0.420)
+	},
+	["Ragdoll Shitter"] = {
+		onFixed = "cl_mode_dollShitter_update",
+		onEquipped = "cl_mode_dollShitter_equipped",
+		onPrimary = "cl_mode_dollShitter_fire",
+		onToggle = "sv_wipeDolls",
+		colour = sm.color.new(1,0.5,0.5)
 	}
 }
 
@@ -147,13 +159,6 @@ if BETA == true then
 		colour = sm.color.new(1,1,0.5)
 	}
 	]]
-	Grav.modes["Ragdoll Shitter"] = {
-		onFixed = "cl_mode_dollShitter_update",
-		onEquipped = "cl_mode_dollShitter_equipped",
-		onPrimary = "cl_mode_dollShitter_fire",
-		onToggle = "sv_wipeDolls",
-		colour = sm.color.new(1,0.5,0.5)
-	}
 	Grav.modes["Arc Tester"] = {
 		onEquipped = "cl_mode_arctester",
 		colour = sm.color.new(0.1,0.25,0.9)
@@ -443,7 +448,7 @@ end
 function Grav:sv_split( body )
 	self.network:sendToClients("cl_split", body)
 
-	local center = body:getCenterOfMassPosition()
+	--local center = body:getCenterOfMassPosition()
 	for k, shape in pairs(body:getCreationShapes()) do
 		--[[
 		local pos = shape.worldPosition
@@ -552,18 +557,19 @@ function Grav.client_onCreate( self )
 	end
 	self.gui:createDropDown( "modes", "cl_gui_modeDropDown", options )
 	self.gui:setSelectedDropDownItem( "modes", self.mode )
+	self.gui:setVisible( "panel_blockReplace", false )
 
-	if BETA == true then
-		--[[self.oldUuid = blk_wood1
+	--[[if BETA == true then
+		self.oldUuid = blk_wood1
 		self.newUuid = blk_concrete1
 		self.gui:createDropDown( "uuidOld", "cl_gui_oldUuid", self.allShapeNames )
 		self.gui:createDropDown( "uuidNew", "cl_gui_newUuid", self.allShapeNames )
 		self.gui:setSelectedDropDownItem( "uuidOld", sm.shape.getShapeTitle(self.oldUuid) )
 		self.gui:setSelectedDropDownItem( "uuidNew", sm.shape.getShapeTitle(self.newUuid) )
-		self.gui:setVisible( "panel_blockReplace", false )]]
-		--self.gui:setMeshPreview( "meshOld", self.oldUuid )
-		--self.gui:setMeshPreview( "meshNew", self.newUuid )
-	end
+		self.gui:setVisible( "panel_blockReplace", false )
+		self.gui:setMeshPreview( "meshOld", self.oldUuid )
+		self.gui:setMeshPreview( "meshNew", self.newUuid )
+	end]]
 
 	self.copyTarget = nil
 	self.copyTargetBodies = nil
@@ -979,32 +985,63 @@ function Grav:cl_mode_split()
 	end
 end
 
+local new_debris = sm.debris.createDebris
+local random = math.random
+function Grav:cl_split_spawnDebris(shape, pos, center)
+	new_debris(
+		shape.uuid,
+		pos,
+		shape.worldRotation,
+		(pos - center):normalize() * random() * 10,
+		vec3_zero,
+		shape.color,
+		random(100, 500) * 0.01
+	)
+end
+
+local util_lerp = sm.util.lerp
+local vec3_new = sm.vec3.new
+local vec3_1eighth = vec3_new(0.125,0.125,0.125)
+function lerpPos(min, max, x, y, z, maxX, maxY, maxZ)
+	local posX = util_lerp(min.x, max.x, x/maxX)
+	local posY = util_lerp(min.y, max.y, y/maxY)
+	local posZ = util_lerp(min.z, max.z, z/maxZ)
+	return vec3_new(posX, posY, posZ) - vec3_1eighth
+end
+
 ---@param body Body
 function Grav:cl_split( body )
 	local center = body:getCenterOfMassPosition()
 	for k, shape in pairs(body:getCreationShapes()) do
-		local pos = shape.worldPosition
-		sm.debris.createDebris(
-			shape.uuid,
-			pos,
-			shape.worldRotation,
-			(pos - center):normalize() * 10,
-			vec3_zero,
-			shape.color,
-			5
-		)
+		if shape.isBlock then
+			local box = shape:getBoundingBox()
+			local box4 = box * 4
+			local maxX, maxY, maxZ = box4.x, box4.y, box4.z
+			local worldPos, worldRot = shape.worldPosition, shape.worldRotation
+			local offset = worldRot * box * 0.5
+			local min, max = worldPos - offset, worldPos + offset
+			for x = 1, maxX do
+				for y = 1, maxY do
+					for z = 1, maxZ do
+						self:cl_split_spawnDebris(shape, lerpPos(min, max, x, y, z, maxX, maxY, maxZ), center)
+					end
+				end
+			end
+		else
+			self:cl_split_spawnDebris(shape, shape.worldPosition, center)
+		end
 	end
 
 	for k, joint in pairs(body:getJoints()) do
 		local pos = joint.worldPosition
-		sm.debris.createDebris(
+		new_debris(
 			joint.uuid,
 			pos,
 			joint.localRotation,
-			(pos - center):normalize() * 10,
+			(pos - center):normalize() * random() * 10,
 			vec3_zero,
 			joint.color,
-			5
+			random(100, 500) * 0.01
 		)
 	end
 end
