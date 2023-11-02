@@ -104,6 +104,7 @@ function RocketLauncher:client_onDestroy()
     self.targetMarker:close()
 end
 
+local camAdjust = sm.vec3.new(0,0,0.575)
 function RocketLauncher:client_onUpdate(dt)
     for k, rocket in pairs(self.rockets) do
         rocket.lifeTime = rocket.lifeTime - dt
@@ -135,7 +136,7 @@ function RocketLauncher:client_onUpdate(dt)
             local char = parent:getSeatCharacter()
             if char then
                 local hit, pos
-                dir, hit, pos = self:autoAim(char, char.worldPosition, char.direction)
+                dir, hit, pos = self:autoAim(char, char.worldPosition + camAdjust, char.direction)
 
                 if hit and char == sm.localPlayer.getPlayer().character then
                     self.targetMarker:setWorldPosition(pos)

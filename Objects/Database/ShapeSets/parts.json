@@ -1424,7 +1424,8 @@
             "filename": "$CONTENT_DATA/Scripts/RocketLauncher.lua"
          },
          "sticky": "-Y",
-         "uuid": "7be9f5e4-cf75-41ab-b332-d536113ce055"
+         "uuid": "7be9f5e4-cf75-41ab-b332-d536113ce055",
+         "showInInventory": false
       },
       {
          "box": {
