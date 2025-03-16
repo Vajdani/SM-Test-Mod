@@ -1,0 +1,64 @@
+{
+	"male" : {
+		"ragdoll" : [
+			{  
+				"name": "Hips",
+				"parent": null,
+				"offset": { "x": 0.0, "y": 0.0, "z": 2.0 },
+				"rotation": { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+				"bone": "Hips",
+				"shape": { "sphere": { "radius": 0.3 } },
+				"mass": 80.0,
+				"joint": null
+			},
+			{  
+				"name": "Head",
+				"parent": null,
+				"offset": { "x": 0.0, "y": 0.0, "z": 4.9 },
+				"bone": "Neck",
+				"shape": { "sphere": { "radius": 0.5 } },
+				"mass": 2.0,
+				"joint": {
+					"coneTwist": {
+						"swing1": 20.0, "swing2": 20.0, "twist": 20.0, 
+						"softness": 0.25,
+						"boneDir": { "x": 0.0, "y": 0.0, "z": 1.0 },
+						"frontDir": { "x": 0.0, "y": 1.0, "z": 0.0 },
+						"centerDir": { "x": 0.0, "y": 0.0, "z": 1.0 }
+					}
+				}
+			}
+		]
+	},
+	"female" : {
+		"ragdoll" : [
+			{  
+				"name": "Hips",
+				"parent": null,
+				"offset": { "x": 0.0, "y": 0.0, "z": 2.0 },
+				"rotation": { "x": 0.0, "y": 0.0, "z": 0.0, "w": 1.0 },
+				"bone": "Hips",
+				"shape": { "sphere": { "radius": 0.3 } },
+				"mass": 80.0,
+				"joint": null
+			},
+			{  
+				"name": "Head",
+				"parent": null,
+				"offset": { "x": 0.0, "y": 0.0, "z": 4.9 },
+				"bone": "Neck",
+				"shape": { "sphere": { "radius": 0.5 } },
+				"mass": 2.0,
+				"joint": {
+					"coneTwist": {
+						"swing1": 20.0, "swing2": 20.0, "twist": 20.0, 
+						"softness": 0.25,
+						"boneDir": { "x": 0.0, "y": 0.0, "z": 1.0 },
+						"frontDir": { "x": 0.0, "y": 1.0, "z": 0.0 },
+						"centerDir": { "x": 0.0, "y": 0.0, "z": 1.0 }
+					}
+				}
+			}
+		]
+	}
+}

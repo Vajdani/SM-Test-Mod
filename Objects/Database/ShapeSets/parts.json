@@ -900,7 +900,7 @@
             "classname": "Chat",
             "filename": "$CONTENT_DATA/Scripts/chat.lua"
          },
-         "showInInventory": false,
+         "showInInventory": true,
          "uuid": "fbf99cf1-a3be-49f7-b60e-189064b3f073"
       },
       {
@@ -1423,9 +1423,9 @@
             "classname": "RocketLauncher",
             "filename": "$CONTENT_DATA/Scripts/RocketLauncher.lua"
          },
+         "showInInventory": false,
          "sticky": "-Y",
-         "uuid": "7be9f5e4-cf75-41ab-b332-d536113ce055",
-         "showInInventory": false
+         "uuid": "7be9f5e4-cf75-41ab-b332-d536113ce055"
       },
       {
          "box": {
@@ -1542,6 +1542,210 @@
          },
          "sticky": "-Y",
          "uuid": "2715b27d-0f4a-4f01-9d5a-91be9dd70672"
+      },
+      {
+         "box": {
+            "x": 1,
+            "y": 1,
+            "z": 1
+         },
+         "color": "0033ff",
+         "flammable": false,
+         "name": "binder",
+         "physicsMaterial": "Mechanical",
+         "ratings": {
+            "buoyancy": 2,
+            "density": 2,
+            "durability": 3,
+            "friction": 5
+         },
+         "renderable": {
+            "lodList": [
+               {
+                  "includes": [
+                     "POSITION",
+                     "UV0",
+                     "UV1",
+                     "NORMAL",
+                     "TANGENTS",
+                     "BLEND_INDICES",
+                     "BLEND_WEIGHTS"
+                  ],
+                  "mesh": "$GAME_DATA/Objects/Mesh/interactive/obj_interactive_logicgate_off.fbx",
+                  "minViewSize": 20,
+                  "pose0": "$GAME_DATA/Objects/Mesh/interactive/obj_interactive_logicgate_on.fbx",
+                  "subMeshMap": {
+                     "logicgate": {
+                        "material": "PoseAnimDifAsgNorAo",
+                        "textureList": [
+                           "$GAME_DATA/Objects/Textures/interactive/obj_interactive_logicgate_dif.tga",
+                           "$GAME_DATA/Objects/Textures/interactive/obj_interactive_logicgate_asg.tga",
+                           "$GAME_DATA/Objects/Textures/interactive/obj_interactive_logicgate_nor.tga",
+                           "$GAME_DATA/Objects/Textures/interactive/obj_interactive_logicgate_ao.tga"
+                        ]
+                     },
+                     "screen": {
+                        "custom": {
+                           "uv0": {
+                              "u": 0.166666670,
+                              "v": 0.16450
+                           }
+                        },
+                        "material": "UVAnimDifAsgNor",
+                        "textureList": [
+                           "$GAME_DATA/Objects/Textures/interactive/obj_interactive_logicgate_dif.tga",
+                           "$GAME_DATA/Objects/Textures/interactive/obj_interactive_logicgate_asg.tga",
+                           "$GAME_DATA/Objects/Textures/interactive/obj_interactive_logicgate_nor.tga"
+                        ]
+                     }
+                  }
+               },
+               {
+                  "mesh": "$GAME_DATA/Objects/Mesh/interactive/obj_interactive_logicgate_lod1.fbx",
+                  "subMeshMap": {
+                     "logicgate": {
+                        "material": "DifAsg",
+                        "textureList": [
+                           "$GAME_DATA/Objects/Textures/interactive/obj_interactive_logicgate_dif.tga",
+                           "$GAME_DATA/Objects/Textures/interactive/obj_interactive_logicgate_asg.tga",
+                           ""
+                        ]
+                     }
+                  }
+               }
+            ]
+         },
+         "rotationSet": "PropYZ",
+         "scripted": {
+            "classname": "Binder",
+            "filename": "$CONTENT_DATA/Scripts/EventTesters.lua"
+         },
+         "uuid": "327433d0-351f-45f9-b2ec-c106f8c11b71"
+      },
+      {
+         "box": {
+            "x": 1,
+            "y": 1,
+            "z": 1
+         },
+         "color": "0033ff",
+         "flammable": false,
+         "name": "receiver",
+         "physicsMaterial": "Mechanical",
+         "ratings": {
+            "buoyancy": 2,
+            "density": 2,
+            "durability": 3,
+            "friction": 5
+         },
+         "renderable": {
+            "lodList": [
+               {
+                  "includes": [
+                     "POSITION",
+                     "UV0",
+                     "UV1",
+                     "NORMAL",
+                     "TANGENTS",
+                     "BLEND_INDICES",
+                     "BLEND_WEIGHTS"
+                  ],
+                  "mesh": "$GAME_DATA/Objects/Mesh/interactive/obj_interactive_logicgate_off.fbx",
+                  "minViewSize": 20,
+                  "pose0": "$GAME_DATA/Objects/Mesh/interactive/obj_interactive_logicgate_on.fbx",
+                  "subMeshMap": {
+                     "logicgate": {
+                        "material": "PoseAnimDifAsgNorAo",
+                        "textureList": [
+                           "$GAME_DATA/Objects/Textures/interactive/obj_interactive_logicgate_dif.tga",
+                           "$GAME_DATA/Objects/Textures/interactive/obj_interactive_logicgate_asg.tga",
+                           "$GAME_DATA/Objects/Textures/interactive/obj_interactive_logicgate_nor.tga",
+                           "$GAME_DATA/Objects/Textures/interactive/obj_interactive_logicgate_ao.tga"
+                        ]
+                     },
+                     "screen": {
+                        "custom": {
+                           "uv0": {
+                              "u": 0.166666670,
+                              "v": 0.16450
+                           }
+                        },
+                        "material": "UVAnimDifAsgNor",
+                        "textureList": [
+                           "$GAME_DATA/Objects/Textures/interactive/obj_interactive_logicgate_dif.tga",
+                           "$GAME_DATA/Objects/Textures/interactive/obj_interactive_logicgate_asg.tga",
+                           "$GAME_DATA/Objects/Textures/interactive/obj_interactive_logicgate_nor.tga"
+                        ]
+                     }
+                  }
+               },
+               {
+                  "mesh": "$GAME_DATA/Objects/Mesh/interactive/obj_interactive_logicgate_lod1.fbx",
+                  "subMeshMap": {
+                     "logicgate": {
+                        "material": "DifAsg",
+                        "textureList": [
+                           "$GAME_DATA/Objects/Textures/interactive/obj_interactive_logicgate_dif.tga",
+                           "$GAME_DATA/Objects/Textures/interactive/obj_interactive_logicgate_asg.tga",
+                           ""
+                        ]
+                     }
+                  }
+               }
+            ]
+         },
+         "rotationSet": "PropYZ",
+         "scripted": {
+            "classname": "Receiver",
+            "filename": "$CONTENT_DATA/Scripts/EventTesters.lua"
+         },
+         "uuid": "0f77a5a2-cbda-41dd-9b0e-7d19d31bd043"
+      },
+      {
+         "uuid": "f527e75a-1d01-4c22-b0f4-8cae03bdc229",
+         "name": "obj_interactive_skibidi_toilet",
+         "legacyId": 114,
+         "renderable": "$GAME_DATA/Objects/Renderable/Interactive/obj_interactive_toilet.rend",
+         "color": "3e9ffe",
+         "hull": {
+            "x": 3,
+            "y": 4,
+            "z": 3,
+            "col": "$GAME_DATA/Objects/Collision/obj_interactive_toilet.obj"
+         },
+         "seat": {
+            "bones": [
+               {
+                  "name": "Head",
+                  "offset": {
+                     "x": 0,
+                     "y": 2.25,
+                     "z": 0.9
+                  }
+               },
+               {
+                  "name": "Hips",
+                  "offset": {
+                     "x": 0,
+                     "y": -3,
+                     "z": 0
+                  }
+               }
+            ],
+            "ragdollFile": "$GAME_DATA/Character/seat_ragdoll.json",
+            "enterAudio": "Toilet seated",
+            "exitAudio": "Toilet unseated"
+         },
+         "rotationSet": "PropY",
+         "sticky": "-Y",
+         "physicsMaterial": "Mechanical",
+         "ratings": {
+            "density": 2,
+            "durability": 3,
+            "friction": 3,
+            "buoyancy": 4
+         },
+         "flammable": false
       }
    ]
 }

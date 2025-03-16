@@ -147,7 +147,245 @@ Grav.modes = {
 	}
 }
 
+local function GetItemScale(uuid)
+	local scale = 1
+	if uuid ~= sm.uuid.getNil() and not sm.item.isTool(uuid) then
+		local size = sm.item.getShapeSize( uuid )
+		local max = math.max( math.max( size.x, size.y ), size.z )
+		scale = 1 / max + ( size:length() - 1.4422496 ) * 0.015625
+		if scale * size:length() > 1.0 then
+			scale = 1 / size:length()
+		end
+	end
+
+	return scale
+end
+
+local quat_zero = sm.quat.identity()
+local invItemRotAdjust = sm.quat.angleAxis(math.rad(90), sm.vec3.new(1,0,0)) * sm.quat.angleAxis(math.rad(180), sm.vec3.new(0,1,0))
+function Grav:cl_createWorldGui()
+	if not self.worldgui then
+		self.dt = 0
+		--[[local layout = {
+			Background = {
+				skin = "TransparentBG",
+				transform = { pos_x = 0, pos_y = 0, scale_x = 100, scale_y = 100, rotation = quat_zero },
+				children = {
+					Plate = {
+						skin = "Red",
+						transform = { pos_x = 0, pos_y = 0, scale_x = 80, scale_y = 20, rotation = quat_zero },
+						parent = "Background",
+						children = {
+							Plate2 = {
+								skin = "Blue",
+								transform = { pos_x = -25, pos_y = 0, scale_x = 10, scale_y = 10, rotation = quat_zero },
+								parent = "Plate",
+								children = {
+									Plate3 = {
+										skin = "White",
+										transform = { pos_x = 0, pos_y = 0, scale_x = 5, scale_y = 5, rotation = sm.quat.angleAxis(math.rad(45), sm.vec3.new(0,1,0)) },
+										parent = "Plate2"
+									}
+								}
+							}
+						}
+					},
+					Slider = {
+						skin = "White",
+						widgetType = "slider",
+						widgetData = {
+							maxRange = 80,
+							sliderFraction = 0,
+							isFlipped = true
+						},
+						transform = { pos_x = 0, pos_y = 40, scale_x = 0, scale_y = 10, rotation = quat_zero },
+						parent = "Background",
+						children = {
+							SliderEnd = {
+								skin = "Black",
+								transform = { pos_x = 0, pos_y = 0, scale_x = 5, scale_y = 10, rotation = quat_zero },
+								parent = "Slider"
+							}
+						}
+					},
+					Plate4 = {
+						skin = "White",
+						transform = { pos_x = 0, pos_y = -40, scale_x = 80, scale_y = 10, rotation = quat_zero },
+						parent = "Background"
+					}
+				}
+			},
+		}]]
+		--[[local layout = {
+			Background = {
+				skin = "TransparentBG",
+				transform = { pos_x = 0, pos_y = 0, scale_x = 500, scale_y = 500, rotation = quat_zero },
+				children = {
+					Button = {
+						skin = "Red",
+						widgetType = "button",
+						transform = { pos_x = 0, pos_y = 0, scale_x = 400, scale_y = 100, rotation = quat_zero },
+						parent = "Background"
+					}
+				}
+			}
+		}]]
+
+		local layout = {
+			Background = {
+				skin = "TransparentBG",
+				transform = {
+					scale_x = 275, scale_y = 275,
+					rotation = quat_zero
+				},
+			}
+		}
+		self.worldgui = sm.worldgui.createGui(layout, sm.camera.getPosition() + sm.camera.getDirection() * 0.5, sm.camera.getRotation() * sm.quat.angleAxis(math.rad(180), sm.vec3.new(0,0,1)))
+		--self.worldgui:bindButtonPressCallback("Button", self.tool, "cl_button")
+
+		local container = sm.localPlayer.getHotbar()
+
+		local itemsPerRow = 10
+		local itemWidth = 20
+		local iconWidth = itemWidth * 0.75
+
+		local padding = 5
+		local offset_x = layout.Background.transform.scale_x * 0.5
+        local offset_y = layout.Background.transform.scale_y * 0.5 - (itemWidth + padding)
+
+		for i = 0, container:getSize() - 1 do
+			local uuid = container:getItem(i).uuid
+			local row = math.floor(i/itemsPerRow)
+			local column = i + 1 - row * itemsPerRow
+
+			local widgetName = "item"..i
+			self.worldgui:createWidget(
+				widgetName,
+				{
+					skin = "Orange",
+					widgetType = "button",
+					transform = {
+						pos_x = -(padding + itemWidth) * column + offset_x,
+						pos_y = -(padding + itemWidth) * row + offset_y,
+						scale_x = itemWidth, scale_y = itemWidth,
+						rotation = quat_zero
+					}
+				},
+				"Background"
+			)
+
+			local scale = GetItemScale(uuid)
+			self.worldgui:createWidget(
+				widgetName.."_icon",
+				{
+					skin = { uuid = tostring(uuid), colour = "#"..sm.item.getShapeDefaultColor(uuid):getHexStr():sub(0,6) },
+					transform = {
+						scale_x = iconWidth * scale, scale_z = iconWidth * scale, scale_y = iconWidth * scale,
+						rotation = invItemRotAdjust
+					},
+				},
+				widgetName
+			)
+
+			self.worldgui:bindButtonHoverCallback(widgetName, self.tool, "cl_invHover")
+		end
+
+		self.worldgui:setScale(2)
+		self.worldgui:open()
+		print("create")
+	else
+		print("destroy")
+		self.worldgui:destroy()
+		self.worldgui = nil
+	end
+end
+
+function Grav:cl_invHover(args)
+	if args.state then
+		self.dt = 0
+		self.widget = args.widget
+
+		local transform = self.worldgui:getWidget(self.widget).transform
+		transform.scale_x = 25
+		transform.scale_y = 25
+
+		self.originalWidgetScale = sm.vec3.one() * 15 * GetItemScale(sm.uuid.new(self.worldgui:getWidget(self.widget.."_icon").skin.uuid))
+	else
+		local widget = self.widget.."_icon"
+		self.worldgui:setWidgetPosition(widget, sm.vec3.new(0,0,0))
+		self.worldgui:setWidgetRotation(widget, invItemRotAdjust)
+		self.worldgui:setWidgetScale(widget, self.originalWidgetScale)
+
+		local transform = self.worldgui:getWidget(self.widget).transform
+		transform.scale_x = 20
+		transform.scale_y = 20
+
+		self.widget = nil
+	end
+end
+
+function Grav:cl_button(args)
+	if args.state then
+		sm.gui.displayAlertText("Pressed #df7f00"..args.widget, 1)
+		sm.audio.play("Button on")
+	else
+		sm.gui.displayAlertText("Released #df7f00"..args.widget, 1)
+		sm.audio.play("Button off")
+	end
+end
+
+function Grav:cl_createOrInvokeEvent()
+	if not sm.customEventSystem:isEventRegistered("test") then
+		if sm.customEventSystem:registerEvent("test", false, { balls = true }) then
+			sm.customEventSystem:subscribeToEvent(self.tool, "cl_event_receive", "test")
+			print("registered event")
+		else
+			print("couldnt register event")
+		end
+	else
+		sm.customEventSystem:invokeEvent("test")
+	end
+end
+
+function Grav:cl_event_receive(data)
+	print("event received")
+	print("event data:", data)
+end
+
+function Grav:cl_changeEventData()
+	if sm.customEventSystem:isEventRegistered("test") then
+		sm.customEventSystem:setEventData("test", { balls = not sm.customEventSystem:getEventData("test").balls })
+		print("changed event data")
+	else
+		print("couldnt change event data, event not registered")
+	end
+end
+
+function Grav:cl_deleteEvent()
+	if sm.customEventSystem:isEventRegistered("test") then
+		sm.customEventSystem:deleteEvent("test")
+		print("deleted event")
+	else
+		print("event doesnt exist, cant delete")
+	end
+end
+
+
 if BETA == true then
+	Grav.modes["Doc Exporter"] = {
+		onPrimary = "cl_modeDocExport",
+		colour = sm.color.new(0.734,0.8934,0.452)
+	}
+	Grav.modes["Event Tester"] = {
+		onPrimary = "cl_createOrInvokeEvent",
+		onSecondary = "cl_changeEventData",
+		onReload = "cl_deleteEvent",
+		colour = sm.color.new(0.23,0.894,0.351)
+	}
+	Grav.modes["World GUI Tester"] = {
+		onPrimary = "cl_createWorldGui",
+		colour = sm.color.new(0.70,0.983,0.830)
+	}
 	Grav.modes["Scalable Wedge Test"] = {
 		onEquipped = "cl_mode_scalableWedge",
 		onToggle = "cl_mode_scalableWedge_rotate",
@@ -180,7 +418,7 @@ if Grav.allShapes == nil and BETA == true then
 		local sets = sm.json.open(dbPath).shapeSetList
 		for _k, setPath in pairs(sets) do
 			local openedSet = sm.json.open(setPath)
-			local shapes = openedSet.blockList or openedSet.partList
+			local shapes = openedSet.blockList or openedSet.partList or openedSet.wedgeList
 			for __k, shape in pairs(shapes) do
 				local uuid = sm.uuid.new(shape.uuid)
 				if sm.item.isBlock(uuid) then
@@ -406,12 +644,17 @@ function Grav:sv_replaceBlocks( args )
 		v:destroyShape()
 	end
 
-	sm.json.save(creation, "$CONTENT_DATA/exportedBP.json")
-	sm.creation.importFromFile(
+	sm.creation.importFromString(
 		world,
-		"$CONTENT_DATA/exportedBP.json",
+		sm.json.writeJsonString(creation),
 		pos + sm.vec3.new(0,0,10)
 	)
+	-- sm.json.save(creation, "$CONTENT_DATA/exportedBP.json")
+	-- sm.creation.importFromFile(
+	-- 	world,
+	-- 	"$CONTENT_DATA/exportedBP.json",
+	-- 	pos + sm.vec3.new(0,0,10)
+	-- )
 end
 
 function Grav:sv_clear( mode )
@@ -1324,6 +1567,40 @@ function Grav:cl_mode_arctester(lmb, rmb)
 	return true
 end
 
+function Grav:cl_modeDocExport()
+	local effectDBs = {
+		"$GAME_DATA/Effects/Database/effectsets.json",
+		"$SURVIVAL_DATA/Effects/Database/effectsets.json",
+		"$CHALLENGE_DATA/Effects/Database/effectsets.json",
+	}
+
+	local effects = [[
+---@meta
+-- This file is automatically generated.
+		
+---All the default effect names in the game, can be used with sm.effect functions.
+---@alias EffectName
+]]
+	for k, db in pairs(effectDBs) do
+		for _k, set in pairs(sm.json.open(db).effectSetList) do
+			for effectName, effectData in pairs(sm.json.open(set.path)) do
+				effects = effects..string.format("---| %q\n", effectName)
+			end
+		end
+	end
+
+	--print(effects)
+
+	local audio = [[
+---All the audio names that can be used with sm.audio.play.
+---@alias AudioName
+]]
+	for k, audioName in pairs(sm.audio.soundList) do
+		audio = audio..string.format("---| %q\n", audioName)
+	end
+	--print(audio)
+end
+
 
 
 ---@return Vec3
@@ -1367,6 +1644,49 @@ function Grav.client_onUpdate( self, dt )
 	local equipped = self.tool:isEquipped()
 
 	if self.isLocal then
+		if self.worldgui then
+			--self.worldgui:update()
+
+			--[[self.worldgui:update(
+				sm.camera.getDefaultPosition() + sm.camera.getDirection() * 0.2 + self.tool:getOwner().character.velocity * dt,
+				sm.camera.getRotation() * sm.quat.angleAxis(math.rad(180), sm.vec3.new(0,0,1)),
+				scale
+			)]]
+			--self.worldgui:setPosition(sm.camera.getDefaultPosition() + sm.camera.getDirection() * 0.2 + self.tool:getOwner().character.velocity * dt * dt)
+			--self.worldgui:setRotation(sm.camera.getRotation() * sm.quat.angleAxis(math.rad(180), sm.vec3.new(0,0,1)))
+			--self.worldgui:setScale(1) --sm.util.lerp(0.1, 1, sm.util.easing("easeOutBounce", math.abs(math.sin(self.dt)))))
+
+			--[[self.worldgui:setWidgetPosition("Plate", sm.vec3.new(0, math.sin(self.dt) * 15, 0))
+			self.worldgui:setWidgetRotation("Plate", sm.quat.angleAxis(math.rad(math.cos(self.dt)) * 25, sm.vec3.new(0,1,0)))
+
+			self.worldgui:setWidgetPosition("Plate2", sm.vec3.new(math.sin(self.dt) * 25, 0, 0))
+
+			self.worldgui:setWidgetRotation("Plate3", sm.quat.angleAxis(math.rad(self.dt) * 100, sm.vec3.new(0,1,0)))
+
+			self.worldgui.widgets.Slider.widgetData.sliderFraction = sm.util.easing("easeInOutQuad", math.abs(math.sin(self.dt)))
+
+			local slider = self.worldgui.widgets.Slider
+			local widgetData = slider.widgetData
+            local width = sm.util.lerp(0, widgetData.maxRange, widgetData.sliderFraction)
+			local pos = slider.transform.pos_x - width * 0.5  - self.worldgui.widgets.SliderEnd.transform.scale_x * 0.5 --+ widgetData.maxRange * 0.5 - self.worldgui.widgets.SliderEnd.transform.scale_x * 0.5
+			self.worldgui:setWidgetZIndex("SliderEnd", 1)
+			self.worldgui:setWidgetPosition("SliderEnd", sm.vec3.new(pos, 0, 0))
+
+			self.worldgui.widgets.Plate4.effect:setParameter("color", sm.color.new(math.abs(math.cos(self.dt)), math.abs(math.sin(self.dt)), math.abs(math.sin(self.dt + 0.5))))]]
+
+			if self.widget then
+				self.dt = (self.dt or 0) + dt * 5
+				local widget = self.widget.."_icon"
+
+				local animProgress = math.min(self.dt, 1)
+				self.worldgui:setWidgetPosition(widget, sm.vec3.new(0,0,animProgress * 10))
+				self.worldgui:setWidgetScale(widget, self.originalWidgetScale + sm.vec3.one() * 2 * animProgress)
+				if animProgress == 1 then
+					self.worldgui:setWidgetRotation(widget, sm.quat.angleAxis(math.rad((self.dt - 1) * 10), sm.vec3.new(0,0,1)) * invItemRotAdjust)
+				end
+			end
+		end
+
 		if self.target then
 			local x, y = sm.localPlayer.getMouseDelta()
 			if (x ~= 0 or y ~= 0) and sm.camera.getCameraState() == 2 then
