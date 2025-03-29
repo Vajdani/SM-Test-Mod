@@ -124,7 +124,7 @@ function Molotov:server_onFixedUpdate( dt )
 		local checkedShapeSets = {}
 		local function AddFlammablesFromShapeSet(shapeSet)
 			local set = sm.json.open(shapeSet)
-			local _set = set.partList or set.blockList
+			local _set = set.partList or set.blockList or set.wedgeList
 			for i, shape in pairs(_set) do
 				if shape.flammable then
 					flammableParts[#flammableParts+1] = shape.uuid
@@ -148,7 +148,7 @@ function Molotov:server_onFixedUpdate( dt )
 		ModDatabase.loadDescriptions()
 		ModDatabase.loadShapesets()
 		for k, v in pairs(ModDatabase.getAllLoadedMods()) do
-			for i, j in pairs(ModDatabase.databases.shapesets[v]) do
+			for i, j in pairs(ModDatabase.databases.shapesets[v] or {}) do
 				AddFlammablesFromShapeSet(i)
 			end
 		end
