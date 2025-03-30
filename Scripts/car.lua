@@ -368,10 +368,10 @@ function Car:client_onInteract( char, state )
     self.interactable:setSeatCharacter( char )
     self.seated = true
 
-    if self.cameraMode ~= 1 then
+    --if self.cameraMode ~= 1 then
         sm.camera.setCameraState(3)
         sm.camera.setFov(sm.camera.getDefaultFov())
-    end
+    --end
 end
 
 function Car:client_onTinker( char, state )
@@ -394,10 +394,11 @@ function Car:client_onAction( action, state )
         elseif action == 18 then --Right click
             --self.network:sendToServer("sv_toggleAi")
         elseif action == 19 then --Left click
-            self.cameraMode = self.cameraMode < --[[3]] 2 and self.cameraMode + 1 or 1
-            if self.cameraMode == 1 then
-                sm.camera.setCameraState(0)
-            elseif sm.camera.getCameraState() ~= 3 then
+            self.cameraMode = self.cameraMode < 3 and self.cameraMode + 1 or 1
+            -- if self.cameraMode == 1 then
+            --     sm.camera.setCameraState(0)
+            -- else
+            if sm.camera.getCameraState() ~= 3 then
                 sm.camera.setCameraState(3)
                 sm.camera.setFov(sm.camera.getDefaultFov())
             end
@@ -421,6 +422,21 @@ function Car:cl_syncControls( controls )
     self.cl_controls = controls
 end
 
+local function dot(a, b)
+    return a.x*b.x + a.y*b.y + a.z*b.z + a.w*b.w;
+end
+
+local function normalise(a)
+    local l = 1.0 / math.sqrt(dot(a, a));
+    return sm.quat.new(l*a.x, l*a.y, l*a.z, l*a.w);
+end
+
+oldQuatSLerp = oldQuatSLerp or sm.quat.slerp
+function sm.quat.slerp(q1, q2, t)
+    return normalise(oldQuatSLerp(q1, q2, t))
+end
+
+local camFilter = sm.physics.filter.default - sm.physics.filter.character
 function Car:client_onUpdate( dt )
     if not self.cl_data then return end
 
@@ -462,32 +478,39 @@ function Car:client_onUpdate( dt )
         self:getCreationBodies(body)
         --sm.gui.displayAlertText(string.format("%.0f km/h",tostring(self.shape.velocity:length()*3.6)), 1)
 
-        if self.cameraMode ~= 1 then
-            local worldPos = shape.worldPosition
+        --if self.cameraMode ~= 1 then
+            local worldPos = shape:getInterpolatedWorldPosition() + shape.velocity * dt
             --1.875 7.5
             local offset = dir_forward * -1 * (3.75 * self.zoom) + dir_up * 4 --(fwd == -1 and dir_forward or -dir_forward) * (3.75 * self.zoom) + dir_up * 4
-            local newPos = worldPos + offset
+            local newPos
+            local defaultDir = sm.camera.getDefaultRotation() * sm.vec3.new(0,1,0)
+            if self.cameraMode == 1 then
+                local standing, seated = sm.camera.getCameraPullback()
+                newPos = sm.camera.getDefaultPosition() - defaultDir * seated
+            else
+                newPos = worldPos + offset
+            end
+
+            local hit, result = sm.physics.spherecast(worldPos, newPos, 0.1, body, camFilter)
+            while hit and result.type == "body" and self.creationBodies[result:getBody().id] ~= nil do
+                hit, result = sm.physics.spherecast(result.pointWorld + offset:normalize() * 0.01, newPos, 0.1, nil, camFilter)
+            end
+
+            if hit then newPos = result.pointWorld - result.directionWorld:normalize() end
 
             local lerp = dt * self.cl_data.cameraFollowSpeed
             if self.cameraMode == 3 then
-                local hit, result = sm.physics.raycast(worldPos, newPos, body)
-                while hit and result.type == "body" and self.creationBodies[result:getBody().id] ~= nil do
-                    hit, result = sm.physics.raycast(result.pointWorld + offset:normalize() * 0.01, newPos)
-                end
-
-                if hit then newPos = result.pointWorld + dir_forward * 0.25 end
-
-                sm.camera.setPosition(hit and newPos or sm.vec3.lerp(sm.camera.getPosition(), newPos, lerp))
-                sm.camera.setRotation(shape.worldRotation * camRotAdjust * sm.quat.angleAxis(-math.rad(15), vec3_x))
+                local regularDir = self.shape:transformDirection((worldPos - newPos + dir_up * 2):normalize())
+                sm.camera.setPosition(sm.vec3.lerp(sm.camera.getPosition(), newPos, lerp))
+                sm.camera.setRotation(
+                    sm.quat.slerp(
+                        sm.camera.getRotation(),
+                        shape.worldRotation * camRotAdjust * sm.quat.angleAxis(math.asin(regularDir.y), vec3_x),
+                        lerp
+                    )
+                )
             elseif self.cameraMode == 2 then
-                local hit, result = sm.physics.raycast(worldPos, newPos, body)
-                while hit and result.type == "body" and self.creationBodies[result:getBody().id] ~= nil do
-                    hit, result = sm.physics.raycast(result.pointWorld + offset:normalize() * 0.01, newPos)
-                end
-
-                if hit then newPos = result.pointWorld + dir_forward * 0.25 end
-
-                sm.camera.setPosition(hit and newPos or sm.vec3.lerp(sm.camera.getPosition(), newPos, lerp))
+                sm.camera.setPosition(sm.vec3.lerp(sm.camera.getPosition(), newPos, lerp))
                 sm.camera.setDirection(
                     sm.vec3.lerp(
                         sm.camera.getDirection(),
@@ -495,16 +518,8 @@ function Car:client_onUpdate( dt )
                         lerp
                     )
                 )
-            --[[else
-                local standing, seated = sm.camera.getCameraPullback()
-                local defaultDir = sm.camera.getDefaultRotation() * sm.vec3.new(0,1,0)
-
-                newPos = sm.camera.getDefaultPosition() - defaultDir * seated
-                local hit, result = sm.physics.raycast(pos, newPos, shape.body)
-                if hit then newPos = result.pointWorld + defaultDir * 0.5 end
-
-                --lerp = lerp * 10
-                sm.camera.setPosition(hit and newPos or sm.vec3.lerp(sm.camera.getPosition(), newPos, lerp))
+            else
+                sm.camera.setPosition(sm.vec3.lerp(sm.camera.getPosition(), newPos, lerp))
                 sm.camera.setDirection(
                     sm.vec3.lerp(
                         sm.camera.getDirection(),
@@ -512,20 +527,16 @@ function Car:client_onUpdate( dt )
                         lerp
                     )
                 )
-
-                --[[if (sm.camera.getPosition() - sm.camera.getDefaultPosition()):length2() <= seated then
-                    sm.camera.setCameraState(0)
-                end]]
             end
 
             if self.cl_data.fovDist then
                 local lag = sm.util.clamp((shape.velocity * 0.2):length(), 0, self.cl_data.fovDistCap) * (fwd == 0 and 1 or fwd)
                 sm.camera.setFov(sm.util.lerp(sm.camera.getFov(), sm.camera.getDefaultFov() + self.cl_data.fovDistMultiplier * lag, lerp) )
             end
-        else
-            sm.camera.setPosition( sm.camera.getPosition() )
-            sm.camera.setDirection( sm.camera.getDirection() )
-        end
+        -- else
+        --     sm.camera.setPosition( sm.camera.getPosition() )
+        --     sm.camera.setDirection( sm.camera.getDirection() )
+        -- end
     elseif sm.camera.getCameraState() == 0 then
         sm.camera.setPosition(sm.camera.getPosition())
         sm.camera.setDirection(sm.camera.getDirection())

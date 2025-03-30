@@ -1,9 +1,13 @@
+local connection_seated = 8
+local connection_logic = 1
+local conenction_bearing = sm.interactable.connectionType.bearing
+
 ---@class Aim : ShapeClass
 Aim = class()
-Aim.maxParentCount = 1
+Aim.maxParentCount = 2
 Aim.maxChildCount = -1
-Aim.connectionInput = sm.interactable.connectionType.power + sm.interactable.connectionType.logic
-Aim.connectionOutput = sm.interactable.connectionType.bearing
+Aim.connectionInput = connection_seated + connection_logic
+Aim.connectionOutput = conenction_bearing
 Aim.colorNormal = sm.color.new( 0xff8000ff )
 Aim.colorHighlight = sm.color.new( 0xff9f3aff )
 
@@ -12,7 +16,7 @@ Aim.UD_col = sm.color.new("#222222")
 
 function Aim:server_onFixedUpdate()
     local active = false
-    for k, v in pairs(self.interactable:getParents( sm.interactable.connectionType.logic )) do
+    for k, v in pairs(self.interactable:getParents(connection_logic)) do
         if v.active then
             active = true
             break
@@ -21,7 +25,7 @@ function Aim:server_onFixedUpdate()
 
     if not active then return end
 
-    local seat = self.interactable:getSingleParent()
+    local seat = self.interactable:getParents(connection_seated)[1]
     if not seat then return end
 
     local char = seat:getSeatCharacter()
@@ -29,7 +33,7 @@ function Aim:server_onFixedUpdate()
 
     local yaw, pitch = getYawPitch( char.direction )
     local lr, ud = {}, {}
-    for k, bearing in pairs(self.interactable:getChildren(sm.interactable.connectionType.bearing)) do
+    for k, bearing in pairs(self.interactable:getChildren(conenction_bearing)) do
         if bearing.color == self.LR_col then
             lr[#lr+1] = bearing
         elseif bearing.color == self.UD_col then
@@ -47,8 +51,8 @@ function Aim:server_onFixedUpdate()
 end
 
 function Aim:client_getAvailableParentConnectionCount( connectionType )
-    if bit.band( connectionType, sm.interactable.connectionType.power ) ~= 0 then
-        return 1 - #self.interactable:getParents( sm.interactable.connectionType.power )
+    if bit.band( connectionType, connection_seated ) ~= 0 then
+        return 1 - #self.interactable:getParents( connection_seated )
     end
 
     return 1
