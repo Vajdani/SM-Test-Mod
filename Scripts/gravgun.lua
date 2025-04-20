@@ -1567,7 +1567,29 @@ function Grav:cl_mode_arctester(lmb, rmb)
 	return true
 end
 
+function Grav:sv_shotgunProjectile(args)
+	sm.log.warning("shotgun")
+	print(args)
+end
+
+function Grav:sv_anyProjectile(args)
+	sm.log.warning("any")
+	print(args)
+end
+
 function Grav:cl_modeDocExport()
+	-- if true then
+	-- 	sm.ReBase.projectile.addHitEvent(projectile_potato, function(position, airTime, velocity, projectileName, shooter, damage, customData, normal, target, uuid)
+	-- 		sm.physics.explode(position, 10, 100, 100, 100, "PropaneTank - ExplosionBig")
+	-- 	end)
+
+	-- 	sm.ReBase.projectile.addHitEvent(projectile_fries, { object = self.tool, callback = "sv_shotgunProjectile" })
+
+	-- 	sm.ReBase.projectile.addHitEvent(sm.uuid.getNil(), { object = self.tool, callback = "sv_anyProjectile" })
+
+	-- 	return
+	-- end
+
 	local effectDBs = {
 		"$GAME_DATA/Effects/Database/effectsets.json",
 		"$SURVIVAL_DATA/Effects/Database/effectsets.json",

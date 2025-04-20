@@ -1782,6 +1782,65 @@
 					}
 				]
 			}
+		},
+      {
+			"uuid": "9dd62b30-0244-41d8-a114-31322674f264",
+			"name": "obj_gunship",
+			"renderable": "$CONTENT_DATA/Objects/Renderables/gunship.rend",
+			"color": "ffffff",
+			"box": {
+				"x": 8,
+				"y": 6,
+				"z": 40
+			},
+         "scripted": {
+            "classname": "Gunship",
+            "data": {},
+            "filename": "$CONTENT_DATA/Scripts/Gunship.lua",
+            "seat": {
+               "bones": [
+                  {
+                     "name": "Hips",
+                     "offset": {
+                        "x": 0.0,
+                        "y": 0.550,
+                        "z": 0.90
+                     }
+                  },
+                  {
+                     "freeRotation": true,
+                     "name": "LeftForeArm",
+                     "offset": {
+                        "x": 1.0,
+                        "y": 0.50,
+                        "z": 1.50
+                     }
+                  },
+                  {
+                     "freeRotation": true,
+                     "name": "RightForeArm",
+                     "offset": {
+                        "x": -1.0,
+                        "y": 0.50,
+                        "z": 1.50
+                     }
+                  }
+               ],
+               "enterAudio": "Toilet seated",
+               "exitAudio": "Toilet unseated",
+               "ragdollFile": "$GAME_DATA/Character/seat_ragdoll.json"
+            }
+         },
+			"rotationSet": "PropY",
+			"sticky": "+Y-Y",
+			"physicsMaterial": "Metal",
+			"ratings": {
+				"density": 5,
+				"durability": 7,
+				"friction": 5,
+				"buoyancy": 7
+			},
+			"flammable": false
 		}
    ]
 }

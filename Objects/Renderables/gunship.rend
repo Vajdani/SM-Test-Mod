@@ -1,0 +1,25 @@
+{
+   "lodList" : [
+      {
+         "mesh" : "$CONTENT_DATA/Objects/Mesh/gunship.fbx",
+         "subMeshList" : [
+            {
+               "material" : "SkelAnimDifAsgNor",
+               "textureList" : [
+                  "$GAME_DATA/Textures/Default/default_dif.tga",
+                  "$GAME_DATA/Textures/Default/default_asg.tga",
+                  "$GAME_DATA/Textures/Default/default_nor.tga"
+               ]
+            },
+            {
+               "material" : "SkelAnimDifAsgNor",
+               "textureList" : [
+                  "$GAME_DATA/Objects/Textures/Blocks/blk_glass_dif.tga",
+                  "$GAME_DATA/Objects/Textures/Blocks/blk_glass_asg.tga",
+                  "$GAME_DATA/Objects/Textures/Blocks/blk_glass_nor.tga"
+               ]
+            }
+         ]
+      }
+   ]
+}
