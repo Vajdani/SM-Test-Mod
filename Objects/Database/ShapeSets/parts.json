@@ -1862,6 +1862,21 @@
             "buoyancy": 7
          },
          "flammable": false
+      },
+      {
+         "uuid": "7030b7b1-f0a1-4b24-bd0d-11d0a42185e6",
+         "name": "obj_marker",
+         "renderable": "$CONTENT_DATA/Objects/Renderables/marker.rend",
+         "color": "ffffff",
+         "box": {
+            "x": 1,
+            "y": 1,
+            "z": 1
+         },
+         "rotationSet": "PropY",
+         "sticky": "+Y-Y",
+         "physicsMaterial": "Metal",
+         "flammable": false
       }
    ]
 }

@@ -4,11 +4,9 @@
          "mesh" : "$CONTENT_DATA/Objects/Mesh/gunship_cockpit.fbx",
          "subMeshMap" : {
             "Base_Cockpit" : {
-               "material" : "DifAsgNor",
+               "material" : "Dif",
                "textureList" : [
-                  "$GAME_DATA/Textures/Default/default_dif.tga",
-                  "$GAME_DATA/Textures/Default/default_asg.tga",
-                  "$GAME_DATA/Textures/Default/default_nor.tga"
+                  "$GAME_DATA/Textures/transparent.tga"
                ]
             },
             "Glass_Cockpit" : {

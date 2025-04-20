@@ -22,47 +22,37 @@
          "mesh" : "$CONTENT_DATA/Objects/Mesh/gunship.fbx",
          "subMeshMap" : {
             "Base" : {
-               "material" : "SkelAnimDifAsgNor",
+               "material" : "SkelAnimDif",
                "textureList" : [
-                  "$GAME_DATA/Textures/Default/default_dif.tga",
-                  "$GAME_DATA/Textures/Default/default_asg.tga",
-                  "$GAME_DATA/Textures/Default/default_nor.tga"
+                  "$GAME_DATA/Textures/transparent.tga"
                ]
             },
             "engine1" : {
-               "material" : "SkelAnimDifAsgNor",
+               "material" : "SkelAnimDif",
                "textureList" : [
-                  "$GAME_DATA/Textures/Default/default_dif.tga",
-                  "$GAME_DATA/Textures/Default/default_asg.tga",
-                  "$GAME_DATA/Textures/Default/default_nor.tga"
+                  "$GAME_DATA/Textures/transparent.tga"
                ]
             },
             "engine2" : {
-               "material" : "SkelAnimDifAsgNor",
+               "material" : "SkelAnimDif",
                "textureList" : [
-                  "$GAME_DATA/Textures/Default/default_dif.tga",
-                  "$GAME_DATA/Textures/Default/default_asg.tga",
-                  "$GAME_DATA/Textures/Default/default_nor.tga"
+                  "$GAME_DATA/Textures/transparent.tga"
                ]
             },
             "engine3" : {
-               "material" : "SkelAnimDifAsgNor",
+               "material" : "SkelAnimDif",
                "textureList" : [
-                  "$GAME_DATA/Textures/Default/default_dif.tga",
-                  "$GAME_DATA/Textures/Default/default_asg.tga",
-                  "$GAME_DATA/Textures/Default/default_nor.tga"
+                  "$GAME_DATA/Textures/transparent.tga"
                ]
             },
             "engine4" : {
-               "material" : "SkelAnimDifAsgNor",
+               "material" : "SkelAnimDif",
                "textureList" : [
-                  "$GAME_DATA/Textures/Default/default_dif.tga",
-                  "$GAME_DATA/Textures/Default/default_asg.tga",
-                  "$GAME_DATA/Textures/Default/default_nor.tga"
+                  "$GAME_DATA/Textures/transparent.tga"
                ]
             },
             "Glass" : {
-               "material" : "SkelAnimDifAsgNor",
+               "material" : "SkelAnimDif",
                "textureList" : [
                   "$GAME_DATA/Objects/Textures/Blocks/blk_glass_dif.tga",
                   "$GAME_DATA/Objects/Textures/Blocks/blk_glass_asg.tga",
