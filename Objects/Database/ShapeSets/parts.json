@@ -1876,7 +1876,8 @@
          "rotationSet": "PropY",
          "sticky": "+Y-Y",
          "physicsMaterial": "Metal",
-         "flammable": false
+         "flammable": false,
+         "showInInventory": false
       }
    ]
 }
