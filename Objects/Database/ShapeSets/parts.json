@@ -1748,51 +1748,51 @@
          "flammable": false
       },
       {
-			"uuid": "24dc8901-b1ae-419c-a081-d563348bf50c",
-			"name": "obj_pneumatic_pump",
-			"renderable": "$SURVIVAL_DATA/Objects/Renderable/vacuumpipe/obj_vacuumpipe_pipepump.rend",
-			"color": "df7f01",
-			"hull": {
-				"x": 3,
-				"y": 4,
-				"z": 3,
-				"col": "$SURVIVAL_DATA/Objects/Collision/obj_pneumatic_pump.obj"
-			},
-			"scripted": {
-				"filename": "$CONTENT_DATA/Scripts/Vacuum.lua",
-				"classname": "Vacuum"
-			},
-			"rotationSet": "PropNegYmZX",
-			"sticky": "+Y+Z-Z+X-X",
-			"physicsMaterial": "Metal",
-			"ratings": {
-				"density": 5,
-				"durability": 7,
-				"friction": 5,
-				"buoyancy": 7
-			},
-			"flammable": false,
-			"pipe": {
-				"openings": [
-					{
-						"side": "+Y",
-						"x": 0,
-						"y": 2.0,
-						"z": 0
-					}
-				]
-			}
-		},
+         "uuid": "24dc8901-b1ae-419c-a081-d563348bf50c",
+         "name": "obj_pneumatic_pump",
+         "renderable": "$SURVIVAL_DATA/Objects/Renderable/vacuumpipe/obj_vacuumpipe_pipepump.rend",
+         "color": "df7f01",
+         "hull": {
+            "x": 3,
+            "y": 4,
+            "z": 3,
+            "col": "$SURVIVAL_DATA/Objects/Collision/obj_pneumatic_pump.obj"
+         },
+         "scripted": {
+            "filename": "$CONTENT_DATA/Scripts/Vacuum.lua",
+            "classname": "Vacuum"
+         },
+         "rotationSet": "PropNegYmZX",
+         "sticky": "+Y+Z-Z+X-X",
+         "physicsMaterial": "Metal",
+         "ratings": {
+            "density": 5,
+            "durability": 7,
+            "friction": 5,
+            "buoyancy": 7
+         },
+         "flammable": false,
+         "pipe": {
+            "openings": [
+               {
+                  "side": "+Y",
+                  "x": 0,
+                  "y": 2.0,
+                  "z": 0
+               }
+            ]
+         }
+      },
       {
-			"uuid": "9dd62b30-0244-41d8-a114-31322674f264",
-			"name": "obj_gunship",
-			"renderable": "$CONTENT_DATA/Objects/Renderables/gunship.rend",
-			"color": "ffffff",
-			"box": {
-				"x": 8,
-				"y": 6,
-				"z": 40
-			},
+         "uuid": "9dd62b30-0244-41d8-a114-31322674f264",
+         "name": "obj_gunship",
+         "renderable": "$CONTENT_DATA/Objects/Renderables/gunship.rend",
+         "color": "ffffff",
+         "box": {
+            "x": 8,
+            "y": 6,
+            "z": 40
+         },
          "scripted": {
             "classname": "Gunship",
             "data": {},
@@ -1803,8 +1803,8 @@
                      "name": "Hips",
                      "offset": {
                         "x": 0.0,
-                        "y": 0.550,
-                        "z": 0.90
+                        "y": -0.55,
+                        "z": 17.4
                      }
                   },
                   {
@@ -1812,8 +1812,8 @@
                      "name": "LeftForeArm",
                      "offset": {
                         "x": 1.0,
-                        "y": 0.50,
-                        "z": 1.50
+                        "y": -0.5,
+                        "z": 18
                      }
                   },
                   {
@@ -1821,47 +1821,47 @@
                      "name": "RightForeArm",
                      "offset": {
                         "x": -1.0,
-                        "y": 0.50,
-                        "z": 1.50
+                        "y": -0.5,
+                        "z": 18
                      }
                   }
                ],
                "enterAudio": "Toilet seated",
                "exitAudio": "Toilet unseated",
-               "ragdollFile": "$GAME_DATA/Character/seat_ragdoll.json"
+               "ragdollFile": "$GAME_DATA/Character/seat_ragdoll.json" // "$CONTENT_DATA/Objects/seat_ragdoll.json"
             }
          },
-			"rotationSet": "PropY",
-			"sticky": "+Y-Y",
-			"physicsMaterial": "Metal",
-			"ratings": {
-				"density": 5,
-				"durability": 7,
-				"friction": 5,
-				"buoyancy": 7
-			},
-			"flammable": false
-		},
+         "rotationSet": "PropY",
+         "sticky": "+Y-Y",
+         "physicsMaterial": "Metal",
+         "ratings": {
+            "durability": 10
+         },
+         "restrictions": {
+            "destructable": false
+         },
+         "flammable": false
+      },
       {
-			"uuid": "5e7a0724-a469-468a-9138-eea1b23c2387",
-			"name": "obj_gunship_cockpit",
-			"renderable": "$CONTENT_DATA/Objects/Renderables/gunship_effect.rend",
-			"color": "ffffff",
-			"box": {
-				"x": 8,
-				"y": 6,
-				"z": 40
-			},
-			"rotationSet": "PropY",
-			"sticky": "+Y-Y",
-			"physicsMaterial": "Metal",
-			"ratings": {
-				"density": 5,
-				"durability": 7,
-				"friction": 5,
-				"buoyancy": 7
-			},
-			"flammable": false
-		}
+         "uuid": "5e7a0724-a469-468a-9138-eea1b23c2387",
+         "name": "obj_gunship_cockpit",
+         "renderable": "$CONTENT_DATA/Objects/Renderables/gunship_effect.rend",
+         "color": "ffffff",
+         "box": {
+            "x": 8,
+            "y": 6,
+            "z": 40
+         },
+         "rotationSet": "PropY",
+         "sticky": "+Y-Y",
+         "physicsMaterial": "Metal",
+         "ratings": {
+            "density": 5,
+            "durability": 7,
+            "friction": 5,
+            "buoyancy": 7
+         },
+         "flammable": false
+      }
    ]
 }
