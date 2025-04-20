@@ -1841,6 +1841,27 @@
 				"buoyancy": 7
 			},
 			"flammable": false
+		},
+      {
+			"uuid": "5e7a0724-a469-468a-9138-eea1b23c2387",
+			"name": "obj_gunship_cockpit",
+			"renderable": "$CONTENT_DATA/Objects/Renderables/gunship_effect.rend",
+			"color": "ffffff",
+			"box": {
+				"x": 8,
+				"y": 6,
+				"z": 40
+			},
+			"rotationSet": "PropY",
+			"sticky": "+Y-Y",
+			"physicsMaterial": "Metal",
+			"ratings": {
+				"density": 5,
+				"durability": 7,
+				"friction": 5,
+				"buoyancy": 7
+			},
+			"flammable": false
 		}
    ]
 }

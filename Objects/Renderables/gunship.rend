@@ -1,9 +1,27 @@
 {
    "lodList" : [
       {
+         // "animationList" : [
+         //    {
+         //       "file" : "$CONTENT_DATA/Objects/Mesh/gunship.fbx",
+         //       "name" : "engine1_rotate"
+         //    },
+         //    {
+         //       "file" : "$CONTENT_DATA/Objects/Mesh/gunship.fbx",
+         //       "name" : "engine2_rotate"
+         //    },
+         //    {
+         //       "file" : "$CONTENT_DATA/Objects/Mesh/gunship.fbx",
+         //       "name" : "engine3_rotate"
+         //    },
+         //    {
+         //       "file" : "$CONTENT_DATA/Objects/Mesh/gunship.fbx",
+         //       "name" : "engine4_rotate"
+         //    }
+         // ],
          "mesh" : "$CONTENT_DATA/Objects/Mesh/gunship.fbx",
-         "subMeshList" : [
-            {
+         "subMeshMap" : {
+            "Base" : {
                "material" : "SkelAnimDifAsgNor",
                "textureList" : [
                   "$GAME_DATA/Textures/Default/default_dif.tga",
@@ -11,7 +29,39 @@
                   "$GAME_DATA/Textures/Default/default_nor.tga"
                ]
             },
-            {
+            "engine1" : {
+               "material" : "SkelAnimDifAsgNor",
+               "textureList" : [
+                  "$GAME_DATA/Textures/Default/default_dif.tga",
+                  "$GAME_DATA/Textures/Default/default_asg.tga",
+                  "$GAME_DATA/Textures/Default/default_nor.tga"
+               ]
+            },
+            "engine2" : {
+               "material" : "SkelAnimDifAsgNor",
+               "textureList" : [
+                  "$GAME_DATA/Textures/Default/default_dif.tga",
+                  "$GAME_DATA/Textures/Default/default_asg.tga",
+                  "$GAME_DATA/Textures/Default/default_nor.tga"
+               ]
+            },
+            "engine3" : {
+               "material" : "SkelAnimDifAsgNor",
+               "textureList" : [
+                  "$GAME_DATA/Textures/Default/default_dif.tga",
+                  "$GAME_DATA/Textures/Default/default_asg.tga",
+                  "$GAME_DATA/Textures/Default/default_nor.tga"
+               ]
+            },
+            "engine4" : {
+               "material" : "SkelAnimDifAsgNor",
+               "textureList" : [
+                  "$GAME_DATA/Textures/Default/default_dif.tga",
+                  "$GAME_DATA/Textures/Default/default_asg.tga",
+                  "$GAME_DATA/Textures/Default/default_nor.tga"
+               ]
+            },
+            "Glass" : {
                "material" : "SkelAnimDifAsgNor",
                "textureList" : [
                   "$GAME_DATA/Objects/Textures/Blocks/blk_glass_dif.tga",
@@ -19,7 +69,7 @@
                   "$GAME_DATA/Objects/Textures/Blocks/blk_glass_nor.tga"
                ]
             }
-         ]
+         }
       }
    ]
 }

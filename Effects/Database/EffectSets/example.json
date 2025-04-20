@@ -55,5 +55,57 @@
 				"type": "luaEvent"
 			}
 		]
+	},
+	"GunshipTurret - Shoot": {
+		"effectList": [
+			{
+				"delay": 0.0,
+				"duration": 0.330,
+				"name": "event:/char/npc/bots/enemies/farmbot/farmbot_shoot",
+				"type": "audio"
+			},
+			{
+				"attached": false,
+				"delay": 0.0,
+				"name": "p_spudgun_muzzel_spinner",
+				"offset": [
+					0.0,
+					0.0,
+					0.0
+				],
+				"type": "particle"
+			},
+			{
+				"delay": 0.0,
+				"duration": 0.40,
+				"name": "",
+				"offset": [
+					0.0,
+					0.0,
+					0.0
+				],
+				"parameters": [
+					"shakeStrength",
+					"shakeRadius"
+				],
+				"type": "cameraShake"
+			}
+		],
+		"parameterList": {
+			"shakeRadius": 5.0,
+			"shakeStrength": 0.005
+		}
+	},
+	"Gunship - Cockpit":
+	{
+		"effectList":
+		[
+			{
+				"type": "renderable",
+				"name": "$CONTENT_DATA/Objects/Renderables/gunship_effect.rend",
+				"offset": { "x": 0.0, "y": 0.0, "z": 0.0 },
+				"delay": 0.0
+			}
+		]
 	}
 }
