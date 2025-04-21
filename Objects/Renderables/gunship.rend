@@ -54,9 +54,7 @@
             "Glass" : {
                "material" : "SkelAnimDif",
                "textureList" : [
-                  "$GAME_DATA/Objects/Textures/Blocks/blk_glass_dif.tga",
-                  "$GAME_DATA/Objects/Textures/Blocks/blk_glass_asg.tga",
-                  "$GAME_DATA/Objects/Textures/Blocks/blk_glass_nor.tga"
+                  "$GAME_DATA/Objects/Textures/Blocks/blk_glass_dif.tga"
                ]
             }
          }

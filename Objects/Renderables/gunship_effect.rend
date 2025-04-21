@@ -12,9 +12,9 @@
             "Glass_Cockpit" : {
                "material" : "Glass",
                "textureList" : [
-                  "$GAME_DATA/Objects/Textures/Blocks/blk_glass_dif.tga",
-                  "$GAME_DATA/Objects/Textures/Blocks/blk_glass_asg.tga",
-                  "$GAME_DATA/Objects/Textures/Blocks/blk_glass_nor.tga"
+                  "$GAME_DATA/Objects/Textures/characterobject/obj_characterobject_farmbotpackage_glass_dif.tga",
+						"$GAME_DATA/Objects/Textures/characterobject/obj_characterobject_farmbotpackage_glass_asg.tga",
+						"$GAME_DATA/Textures/Materialtextures/normal_nor.tga"
                ]
             }
          }

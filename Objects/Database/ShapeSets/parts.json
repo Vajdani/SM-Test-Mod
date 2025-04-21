@@ -1861,7 +1861,8 @@
             "friction": 5,
             "buoyancy": 7
          },
-         "flammable": false
+         "flammable": false,
+         "showInInventory": false
       },
       {
          "uuid": "7030b7b1-f0a1-4b24-bd0d-11d0a42185e6",

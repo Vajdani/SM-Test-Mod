@@ -3,6 +3,15 @@ local getRotation = sm.vec3.getRotation
 local getGravity = sm.physics.getGravity
 local angleAxis = sm.quat.angleAxis
 
+local function CalculateRightVector(vector)
+    local yaw = math.atan2(vector.y, vector.x) - math.pi / 2
+    return vec3(math.cos(yaw), math.sin(yaw), 0)
+end
+
+local function BoolToNum(bool)
+    return bool and 1 or 0
+end
+
 local VEC3_UP = vec3(0,0,1)
 local VEC3_ZERO = sm.vec3.zero()
 
@@ -52,6 +61,12 @@ end
 
 ---@class Gunship : ShapeClass
 Gunship = class()
+Gunship.maxParentCount = 0
+Gunship.maxChildCount = 7
+Gunship.connectionInput = sm.interactable.connectionType.none
+Gunship.connectionOutput = sm.interactable.connectionType.seated
+Gunship.colorNormal = sm.color.new( 0xcb0a00ff )
+Gunship.colorHighlight = sm.color.new( 0xee0a00ff )
 
 local moveSpeed = 25
 local boostSpeed = 100
@@ -94,11 +109,15 @@ function Gunship:server_onFixedUpdate(dt)
     local char = self.interactable:getSeatCharacter()
     if not char then return end
 
-    local up = self.sv_actions[21] and 1 or (self.sv_actions[20] and -1 or 0)
-    local fwd = self.sv_actions[3] and 1 or (self.sv_actions[4] and -1 or 0)
-    local right = self.sv_actions[1] and 1 or (self.sv_actions[2] and -1 or 0)
+    local up = BoolToNum(self.sv_actions[21]) - BoolToNum(self.sv_actions[20])
+    local fwd = BoolToNum(self.sv_actions[3]) - BoolToNum(self.sv_actions[4])
+    local right = BoolToNum(self.sv_actions[1]) - BoolToNum(self.sv_actions[2])
 
-	local mass = self.shape.mass
+	local mass = 0
+    for k, v in pairs(self.shape.body:getCreationBodies()) do
+        mass = mass + v.mass
+    end
+
     local direction = char.direction
 	local force = vec3(0, 0, getGravity() + 0.45) --result.pointWorld + vec3(0,0,5) - pos
 
@@ -116,12 +135,12 @@ function Gunship:server_onFixedUpdate(dt)
 	sm.physics.applyImpulse(self.shape, force * dt * mass, true)
 
     local torque = -self.shape.body.angularVelocity * 0.3 - direction * right * 0.15
-    if self.sv_actions[18] then
-        torque = torque + calculateRightVector(self.aimDirection):cross(self.shape.right)
+    if self.sv_actions[18] or self.forceStatic then
+        torque = torque + CalculateRightVector(self.aimDirection):cross(self.shape.right)
     else
         self.aimDirection = direction
 
-        local steer = calculateRightVector(direction):cross(self.shape.right)
+        local steer = CalculateRightVector(direction):cross(self.shape.right)
         local length = steer:length()
         if length > turnLimit then
             steer = steer * (turnLimit / length)
@@ -184,6 +203,14 @@ function Gunship:sv_fireRocket(args)
     sm.projectile.projectileAttack(projectile_explosivetape, 100, firePos + fireDir, fireDir * 200, args.player)
 end
 
+function Gunship:sv_onRocketFire()
+    self.forceStatic = true
+end
+
+function Gunship:sv_onRocketExplode()
+    self.forceStatic = false
+end
+
 
 
 function Gunship:client_onCreate()
@@ -200,7 +227,7 @@ function Gunship:client_onCreate()
 
     self.thrusters = {}
     for i = 1, 4 do
-        local thruster = sm.effect.createEffect("Thruster - Level 5", self.interactable)--, "jnt_engine"..i.."_effect")
+        local thruster = sm.effect.createEffect("Thruster - Level 5", self.interactable, "jnt_engine"..i.."_effect")
         thruster:setOffsetRotation(angleAxis(math.rad(90), vec3(1,0,0)))
         table.insert(self.thrusters, thruster)
     end
@@ -217,6 +244,8 @@ function Gunship:client_onCreate()
     end
 
     self.engine = sm.effect.createEffect("GasEngine - Level 4", self.interactable)
+
+    self.gui = sm.gui.createSeatGui()
 end
 
 function Gunship:client_onDestroy()
@@ -234,6 +263,8 @@ function Gunship:client_onDestroy()
     for i = 1, 2 do
         self.tracers[i]:destroy()
     end
+
+    self.gui:destroy()
 end
 
 local rocketOffset = {
@@ -246,7 +277,7 @@ local turretOffset = {
 }
 function Gunship:client_onUpdate(dt)
     self.cockpit:setParameter("color", self.shape.color)
-    self.interactable:setSubMeshVisible("Glass", not self.seatedTick)
+    self.interactable:setSubMeshVisible("Glass", not self.seatedTick or self.controllingRocket)
 
     -- self.interactable:setAnimEnabled("engine1_rotate", true)
     -- self.interactable:setAnimEnabled("engine2_rotate", true)
@@ -291,11 +322,13 @@ function Gunship:client_onUpdate(dt)
         self.engine:stop()
     end
 
-    if self.seatedTick then
+    if self.seatedTick and not self.controllingRocket then
         if not self.cockpit:isPlaying() then
             self.cockpit:start()
             self.aimPoint:start()
         end
+
+        self:cl_updateSeatGui()
     else
         if self.cockpit:isPlaying() then
             self.cockpit:stop()
@@ -367,9 +400,15 @@ function Gunship:client_onUpdate(dt)
 end
 
 function Gunship:client_onFixedUpdate()
+    if #self.interactable:getChildren(2^14) == 0 then
+        self.controllingRocket = false
+        self.network:sendToServer("sv_onRocketExplode")
+    end
+
     if self.seatedTick and sm.game.getServerTick() - self.seatedTick > 5 and not self.interactable:getSeatCharacter() then
         self.seatedTick = nil
         sm.camera.setCameraState(0)
+        self.gui:close()
     end
 end
 
@@ -380,30 +419,114 @@ end
 function Gunship:client_onInteract(char, state)
     if not state then return end
 
+    sm.localPlayer.setLockedControls(true)
+    sm.localPlayer.setDirection(self.shape.up)
+    sm.event.sendToInteractable(self.interactable, "cl_seat")
+end
+
+function Gunship:cl_seat()
+    sm.localPlayer.setLockedControls(false)
     sm.camera.setCameraState(2)
-    self.interactable:setSeatCharacter(char)
+    self.gui:open()
+    self.interactable:setSeatCharacter(sm.localPlayer.getPlayer().character)
     self.seatedTick = sm.game.getServerTick()
 end
 
 function Gunship:client_onAction(action, state)
+    if self:cl_checkRocketInput(action, state) then
+        return true
+    end
+
     if actions[action] then
         self.cl_actions[action] = state
         self.network:sendToServer("sv_updateAction", { action, state })
     end
 
-    if not state then return true end
+    if state then
+        if action == 15 then
+            sm.camera.setCameraState(0)
+            self.gui:close()
+            self.interactable:setSeatCharacter(sm.localPlayer.getPlayer().character)
+            self.seatedTick = nil
+        elseif action == 6 then
+            self.tracerEnabled = not self.tracerEnabled
+        elseif action == 7 then
+            self.tracingTurret = not self.tracingTurret
+        end
+    end
 
-    if action == 15 then
-        sm.camera.setCameraState(0)
-        self.interactable:setSeatCharacter(sm.localPlayer.getPlayer().character)
-        self.seatedTick = nil
-    elseif action == 6 then
-        self.tracerEnabled = not self.tracerEnabled
-    elseif action == 7 then
-        self.tracingTurret = not self.tracingTurret
+    if action >= 8 and action <= 14 then
+        if state then
+			self.interactable:pressSeatInteractable( action - 8 )
+        else
+			self.interactable:releaseSeatInteractable( action - 8 )
+        end
     end
 
     return true
+end
+
+local rocketIcon, tracerIcon, turretIcon =
+    tostring(obj_interactive_propanetank_small),
+    tostring(tool_connect),
+    tostring(obj_interactive_mountablespudgun)
+local mountedCannonUUID = "0af5379e-29e8-4eb3-b965-6b3993c8f1df"
+local MountedCannonGun = {
+    ammoTypes = {
+        "24d5e812-3902-4ac3-b214-a0c924a5c40f",
+        -- "4c69fa44-dd0d-42ce-9892-e61d13922bd2",
+        "e36b172c-ae2d-4697-af44-8041d9cbde0e",
+        "242b84e4-c008-4780-a2dd-abacea821637"
+    },
+    overrideAmmoTypes = {
+        "47b43e6e-280d-497e-9896-a3af721d89d2",
+        "24001201-40dd-4950-b99f-17d878a9e07b",
+        "8d3b98de-c981-4f05-abfe-d22ee4781d33",
+    }
+}
+function Gunship:cl_updateSeatGui()
+    self.gui:setGridItem( "ButtonGrid", 0, {
+        itemId = rocketIcon,
+        active = self.cl_actions[5]
+    })
+
+    self.gui:setGridItem( "ButtonGrid", 1, {
+        itemId = tracerIcon,
+        active = self.tracerEnabled
+    })
+
+    if self.tracingTurret then
+        self.gui:setGridItem( "ButtonGrid", 2, {
+            itemId = turretIcon,
+            active = self.cl_actions[19]
+        })
+    else
+        self.gui:setGridItem( "ButtonGrid", 2, {
+            itemId = rocketIcon,
+            active = self.cl_actions[5]
+        })
+    end
+
+    local children = self.interactable:getChildren()
+    for i = 1, self.maxChildCount do
+        local int = children[i]
+        if int then
+            local uuid = tostring(int.shape.uuid)
+            if uuid == mountedCannonUUID then
+                self.gui:setGridItem( "ButtonGrid", 2 + i, {
+                    itemId = sm.GetTurretAmmoData(MountedCannonGun, sm.GetInteractableClientPublicData(int).ammoType),
+                    active = int.active
+                })
+            else
+                self.gui:setGridItem( "ButtonGrid", 2 + i, {
+                    itemId = uuid,
+                    active = int.active
+                })
+            end
+        else
+            self.gui:setGridItem( "ButtonGrid", 2 + i, nil)
+        end
+    end
 end
 
 function Gunship:cl_updateAction(args)
@@ -419,10 +542,48 @@ function Gunship:cl_setTracerColour(colour)
     self.aimPoint:setParameter("color", colour)
 end
 
+function Gunship:cl_checkRocketInput(action, state)
+	local cannon = self.interactable:getChildren(2^14)[1]
+	if cannon and sm.GetInteractableClientPublicData(cannon --[[@as Interactable]]).hasRocket then
+		self.network:sendToServer("sv_onRocketInput", { cannon = cannon, action = action, state = state })
+
+		if state then
+			return true
+		end
+	end
+
+	return false
+end
+
+function Gunship:sv_onRocketInput(data)
+	sm.event.sendToInteractable(data.cannon, "sv_onRocketInput", { action = data.action, state = data.state })
+end
+
+function Gunship:cl_onRocketFire()
+    self.controllingRocket = true
+    self.network:sendToServer("sv_onRocketFire")
+	self.gui:close()
+end
+
+function Gunship:cl_onRocketExplode()
+    self.controllingRocket = false
+    self.network:sendToServer("sv_onRocketExplode")
+
+    self.gui:open()
+    sm.localPlayer.setLockedControls(true)
+    sm.localPlayer.setDirection(self.shape.up)
+    sm.event.sendToInteractable(self.interactable, "cl_onRocketExplodeEnd")
+end
+
+function Gunship:cl_onRocketExplodeEnd()
+    sm.localPlayer.setLockedControls(false)
+end
+
+
 
 function Gunship:GetCameraPosition(dt)
     -- return self.interactable:getWorldBonePosition("jnt_camera")
-    return self.shape:getInterpolatedWorldPosition() + self.shape.velocity * (dt or (1/40)) + self.shape:getInterpolatedUp() * 4
+    return self.shape:getInterpolatedWorldPosition() + self.shape.velocity * (dt or (1/40)) + self.shape:getInterpolatedUp() * 4 + self.shape:getInterpolatedAt() * 0.25
     -- return self.shape:getInterpolatedWorldPosition() + self.shape.velocity * (dt or (1/40)) - self.shape:getInterpolatedUp() * 10 + self.shape:getInterpolatedAt() * 2
 end
 
@@ -444,9 +605,4 @@ function Gunship:GetRocketFireData(start)
     end
 
     return firePos, fireDir, targetPos
-end
-
-function calculateRightVector(vector)
-    local yaw = math.atan2(vector.y, vector.x) - math.pi / 2
-    return vec3(math.cos(yaw), math.sin(yaw), 0)
 end
