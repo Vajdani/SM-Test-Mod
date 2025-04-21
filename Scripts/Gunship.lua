@@ -103,6 +103,7 @@ function Gunship:server_onCreate()
     self.sv_mass = self:GetBodyMass()
 
     self.sv_health = maxHealth
+    self.network:setClientData(self.sv_health, 1)
 end
 
 function Gunship:server_onProjectile(position, airTime, velocity, projectileName, shooter, damage, customData, normal, uuid)
@@ -152,7 +153,7 @@ function Gunship:server_onFixedUpdate(dt)
 
 	sm.physics.applyImpulse(self.shape, force * dt * self.sv_mass, true)
 
-    local torque = -body.angularVelocity * 0.3 - direction * (BoolToNum(self.sv_actions[1]) - BoolToNum(self.sv_actions[2])) * 0.15
+    local torque = -body.angularVelocity * 0.3 - self.shape.up * (BoolToNum(self.sv_actions[1]) - BoolToNum(self.sv_actions[2])) * 0.15
     if self.sv_actions[18] or self.forceStatic then
         torque = torque + CalculateRightVector(self.aimDirection):cross(shape.right)
     else
@@ -220,6 +221,8 @@ function Gunship:sv_takeDamage(damage)
         -- end
 
         sm.physics.explode(pos, 9, 40, 80, 200, "PropaneTank - ExplosionBig")
+    else
+        self.network:setClientData(self.sv_health, 1)
     end
 end
 
@@ -282,7 +285,20 @@ function Gunship:client_onCreate()
 
     self.engine = sm.effect.createEffect("GasEngine - Level 4", self.interactable, "jnt_camera")
 
+    self.wgui = {}
+    local healthbar = sm.effect.createEffect( "ShapeRenderable" )
+    healthbar:setParameter("uuid", sm.uuid.new("7030b7b1-f0a1-4b24-bd0d-11d0a42185e6"))
+    healthbar:setScale(vec3(0.25,0.25,0.25))
+    self.wgui.healthbar = healthbar
+
+    local healthbarbg = sm.effect.createEffect( "ShapeRenderable" )
+    healthbarbg:setParameter("uuid", sm.uuid.new("7030b7b1-f0a1-4b24-bd0d-11d0a42185e6"))
+    healthbarbg:setScale(vec3(0.25,0.25,0.25))
+    self.wgui.healthbarbg = healthbarbg
+
     self.gui = sm.gui.createSeatGui()
+
+    self.cl_health = 0
 end
 
 function Gunship:client_onDestroy()
@@ -302,6 +318,12 @@ function Gunship:client_onDestroy()
     end
 
     self.gui:destroy()
+end
+
+function Gunship:client_onClientDataUpdate(data, channel)
+    if channel == 1 then
+        self.cl_health = data
+    end
 end
 
 local rocketOffset = {
@@ -363,6 +385,10 @@ function Gunship:client_onUpdate(dt)
         if not self.cockpit:isPlaying() then
             self.cockpit:start()
             self.aimPoint:start()
+
+            for k, v in pairs(self.wgui) do
+                v:start()
+            end
         end
 
         self:cl_updateSeatGui()
@@ -374,6 +400,10 @@ function Gunship:client_onUpdate(dt)
             for i = 1, 2 do
                 self.tracers[i]:stop()
             end
+
+            for k, v in pairs(self.wgui) do
+                v:stop()
+            end
         end
 
         return
@@ -382,6 +412,8 @@ function Gunship:client_onUpdate(dt)
     local camPos = self:GetCameraPosition(dt)
     local char = sm.localPlayer.getPlayer().character
     local charDir = char:getSmoothViewDirection()
+
+    self:cl_updateCockpitUI(dt)
 
     sm.camera.setCameraState(2)
     sm.camera.setPosition(camPos)
@@ -564,6 +596,71 @@ function Gunship:cl_updateSeatGui()
             self.gui:setGridItem( "ButtonGrid", 2 + i, nil)
         end
     end
+end
+
+local function dot(a, b)
+    return a.x*b.x + a.y*b.y + a.z*b.z + a.w*b.w;
+end
+
+local function normalise(a)
+    local l = 1.0 / math.sqrt(dot(a, a));
+    return sm.quat.new(l*a.x, l*a.y, l*a.z, l*a.w);
+end
+
+oldQuatSLerp = oldQuatSLerp or sm.quat.slerp
+function sm.quat.slerp(q1, q2, t)
+    return normalise(oldQuatSLerp(q1, q2, t))
+end
+
+function Gunship:cl_updateCockpitUI(dt)
+    local shapePos = self.shape:getInterpolatedWorldPosition() + self.shape.velocity * dt
+    local up = self.shape:getInterpolatedUp()
+    local at = self.shape:getInterpolatedAt()
+    local right = self.shape:getInterpolatedRight()
+
+    -- self.quat = sm.quat.slerp(self.quat or self.shape.worldRotation, self.shape.worldRotation, dt * 5)
+    local shapeRot = self.shape.worldRotation
+
+    -- local angVel = self.shape.body.angularVelocity
+    -- local angVelLength = angVel:length()
+    -- if angVelLength > 0 then
+    --     angVelLength = angVelLength * dt
+    --     local angVelDir = angVel:normalize()
+    --     up = angleAxis(angVelLength, angVelDir) * up
+    --     at = angleAxis(angVelLength, angVelDir) * at
+    --     right = angleAxis(angVelLength, angVelDir) * right
+    -- end
+
+    -- local delta_rotation = self.shape.body.angularVelocity * dt
+    -- local delta_theta = delta_rotation:length()
+    -- local delta_rotation_norm = delta_rotation:safeNormalize(VEC3_ZERO)
+    -- local S, C = math.sin(delta_theta * 0.5), math.cos(delta_theta * 0.5)
+    -- local delta_quat = sm.quat.new(delta_rotation_norm.x * S, delta_rotation_norm.y * S, delta_rotation_norm.z * S, C)
+    -- shapeRot = normalise(delta_quat * shapeRot)
+
+    -- local up, at, right = shapeRot * VEC3_UP, shapeRot * vec3(0,1,0), shapeRot * vec3(1,0,0)
+
+    local healthPercent = math.max(self.cl_health / maxHealth, 0)
+    local baseHealthScale = 0.25 * 1.75
+    local healthbar, healthbarbg = self.wgui.healthbar, self.wgui.healthbarbg
+
+    healthbar:setPosition(shapePos + up * 4.4 + right * baseHealthScale * (1 - healthPercent) * 0.5 + at * 0.1)
+    healthbar:setRotation(shapeRot)
+    healthbar:setScale(vec3(baseHealthScale * healthPercent - 0.006, 0.02, 0))
+
+    healthbarbg:setPosition(shapePos + up * 4.401 + at * 0.1)
+    healthbarbg:setRotation(shapeRot)
+    healthbarbg:setScale(vec3(baseHealthScale, 0.025, 0))
+
+    if self.cl_health > maxHealth * 0.75 then
+        healthbar:setParameter("color", sm.color.new(1,1,1))
+    elseif self.cl_health > maxHealth * 0.25 then
+        healthbar:setParameter("color", sm.color.new(1,1,0))
+    else
+        healthbar:setParameter("color", red)
+    end
+
+    healthbarbg:setParameter("color", sm.color.new(0,0,0))
 end
 
 function Gunship:cl_updateAction(args)
