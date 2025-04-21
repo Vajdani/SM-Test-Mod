@@ -68,6 +68,7 @@ Gunship.connectionOutput = sm.interactable.connectionType.seated
 Gunship.colorNormal = sm.color.new( 0xcb0a00ff )
 Gunship.colorHighlight = sm.color.new( 0xee0a00ff )
 
+local maxHealth = 1000
 local moveSpeed = 25
 local boostSpeed = 100
 local fireRate = 1/4
@@ -95,67 +96,82 @@ local red = sm.color.new(1,0,0)
 function Gunship:server_onCreate()
     self.sv_actions = {}
 
-    self.fireTimer = 0
-    self.rocketTimer = 0
-    self.rocketCounter = 0
+    self.sv_fireTimer = 0
+    self.sv_rocketTimer = 0
+    self.sv_rocketCounter = 0
+
+    self.sv_mass = self:GetBodyMass()
+
+    self.sv_health = maxHealth
 end
 
-function Gunship:sv_updateAction(args)
-    self.sv_actions[args[1]] = args[2]
-    self.network:sendToClients("cl_updateAction", args)
+function Gunship:server_onProjectile(position, airTime, velocity, projectileName, shooter, damage, customData, normal, uuid)
+    self:sv_takeDamage(damage)
+end
+
+function Gunship:server_onMelee(position, attacker, damage, power, direction, normal)
+    self:sv_takeDamage(damage)
+end
+
+function Gunship:server_onExplosion(center, destructionLevel)
+    self:sv_takeDamage(destructionLevel * 10)
+end
+
+function Gunship:server_onCollision(other, position, selfPointVelocity, otherPointVelocity, normal)
+    if isAnyOf(other, self.shape.body:getCreationBodies()) then return end
+
+    local damage = round((selfPointVelocity + otherPointVelocity):length())
+    if damage >= 20 then
+        self:sv_takeDamage(damage)
+    end
 end
 
 function Gunship:server_onFixedUpdate(dt)
     local char = self.interactable:getSeatCharacter()
     if not char then return end
 
-    local up = BoolToNum(self.sv_actions[21]) - BoolToNum(self.sv_actions[20])
-    local fwd = BoolToNum(self.sv_actions[3]) - BoolToNum(self.sv_actions[4])
-    local right = BoolToNum(self.sv_actions[1]) - BoolToNum(self.sv_actions[2])
-
-	local mass = 0
-    for k, v in pairs(self.shape.body:getCreationBodies()) do
-        mass = mass + v.mass
+    local shape, body = self.shape, self.shape.body
+    local velocity = shape.velocity
+	if body:hasChanged(sm.game.getServerTick() - 1) then
+        self.sv_mass = self:GetBodyMass()
     end
 
     local direction = char.direction
-	local force = vec3(0, 0, getGravity() + 0.45) --result.pointWorld + vec3(0,0,5) - pos
+	local force =
+        vec3(0, 0, getGravity() + 0.45) +
+        -- self:GetMoveDir() * moveSpeed -
+        self:GetMoveDir() * (self.sv_actions[16] and boostSpeed or moveSpeed) -
+        velocity * 0.5
 
-    -- local groundCheck = self.shape.body:getWorldAabb()
-    -- local hit, result = sm.physics.raycast(groundCheck, groundCheck - VEC3_UP * 5, self.shape.body, rayFilter)
+    -- local groundCheck = body:getWorldAabb()
+    -- local hit, result = sm.physics.raycast(groundCheck, groundCheck - VEC3_UP * 5, body, rayFilter)
     -- if hit then
     --     force = force + VEC3_UP * moveSpeed
     --     -- up = 1
     -- end
 
-    force = force + (self.shape.at * up + self.shape.up * fwd + self.shape.right * right):safeNormalize(VEC3_ZERO) * (self.sv_actions[16] and boostSpeed or moveSpeed)
-    force = force - self.shape.velocity * 0.5
+	sm.physics.applyImpulse(self.shape, force * dt * self.sv_mass, true)
 
-	-- sm.physics.applyImpulse(self.shape, ((force  * 2) - ( self.shape.velocity--[[@as Vec3]] * 0.3 )) * mass, true)
-	sm.physics.applyImpulse(self.shape, force * dt * mass, true)
-
-    local torque = -self.shape.body.angularVelocity * 0.3 - direction * right * 0.15
+    local torque = -body.angularVelocity * 0.3 - direction * (BoolToNum(self.sv_actions[1]) - BoolToNum(self.sv_actions[2])) * 0.15
     if self.sv_actions[18] or self.forceStatic then
-        torque = torque + CalculateRightVector(self.aimDirection):cross(self.shape.right)
+        torque = torque + CalculateRightVector(self.aimDirection):cross(shape.right)
     else
         self.aimDirection = direction
 
-        local steer = CalculateRightVector(direction):cross(self.shape.right)
+        local steer = CalculateRightVector(direction):cross(shape.right)
         local length = steer:length()
         if length > turnLimit then
             steer = steer * (turnLimit / length)
         end
 
-        torque = torque + self.shape.up:cross(direction) + steer
+        torque = torque + shape.up:cross(direction) + steer
     end
+    sm.physics.applyTorque(body, torque * self.sv_mass, true)
 
-    -- sm.physics.applyTorque(self.shape.body, torque * dt * mass, true)
-    sm.physics.applyTorque(self.shape.body, torque * mass, true)
-
-    self.fireTimer = math.max(self.fireTimer - dt, 0)
-    self.rocketTimer = math.max((self.rocketTimer or 0) - dt, 0)
-    if self.sv_actions[19] and self.fireTimer <= 0 then
-        local firePos = self.interactable:getWorldBonePosition("jnt_turret_firepos") + self.shape.velocity * (1/40)
+    self.sv_fireTimer = math.max(self.sv_fireTimer - dt, 0)
+    self.sv_rocketTimer = math.max(self.sv_rocketTimer - dt, 0)
+    if self.sv_actions[19] and self.sv_fireTimer <= 0 then
+        local firePos = self.interactable:getWorldBonePosition("jnt_turret_firepos") + velocity * (1/40)
         local camPos = self:GetCameraPosition()
         local targetPos = camPos + direction * 100
         local hit, result = sm.physics.raycast(camPos, targetPos, self.shape, rayFilter)
@@ -168,28 +184,48 @@ function Gunship:server_onFixedUpdate(dt)
         if low then
             fireDir = low:normalize()
         else
-            fireDir = direction --(targetPos - firePos):normalize()
+            fireDir = direction
         end
 
-        -- fireDir.z = min(fireDir.z, self.shape.up.z)
-
-        -- sm.effect.playEffect("GunshipTurret - Shoot", firePos, nil, getRotation(VEC3_UP, fireDir))
-        self.network:sendToClients("cl_shoot", "jnt_turret_firepos")
+        self.network:sendToClients("cl_shoot", 0)
         sm.projectile.projectileAttack(projectile_tape, 100, firePos, fireDir * 200, char:getPlayer())
 
-        self.fireTimer = fireRate
+        self.sv_fireTimer = fireRate
     end
 
-    if self.sv_actions[5] and self.rocketTimer <= 0 then
-        self.rocketCounter = self.rocketCounter % 2 + 1
+    if self.sv_actions[5] and self.sv_rocketTimer <= 0 then
+        self.sv_rocketCounter = self.sv_rocketCounter % 2 + 1
         local player = char:getPlayer()
         self:sv_fireRocket({ delay = 0, player = player })
         for i = 1, rocketBurst - 1 do
             sm.event.sendToInteractable(self.interactable, "sv_fireRocket", { delay = i * rocketBurstTicks, player = player })
         end
 
-        self.rocketTimer = rocketRate
+        self.sv_rocketTimer = rocketRate
     end
+end
+
+function Gunship:sv_takeDamage(damage)
+    self.sv_health = self.sv_health - damage
+    print(("[Gunship %s] Recieved %s damage (%s/%s)"):format(self.shape.id, damage, self.sv_health, maxHealth))
+    if self.sv_health <= 0 then
+        print(self.shape, "exploded")
+
+        -- self.shape.body:setDestructable(true)
+        local pos = self.shape.worldPosition
+        -- local player = self.interactable:getSeatCharacter():getPlayer()
+        self.shape:destroyShape()
+        -- for i = 1, 100 do
+        --     sm.projectile.projectileAttack(projectile_explosivetape, 100, pos, vec3(-1 + math.random() * 2, -1 + math.random() * 2, -1 + math.random() * 2):normalize() * 10, player)
+        -- end
+
+        sm.physics.explode(pos, 9, 40, 80, 200, "PropaneTank - ExplosionBig")
+    end
+end
+
+function Gunship:sv_updateAction(args)
+    self.sv_actions[args[1]] = args[2]
+    self.network:sendToClients("cl_updateAction", args)
 end
 
 function Gunship:sv_fireRocket(args)
@@ -199,9 +235,8 @@ function Gunship:sv_fireRocket(args)
         return
     end
 
-    local firePos, fireDir = self:GetRocketFireData(self.interactable:getWorldBonePosition("jnt_rocket"..self.rocketCounter.."_firepos"))
-    -- sm.effect.playEffect("GunshipTurret - Shoot", firePos, nil, getRotation(VEC3_UP, fireDir))
-    self.network:sendToClients("cl_shoot", "jnt_rocket"..self.rocketCounter.."_firepos")
+    local firePos, fireDir = self:GetRocketFireData(self.interactable:getWorldBonePosition("jnt_rocket"..self.sv_rocketCounter.."_firepos"))
+    self.network:sendToClients("cl_shoot", self.sv_rocketCounter)
     sm.projectile.projectileAttack(projectile_explosivetape, 100, firePos + fireDir, fireDir * 200, args.player)
 end
 
@@ -309,7 +344,7 @@ function Gunship:client_onUpdate(dt)
 
         self.engine:setParameter("gas", 1)
 
-        local moving = (self.cl_actions[21] or self.cl_actions[20] or self.cl_actions[3] or self.cl_actions[4] or self.cl_actions[1] or self.cl_actions[2]) and 1 or 0
+        local moving = self:GetMoveDir():length2()
         if self.cl_actions[16] and moving == 1 then
             self.engine:setParameter("rpm", 1)
             self.engine:setParameter("load", 0)
@@ -402,7 +437,7 @@ function Gunship:client_onUpdate(dt)
 end
 
 function Gunship:client_onFixedUpdate()
-    if #self.interactable:getChildren(2^14) == 0 then
+    if #self.interactable:getChildren(2^14) == 0 and self.controllingRocket then
         self.controllingRocket = false
         self.network:sendToServer("sv_onRocketExplode")
     end
@@ -471,7 +506,7 @@ end
 local rocketIcon, tracerIcon, turretIcon =
     tostring(obj_interactive_propanetank_small),
     tostring(tool_connect),
-    tostring(obj_interactive_mountablespudgun)
+    tostring(obj_interactive_mountablespudgun_creative)
 local mountedCannonUUID = "0af5379e-29e8-4eb3-b965-6b3993c8f1df"
 local MountedCannonGun = {
     ammoTypes = {
@@ -581,8 +616,23 @@ function Gunship:cl_onRocketExplodeEnd()
     sm.localPlayer.setLockedControls(false)
 end
 
-function Gunship:cl_shoot(bone)
-    sm.effect.playHostedEffect("GunshipTurret - Shoot", self.interactable, bone, { offsetRotation = angleAxis(math.rad(-90), vec3(1,0,0)) })
+local shootEffects = {
+    [0] = {
+        "jnt_turret_firepos",
+        "GunshipTurret - Shoot"
+    },
+    [1] = {
+        "jnt_rocket1_firepos",
+        "GunshipRockets - Shoot"
+    },
+    [2] = {
+        "jnt_rocket2_firepos",
+        "GunshipRockets - Shoot"
+    }
+}
+function Gunship:cl_shoot(id)
+    local effect = shootEffects[id]
+    sm.effect.playHostedEffect(effect[2], self.interactable, effect[1], { offsetRotation = angleAxis(math.rad(-90), vec3(1,0,0)) })
 end
 
 
@@ -611,4 +661,33 @@ function Gunship:GetRocketFireData(start)
     end
 
     return firePos, fireDir, targetPos
+end
+
+function Gunship:GetMoveDir()
+    local _actions = self.sv_actions or self.cl_actions
+    local at, up, right = self.shape.at, self.shape.up, self.shape.right
+    -- if _actions[16] then
+    --     at = VEC3_UP
+
+    --     up.z = 0
+    --     up = up:normalize()
+
+    --     right.z = 0
+    --     right = right:normalize()
+    -- end
+
+    return (
+        at * (BoolToNum(_actions[21]) - BoolToNum(_actions[20])) +
+        up * (BoolToNum(_actions[3]) - BoolToNum(_actions[4])) +
+        right * (BoolToNum(_actions[1]) - BoolToNum(_actions[2]))
+    ):safeNormalize(VEC3_ZERO)
+end
+
+function Gunship:GetBodyMass()
+    local mass = 0
+    for k, v in pairs(self.shape.body:getCreationBodies()) do
+        mass = mass + v.mass
+    end
+
+    return mass
 end
