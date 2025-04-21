@@ -173,7 +173,8 @@ function Gunship:server_onFixedUpdate(dt)
 
         -- fireDir.z = min(fireDir.z, self.shape.up.z)
 
-        sm.effect.playEffect("GunshipTurret - Shoot", firePos, nil, getRotation(VEC3_UP, fireDir))
+        -- sm.effect.playEffect("GunshipTurret - Shoot", firePos, nil, getRotation(VEC3_UP, fireDir))
+        self.network:sendToClients("cl_shoot", "jnt_turret_firepos")
         sm.projectile.projectileAttack(projectile_tape, 100, firePos, fireDir * 200, char:getPlayer())
 
         self.fireTimer = fireRate
@@ -199,7 +200,8 @@ function Gunship:sv_fireRocket(args)
     end
 
     local firePos, fireDir = self:GetRocketFireData(self.interactable:getWorldBonePosition("jnt_rocket"..self.rocketCounter.."_firepos"))
-    sm.effect.playEffect("GunshipTurret - Shoot", firePos, nil, getRotation(VEC3_UP, fireDir))
+    -- sm.effect.playEffect("GunshipTurret - Shoot", firePos, nil, getRotation(VEC3_UP, fireDir))
+    self.network:sendToClients("cl_shoot", "jnt_rocket"..self.rocketCounter.."_firepos")
     sm.projectile.projectileAttack(projectile_explosivetape, 100, firePos + fireDir, fireDir * 200, args.player)
 end
 
@@ -243,7 +245,7 @@ function Gunship:client_onCreate()
         table.insert(self.tracers, Line_tracer():init(0.15, green))
     end
 
-    self.engine = sm.effect.createEffect("GasEngine - Level 4", self.interactable)
+    self.engine = sm.effect.createEffect("GasEngine - Level 4", self.interactable, "jnt_camera")
 
     self.gui = sm.gui.createSeatGui()
 end
@@ -365,7 +367,7 @@ function Gunship:client_onUpdate(dt)
         end
 
         local colHit, colResult = sm.physics.spherecast(gunPos, targetPos, 0.075, nil, rayFilter)
-        if colResult:getShape() == self.shape then
+        if isAnyOf(colResult:getBody(), self.shape.body:getCreationBodies()) then
             self:cl_setTracerColour(red)
         else
             self:cl_setTracerColour(green)
@@ -577,6 +579,10 @@ end
 
 function Gunship:cl_onRocketExplodeEnd()
     sm.localPlayer.setLockedControls(false)
+end
+
+function Gunship:cl_shoot(bone)
+    sm.effect.playHostedEffect("GunshipTurret - Shoot", self.interactable, bone, { offsetRotation = angleAxis(math.rad(-90), vec3(1,0,0)) })
 end
 
 

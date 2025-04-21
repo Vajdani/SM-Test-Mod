@@ -59,23 +59,25 @@
 	"GunshipTurret - Shoot": {
 		"effectList": [
 			{
+				"attached": true,
 				"delay": 0.0,
 				"duration": 0.330,
 				"name": "event:/char/npc/bots/enemies/farmbot/farmbot_shoot",
 				"type": "audio"
 			},
 			{
-				"attached": false,
+				"attached": true,
 				"delay": 0.0,
 				"name": "p_spudgun_muzzel_spinner",
 				"offset": [
 					0.0,
 					0.0,
-					0.0
+					0.25
 				],
 				"type": "particle"
 			},
 			{
+				"attached": true,
 				"delay": 0.0,
 				"duration": 0.40,
 				"name": "",
