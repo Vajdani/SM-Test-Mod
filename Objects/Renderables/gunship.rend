@@ -1,24 +1,24 @@
 {
    "lodList" : [
       {
-         // "animationList" : [
-         //    {
-         //       "file" : "$CONTENT_DATA/Objects/Mesh/gunship.fbx",
-         //       "name" : "engine1_rotate"
-         //    },
-         //    {
-         //       "file" : "$CONTENT_DATA/Objects/Mesh/gunship.fbx",
-         //       "name" : "engine2_rotate"
-         //    },
-         //    {
-         //       "file" : "$CONTENT_DATA/Objects/Mesh/gunship.fbx",
-         //       "name" : "engine3_rotate"
-         //    },
-         //    {
-         //       "file" : "$CONTENT_DATA/Objects/Mesh/gunship.fbx",
-         //       "name" : "engine4_rotate"
-         //    }
-         // ],
+         "animationList" : [
+            {
+               "file" : "$CONTENT_DATA/Objects/Mesh/gunship_engine1_rotate.fbx",
+               "name" : "engine1_rotate"
+            },
+            {
+               "file" : "$CONTENT_DATA/Objects/Mesh/gunship_engine2_rotate.fbx",
+               "name" : "engine2_rotate"
+            },
+            {
+               "file" : "$CONTENT_DATA/Objects/Mesh/gunship_engine3_rotate.fbx",
+               "name" : "engine3_rotate"
+            },
+            {
+               "file" : "$CONTENT_DATA/Objects/Mesh/gunship_engine4_rotate.fbx",
+               "name" : "engine4_rotate"
+            }
+         ],
          "mesh" : "$CONTENT_DATA/Objects/Mesh/gunship.fbx",
          "subMeshMap" : {
             "Base" : {
@@ -54,7 +54,7 @@
             "Glass" : {
                "material" : "SkelAnimDif",
                "textureList" : [
-                  "$GAME_DATA/Objects/Textures/Blocks/blk_glass_dif.tga"
+                  "$GAME_DATA/Textures/transparent.tga"
                ]
             }
          }
