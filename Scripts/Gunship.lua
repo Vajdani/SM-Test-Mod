@@ -457,6 +457,9 @@ function Gunship:client_onUpdate(dt)
     sm.camera.setCameraState(2)
     sm.camera.setPosition(camPos)
     sm.camera.setDirection(charDir)
+    -- local shapePos, shapeRot, up, at, right = self:GetAccurateTransform(dt)
+    -- sm.camera.setRotation(shapeRot * angleAxis(math.rad(90), VEC3_RIGHT) * angleAxis(math.rad(180), VEC3_FORWARD))
+
     if self.cl_actions[18] then
         sm.camera.setFov(sm.camera.getDefaultFov() * 0.4)
     else
@@ -919,7 +922,7 @@ function Gunship:GetAccurateTransform(dt)
 
     local angvel = self.shape.body.angularVelocity
     local interpolatedRot = sm.util.axesToQuat( self.shape:getInterpolatedRight(), self.shape:getInterpolatedUp() )
-    local angle = angvel:length() * dt * 0.5
+    local angle = angvel:length() * dt * dt
     local axis = angvel:safeNormalize(VEC3_ZERO)
     local deltaRot = angleAxis( angle, axis )
     local shapeRot = deltaRot * interpolatedRot
