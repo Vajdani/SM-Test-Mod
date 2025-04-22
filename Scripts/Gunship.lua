@@ -795,12 +795,13 @@ end
 function Gunship:cl_updateThrusters(dt)
     local downwards = 0.5 + (-math.asin(self.shape.up.z) / RAD90) * 0.5
     local forwards = (BoolToNum(self.cl_actions[3]) - BoolToNum(self.cl_actions[4])) * 0.5
-    local offsetMultiplier = (self.cl_actions[21] or self.cl_actions[20]) and 0.1 or 1
+    local offsetMultiplier = self.cl_actions[21] and 0.35 or 1
     local baseAnim = downwards - forwards * offsetMultiplier
-    local rotation = -self.shape.body.angularVelocity.z * 0.25 * offsetMultiplier
+    local rotation = -self.shape.body.angularVelocity.z * 0.1 * offsetMultiplier
 
-    self.leftThrusterAnim = sm.util.lerp(self.leftThrusterAnim, baseAnim - rotation, dt * 5)
-    self.rightThrusterAnim = sm.util.lerp(self.rightThrusterAnim, baseAnim + rotation, dt * 5)
+    local animSpeed = dt * 2.5
+    self.leftThrusterAnim = sm.util.lerp(self.leftThrusterAnim, baseAnim - rotation, animSpeed)
+    self.rightThrusterAnim = sm.util.lerp(self.rightThrusterAnim, baseAnim + rotation, animSpeed)
 
     self.interactable:setAnimProgress("engine1_rotate", self.rightThrusterAnim)
     self.interactable:setAnimProgress("engine2_rotate", self.leftThrusterAnim)
