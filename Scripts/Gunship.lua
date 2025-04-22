@@ -218,15 +218,8 @@ function Gunship:sv_takeDamage(damage)
     if self.sv_health <= 0 then
         print(self.shape, "exploded")
 
-        -- self.shape.body:setDestructable(true)
-        local pos = self.shape.worldPosition
-        -- local player = self.interactable:getSeatCharacter():getPlayer()
-        self.shape:destroyShape()
-        -- for i = 1, 100 do
-        --     sm.projectile.projectileAttack(projectile_explosivetape, 100, pos, vec3(-1 + math.random() * 2, -1 + math.random() * 2, -1 + math.random() * 2):normalize() * 10, player)
-        -- end
-
-        sm.physics.explode(pos, 9, 40, 80, 200, "PropaneTank - ExplosionBig")
+        sm.physics.explode(self.shape.worldPosition, 10, 10, 20, 100, "PropaneTank - ExplosionBig")
+        self.shape:destroyPart()
     else
         self.network:setClientData(self.sv_health, 1)
     end
@@ -262,12 +255,10 @@ end
 function Gunship:client_onCreate()
     self.cl_actions = {}
 
-    local cockpit = sm.effect.createEffect("ShapeRenderable", self.interactable)
+    local cockpit = sm.effect.createEffect("ShapeRenderable")
     cockpit:setParameter("uuid", sm.uuid.new("5e7a0724-a469-468a-9138-eea1b23c2387"))
     cockpit:setParameter("color", self.shape.color)
     cockpit:setScale(vec3(0.25, 0.25, 0.25))
-    cockpit:setOffsetRotation(angleAxis(math.rad(-90), vec3(1,0,0)))
-    cockpit:start()
 
     self.cockpit = cockpit
 
@@ -300,9 +291,35 @@ function Gunship:client_onCreate()
     local healthbarbg = sm.effect.createEffect( "ShapeRenderable" )
     healthbarbg:setParameter("uuid", sm.uuid.new("7030b7b1-f0a1-4b24-bd0d-11d0a42185e6"))
     healthbarbg:setParameter("color", black)
-    healthbarbg:setScale(vec3(0.25,0.25,0.25))
     healthbarbg:setScale(vec3(baseHealthbarScale, 0.025, 0))
     self.wgui.healthbarbg = healthbarbg
+
+    -- if not self.wgui.hotbar then
+    --     self.wgui.hotbar = {
+    --         items = {},
+    --         start = function(_self)
+    --             for k, v in ipairs(_self.items) do
+    --                 for _k, _v in pairs(v) do
+    --                     _v:start()
+    --                 end
+    --             end
+    --         end,
+    --         stop = function(_self)
+    --             for k, v in ipairs(_self.items) do
+    --                 for _k, _v in pairs(v) do
+    --                     _v:stop()
+    --                 end
+    --             end
+    --         end,
+    --         destroy = function(_self)
+    --             for k, v in ipairs(_self.items) do
+    --                 for _k, _v in pairs(v) do
+    --                     _v:destroy()
+    --                 end
+    --             end
+    --         end
+    --     }
+    -- end
 
     self.gui = sm.gui.createSeatGui()
 
@@ -323,6 +340,10 @@ function Gunship:client_onDestroy()
     self.aimPoint:destroy()
     for i = 1, 2 do
         self.tracers[i]:destroy()
+    end
+
+    for k, v in pairs(self.wgui) do
+        v:destroy()
     end
 
     self.gui:destroy()
@@ -431,7 +452,7 @@ function Gunship:client_onUpdate(dt)
     local char = sm.localPlayer.getPlayer().character
     local charDir = char:getSmoothViewDirection()
 
-    self:cl_updateCockpitUI(dt)
+    self:cl_updateCockpitUI(camPos, dt)
 
     sm.camera.setCameraState(2)
     sm.camera.setPosition(camPos)
@@ -616,8 +637,26 @@ function Gunship:cl_updateSeatGui()
     end
 end
 
-function Gunship:cl_updateCockpitUI(dt)
+local cockPitRot = angleAxis(math.rad(-90), VEC3_RIGHT)
+-- local function GetItemScale(uuid)
+-- 	local scale = 1
+-- 	if uuid ~= sm.uuid.getNil() and not sm.item.isTool(uuid) then
+-- 		local size = sm.item.getShapeSize( uuid )
+-- 		local max = math.max( math.max( size.x, size.y ), size.z )
+-- 		scale = 1 / max + ( size:length() - 1.4422496 ) * 0.015625
+-- 		if scale * size:length() > 1.0 then
+-- 			scale = 1 / size:length()
+-- 		end
+-- 	end
+
+-- 	return scale
+-- end
+
+function Gunship:cl_updateCockpitUI(camPos, dt)
     local shapePos, shapeRot, up, at, right = self:GetAccurateTransform(dt)
+
+    self.cockpit:setPosition(shapePos)
+    self.cockpit:setRotation(shapeRot * cockPitRot)
 
     local healthPercent = math.max(self.cl_health / maxHealth, 0)
     local healthbar, healthbarbg = self.wgui.healthbar, self.wgui.healthbarbg
@@ -627,6 +666,126 @@ function Gunship:cl_updateCockpitUI(dt)
 
     healthbarbg:setPosition(shapePos + up * 4.401 + at * 0.1)
     healthbarbg:setRotation(shapeRot)
+
+    -- local children = self.interactable:getChildren()
+    -- local hotbarWidth = (#children - 1) * 0.03 * 0.5
+    -- for i = 1, self.maxChildCount do
+    --     local int = children[i]
+    --     local hotbarItem = self.wgui.hotbar.items[i]
+    --     if int then
+    --         if not hotbarItem then
+    --             hotbarItem = {}
+    --             local itembg = sm.effect.createEffect( "ShapeRenderable" )
+    --             itembg:setParameter("uuid", blk_plastic) --sm.uuid.new("7030b7b1-f0a1-4b24-bd0d-11d0a42185e6"))
+    --             itembg:setParameter("color", black)
+    --             itembg:setScale(vec3(0.025, 0.025, 0))
+
+    --             hotbarItem.bg = itembg
+
+    --             local item = sm.effect.createEffect( "ShapeRenderable" )
+    --             item:setScale(vec3(0.25, 0.25, 0.25) * 0.01)
+
+    --             hotbarItem.item = item
+
+    --             self.wgui.hotbar.items[i] = hotbarItem
+    --         end
+
+    --         if not hotbarItem.bg:isPlaying() then
+    --             hotbarItem.bg:start()
+    --             hotbarItem.item:start()
+    --         end
+
+    --         local uuid = tostring(int.shape.uuid)
+    --         if uuid == mountedCannonUUID then
+    --             local itemId = sm.uuid.new(sm.GetTurretAmmoData(MountedCannonGun, sm.GetInteractableClientPublicData(int).ammoType))
+    --             hotbarItem.item:setParameter("uuid", itemId)
+    --             hotbarItem.item:setParameter("color", int.shape.color)
+    --             hotbarItem.item:setScale(vec3(0.25, 0.25, 0.25) * 0.1 * GetItemScale(itemId))
+    --         else
+    --             hotbarItem.item:setParameter("uuid", int.shape.uuid)
+    --             hotbarItem.item:setParameter("color", int.shape.color)
+    --             hotbarItem.item:setScale(vec3(0.25, 0.25, 0.25) * 0.1 * GetItemScale(int.shape.uuid))
+    --         end
+
+    --         local itemPos = shapePos + up * 4.4 + right * (hotbarWidth - (i - 1) * 0.03) + at * 0.07
+    --         hotbarItem.bg:setPosition(itemPos)
+    --         hotbarItem.bg:setRotation(shapeRot)
+    --         hotbarItem.bg:setParameter("color", int.active and white or black)
+
+    --         hotbarItem.item:setPosition(itemPos)
+    --         hotbarItem.item:setRotation(shapeRot)
+    --     elseif hotbarItem and hotbarItem.bg:isPlaying() then
+    --         hotbarItem.bg:stop()
+    --         hotbarItem.item:stop()
+    --     end
+    -- end
+
+    -- if sm.game.getCurrentTick()%40 == 0 then
+    --     self.init = false
+    -- end
+
+    if not self.init then
+        for i = 1, 10 do
+            local bar = sm.effect.createEffect( "ShapeRenderable" )
+            bar:setParameter("uuid", sm.uuid.new("7030b7b1-f0a1-4b24-bd0d-11d0a42185e6"))
+            bar:setScale(vec3(0.25,0.25,0.25))
+            self.wgui["bar"..i] = bar
+        end
+
+        self.init = true
+    end
+
+    local base = camPos + up * 4.4
+    local barScale = vec3(0.3,0.025,0)
+    local verticalScale, horizontalScale = 1 - barScale.y * 0.5, 1.25 - barScale.x * 0.5
+    local verticalOffset, horizontalOffset = at * verticalScale, right * horizontalScale
+    self.wgui.bar1:setPosition(base + verticalOffset + horizontalOffset)
+    self.wgui.bar1:setRotation(shapeRot)
+    self.wgui.bar1:setScale(barScale)
+
+    self.wgui.bar2:setPosition(base + verticalOffset - horizontalOffset)
+    self.wgui.bar2:setRotation(shapeRot)
+    self.wgui.bar2:setScale(barScale)
+
+    self.wgui.bar3:setPosition(base - verticalOffset + horizontalOffset)
+    self.wgui.bar3:setRotation(shapeRot)
+    self.wgui.bar3:setScale(barScale)
+
+    self.wgui.bar4:setPosition(base - verticalOffset - horizontalOffset)
+    self.wgui.bar4:setRotation(shapeRot)
+    self.wgui.bar4:setScale(barScale)
+
+    local degreeOffset = verticalOffset * (math.asin(up.z) / (math.pi * 0.5))
+    self.wgui.bar5:setPosition(base - horizontalOffset + degreeOffset)
+    self.wgui.bar5:setRotation(shapeRot)
+    self.wgui.bar5:setScale(barScale)
+
+    self.wgui.bar6:setPosition(base + horizontalOffset + degreeOffset)
+    self.wgui.bar6:setRotation(shapeRot)
+    self.wgui.bar6:setScale(barScale)
+
+    self.wgui.bar7:setPosition(base)
+    self.wgui.bar7:setRotation(shapeRot)
+    self.wgui.bar7:setScale(barScale)
+
+    self.wgui.bar8:setPosition(base)
+    self.wgui.bar8:setRotation(shapeRot)
+    self.wgui.bar8:setScale(vec3(barScale.y,barScale.x,0))
+
+    local sidebarOffset, sideBarScale = horizontalOffset + right * (barScale.x - barScale.y) * 0.5, vec3(0.025,verticalScale * 2,0)
+    self.wgui.bar9:setPosition(base - sidebarOffset)
+    self.wgui.bar9:setRotation(shapeRot)
+    self.wgui.bar9:setScale(sideBarScale)
+
+    self.wgui.bar10:setPosition(base + sidebarOffset)
+    self.wgui.bar10:setRotation(shapeRot)
+    self.wgui.bar10:setScale(sideBarScale)
+
+    if not self.wgui.bar1:isPlaying() then
+        for i = 1, 10 do
+            self.wgui["bar"..i]:start()
+        end
+    end
 end
 
 function Gunship:cl_updateAction(args)

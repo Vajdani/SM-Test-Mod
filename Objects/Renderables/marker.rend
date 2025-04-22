@@ -6,7 +6,7 @@
             {
                "material" : "ConnectJoint",
                "textureList" : [
-                  "$GAME_DATA/Textures/Default/default_dif.tga"
+                  "$GAME_DATA/Textures/transparent.tga"
                ]
             }
          ]
