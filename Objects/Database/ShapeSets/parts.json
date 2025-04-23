@@ -1835,7 +1835,7 @@
          "sticky": "+Y-Y",
          "physicsMaterial": "Metal",
          "ratings": {
-            "durability": 10
+            "durability": 1
          },
          "restrictions": {
             "destructable": false

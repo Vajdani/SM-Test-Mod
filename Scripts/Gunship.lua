@@ -1,3 +1,5 @@
+dofile "ProjectileLibrary.lua"
+
 local vec3 = sm.vec3.new
 local getRotation = sm.vec3.getRotation
 local getGravity = sm.physics.getGravity
@@ -12,19 +14,19 @@ local function BoolToNum(bool)
     return bool and 1 or 0
 end
 
-local function dot(a, b)
-    return a.x*b.x + a.y*b.y + a.z*b.z + a.w*b.w;
+local function quat_dot(a, b)
+    return a.x * b.x + a.y * b.y + a.z * b.z + a.w * b.w;
 end
 
-local function normalise(a)
-    local l = 1.0 / math.sqrt(dot(a, a));
-    return sm.quat.new(l*a.x, l*a.y, l*a.z, l*a.w);
+local function quat_normalise(a)
+    local l = 1.0 / math.sqrt(quat_dot(a, a));
+    return sm.quat.new(l * a.x, l * a.y, l * a.z, l * a.w);
 end
 
 oldQuatSLerp = oldQuatSLerp or sm.quat.slerp
 ---@diagnostic disable-next-line:duplicate-set-field
 function sm.quat.slerp(q1, q2, t)
-    return normalise(oldQuatSLerp(q1, q2, t))
+    return quat_normalise(oldQuatSLerp(q1, q2, t))
 end
 
 local VEC3_RIGHT = vec3(1, 0, 0)
@@ -76,7 +78,90 @@ function Line_tracer:destroy()
     self.effect:destroy()
 end
 
+oldRaycast = oldRaycast or sm.physics.raycast
+---@diagnostic disable-next-line:duplicate-set-field
+function sm.physics.raycast(startPos, endPos, ignoredObject, mask)
+    local hit, result = oldRaycast(startPos, endPos, ignoredObject,
+        sm.physics.filter.default + sm.physics.filter.areaTrigger)
+    if hit and result.type == "areaTrigger" then
+        local trigger = result:getAreaTrigger()
+        if sm.exists(trigger) then
+            local userdata = trigger:getUserData()
+            if userdata and userdata.isCustomCollision then
+                return true, {
+                    directionWorld = result.directionWorld,
+                    fraction = result.fraction,
+                    normalLocal = result.normalLocal,
+                    normalWorld = result.normalWorld,
+                    originWorld = result.originWorld,
+                    pointLocal = result.pointLocal,
+                    pointWorld = result.pointWorld,
+                    type = "body",
+                    valid = result.valid,
+                    getAreaTrigger = function() return nil end,
+                    getBody = function()
+                        return userdata.parent.body
+                    end,
+                    getCharacter = function() return nil end,
+                    getHarvestable = function() return nil end,
+                    getJoint = function() return nil end,
+                    getLiftData = function() return nil end,
+                    getShape = function()
+                        return userdata.parent
+                    end,
+                }
+            end
+        end
+    end
+
+    return oldRaycast(startPos, endPos, ignoredObject, mask)
+end
+
+oldSpherecast = oldSpherecast or sm.physics.spherecast
+---@diagnostic disable-next-line:duplicate-set-field
+function sm.physics.spherecast(startPos, endPos, radius, object, mask)
+    local hit, result = oldSpherecast(startPos, endPos, radius, object,
+        sm.physics.filter.default + sm.physics.filter.areaTrigger)
+    if hit and result.type == "areaTrigger" then
+        local trigger = result:getAreaTrigger()
+        if sm.exists(trigger) then
+            local userdata = trigger:getUserData()
+            if userdata and userdata.isCustomCollision then
+                return true, {
+                    directionWorld = result.directionWorld,
+                    fraction = result.fraction,
+                    normalLocal = result.normalLocal,
+                    normalWorld = result.normalWorld,
+                    originWorld = result.originWorld,
+                    pointLocal = result.pointLocal,
+                    pointWorld = result.pointWorld,
+                    type = "body",
+                    valid = result.valid,
+                    getAreaTrigger = function() return nil end,
+                    getBody = function()
+                        return userdata.parent.body
+                    end,
+                    getCharacter = function() return nil end,
+                    getHarvestable = function() return nil end,
+                    getJoint = function() return nil end,
+                    getLiftData = function() return nil end,
+                    getShape = function()
+                        return userdata.parent
+                    end,
+                }
+            end
+        end
+    end
+
+    return oldSpherecast(startPos, endPos, radius, object, mask)
+end
+
+---@class DamageArea
+---@field health number
+---@field trigger AreaTrigger
+
 ---@class Gunship : ShapeClass
+---@field damageAreas DamageArea[]
 Gunship = class()
 Gunship.maxParentCount = 0
 Gunship.maxChildCount = 7
@@ -86,6 +171,7 @@ Gunship.colorNormal = sm.color.new(0xcb0a00ff)
 Gunship.colorHighlight = sm.color.new(0xee0a00ff)
 
 local maxHealth = 2000
+local thrusterMaxHealth = 200
 local moveSpeed = 25
 local boostSpeed = 100
 local fireRate = 1 / 5
@@ -112,9 +198,23 @@ local actions = {
     [21] = true, --Up
     [16] = true, --Boost
 }
-
 local turnLimit = 0.3
 local rayFilter = sm.physics.filter.default + sm.physics.filter.areaTrigger
+local destructionResistence = {
+    [1] = 0.9,
+    [2] = 0.75,
+    [3] = 0.5,
+    [4] = 0.25,
+    [5] = 0.1,
+    [6] = 0,
+    [7] = 0,
+    [8] = 0,
+    [9] = 0,
+    [10] = 0
+}
+local engineScale = vec3(0.75, 1.5, 2.065) * 0.5
+local engineOffset = 0.275
+
 local green = sm.color.new(0, 1, 0)
 local red = sm.color.new(1, 0, 0)
 local white = sm.color.new(1, 1, 1)
@@ -133,10 +233,34 @@ function Gunship:server_onCreate()
 
     self.sv_health = maxHealth
     self.network:setClientData(self.sv_health, 1)
+
+    self.damageAreas = {}
+    for i = 1, 4 do
+        local trigger = sm.areaTrigger.createBox(engineScale, self.shape.worldPosition, nil, nil, {
+            id = i,
+            isCustomCollision = true,
+            parent = self.shape
+        })
+        trigger:bindOnProjectile("sv_onDamageAreaHit")
+
+        self.damageAreas[i] = {
+            health = thrusterMaxHealth,
+            trigger = trigger
+        }
+    end
+end
+
+function Gunship:server_onDestroy()
+    for k, v in pairs(self.damageAreas) do
+        sm.areaTrigger.destroy(v.trigger)
+    end
 end
 
 function Gunship:server_onProjectile(position, airTime, velocity, projectileName, shooter, damage, customData, normal, uuid)
-    self:sv_takeDamage(damage)
+    local level = self:GetDestructionResistence(uuid)
+    if level == 0 then return end
+
+    self:sv_takeDamage(damage * (1 - destructionResistence[level]))
 end
 
 function Gunship:server_onMelee(position, attacker, damage, power, direction, normal)
@@ -147,16 +271,80 @@ function Gunship:server_onExplosion(center, destructionLevel)
     self:sv_takeDamage(destructionLevel * 10)
 end
 
+function Gunship:sv_e_onHit(args)
+    local pos = args.position - args.normal * 0.15
+    local x, y, z = pos.x, pos.y, pos.z
+    for k, v in pairs(self.damageAreas) do
+        local trigger = v.trigger
+        local min, max = trigger:getWorldMin(), trigger:getWorldMax()
+        if x >= min.x and x <= max.x and y >= min.y and y <= max.y and z > min.z and z <= max.z then
+            self:sv_onDamageAreaHit(trigger, pos, nil, -args.normal --[[@as Vec3]], nil, nil, args.damage, nil, nil, sm.uuid.getNil())
+            return
+        end
+    end
+
+    self:sv_takeDamage(args.damage)
+end
+
+---@param velocity Vec3
+function Gunship:sv_onDamageAreaHit(trigger, hitPos, airTime, velocity, name, source, damage, data, normal, uuid)
+    local effect = GetProjectileData(uuid).effect
+    if effect then
+        local dir = -velocity:normalize()
+        sm.effect.playEffect(effect, hitPos + dir * 0.05, nil, getRotation(dir, VEC3_UP))
+    end
+
+    local level = self:GetDestructionResistence(uuid)
+    if level == 0 or not sm.exists(trigger) then return true end
+
+    local id = trigger:getUserData().id
+    local area = self.damageAreas[id]
+    if area.health <= 0 then return true end
+
+    local finalDamage = round(damage * (1 - destructionResistence[level]))
+    area.health = area.health - finalDamage
+    print(("[Gunship %s Thruster %s] Recieved %s damage (%s/%s)"):format(self.shape.id, id, finalDamage, area.health, thrusterMaxHealth))
+
+    self:sv_takeDamage(finalDamage * 0.5)
+
+    self.network:setClientData(self.sv_health, 1)
+    self.network:setClientData({ id = id, health = area.health }, 2)
+
+    if area.health <= 0 then
+        sm.effect.playEffect("PropaneTank - ExplosionSmall", trigger:getWorldPosition())
+        sm.areaTrigger.destroy(trigger)
+        self.damageAreas[id] = nil
+    end
+
+    return true
+end
+
 function Gunship:server_onCollision(other, position, selfPointVelocity, otherPointVelocity, normal)
     if isAnyOf(other, self.shape.body:getCreationBodies()) then return end
 
-    local damage = round((selfPointVelocity + otherPointVelocity):length())
+    local damage = (selfPointVelocity + otherPointVelocity):length()
     if damage >= 20 then
         self:sv_takeDamage(damage)
     end
 end
 
 function Gunship:server_onFixedUpdate(dt)
+    for k, v in pairs(self.damageAreas) do
+        local name = "jnt_engine" .. k
+        local engineDir = self:GetLocalBoneDir(name.."_effect")
+        local enginePos = self.interactable:getWorldBonePosition(name)
+        local worldUp = self:TransformLocalDirection(engineDir)
+        local worldRight = self:TransformLocalDirection(CalculateRightVector(engineDir))
+        local trigger = v.trigger
+        if k == 1 or k == 3 then
+            trigger:setWorldPosition(enginePos - worldRight * engineOffset)
+        else
+            trigger:setWorldPosition(enginePos + worldRight * engineOffset)
+        end
+
+        trigger:setWorldRotation(quat_normalise(sm.util.axesToQuat(worldRight, worldUp)))
+    end
+
     local char = self.interactable:getSeatCharacter()
     if not char then return end
 
@@ -226,7 +414,10 @@ function Gunship:server_onFixedUpdate(dt)
         local player = char:getPlayer()
         self:sv_fireRocket({ delay = 0, player = player })
         for i = 1, rocketBurst - 1 do
-            sm.event.sendToInteractable(self.interactable, "sv_fireRocket", { delay = i * rocketBurstTicks, player = player })
+            sm.event.sendToInteractable(self.interactable, "sv_fireRocket", {
+                delay = i * rocketBurstTicks,
+                player = player
+            })
         end
 
         self.sv_rocketTimer = rocketRate
@@ -234,6 +425,10 @@ function Gunship:server_onFixedUpdate(dt)
 end
 
 function Gunship:sv_takeDamage(damage)
+    if self.sv_health <= 0 then return end
+
+    damage = round(damage)
+
     self.sv_health = self.sv_health - damage
     print(("[Gunship %s] Recieved %s damage (%s/%s)"):format(self.shape.id, damage, self.sv_health, maxHealth))
     if self.sv_health <= 0 then
@@ -401,6 +596,8 @@ function Gunship:client_onClientDataUpdate(data, channel)
         end
 
         self.wgui.healthbar:setScale(vec3(baseHealthbarScale * math.max(self.cl_health / maxHealth, 0) - 0.006, 0.02, 0))
+    else
+        self.interactable:setSubMeshVisible("engine"..data.id, data.health > 0)
     end
 end
 
@@ -934,7 +1131,9 @@ local shootEffects = {
 }
 function Gunship:cl_shoot(id)
     local effect = shootEffects[id]
-    sm.effect.playHostedEffect(effect[2], self.interactable, effect[1], { offsetRotation = angleAxis(math.rad(-90), VEC3_RIGHT) })
+    sm.effect.playHostedEffect(effect[2], self.interactable, effect[1], {
+        offsetRotation = angleAxis(math.rad(-90), VEC3_RIGHT)
+    })
 end
 
 function Gunship:cl_resetAction()
@@ -943,12 +1142,14 @@ function Gunship:cl_resetAction()
     end
 end
 
-
-
 function Gunship:GetCameraPosition(dt)
     -- return self.interactable:getWorldBonePosition("jnt_camera")
     -- return self.shape:getInterpolatedWorldPosition() + self.shape.velocity * (dt or (1/40)) - self.shape:getInterpolatedUp() * 10 + self.shape:getInterpolatedAt() * 2
-    return self.shape:getInterpolatedWorldPosition() + self.shape.velocity * (dt or (1 / 40)) + self.shape:getInterpolatedUp() * 4 + self.shape:getInterpolatedAt() * 0.25
+    return
+        self.shape:getInterpolatedWorldPosition() +
+        self.shape.velocity * (dt or (1 / 40)) +
+        self.shape:getInterpolatedUp() * 4 +
+        self.shape:getInterpolatedAt() * 0.25
 end
 
 function Gunship:GetRocketFireData(start, dt)
@@ -1010,7 +1211,12 @@ function Gunship:GetAccurateTransform(dt)
     local deltaRot = angleAxis(angle, axis)
     local shapeRot = deltaRot * interpolatedRot
 
-    return self.shape:getInterpolatedWorldPosition() + self.shape.velocity * dt, shapeRot, shapeRot * VEC3_UP, shapeRot * VEC3_FORWARD, shapeRot * VEC3_RIGHT
+    return
+        self.shape:getInterpolatedWorldPosition() + self.shape.velocity * dt,
+        shapeRot,
+        shapeRot * VEC3_UP,
+        shapeRot * VEC3_FORWARD,
+        shapeRot * VEC3_RIGHT
 end
 
 function Gunship:SetBodyVisibility(state)
@@ -1027,4 +1233,27 @@ end
 
 function Gunship:GetTurretFirePos()
     return self.interactable:getWorldBonePosition("jnt_turret_firepos")
+end
+
+function Gunship:GetLocalBoneDir(bone)
+    return (self.interactable:getLocalBonePosition(bone.."_end") - self.interactable:getLocalBonePosition(bone)):normalize()
+end
+
+function Gunship:TransformLocalDirection(dir)
+    return (self.shape:transformLocalPoint(dir) - self.shape.worldPosition):normalize()
+end
+
+function Gunship:GetDestructionResistence(uuid)
+    if uuid == sm.uuid.getNil() then
+        return 10
+    end
+
+    local destruction = GetProjectileData(uuid).destruction
+    for k, v in reverse_ipairs(destruction) do
+        if v > 0 then
+            return k
+        end
+    end
+
+    return 0
 end
