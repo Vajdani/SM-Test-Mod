@@ -234,7 +234,7 @@ function Gunship:server_onCreate()
     self.sv_health = maxHealth
     self.network:setClientData(self.sv_health, 1)
 
-    self.damageAreas = {}
+    self.sv_damageAreas = {}
     for i = 1, 4 do
         local trigger = sm.areaTrigger.createBox(engineScale, self.shape.worldPosition, nil, nil, {
             id = i,
@@ -243,7 +243,7 @@ function Gunship:server_onCreate()
         })
         trigger:bindOnProjectile("sv_onDamageAreaHit")
 
-        self.damageAreas[i] = {
+        self.sv_damageAreas[i] = {
             health = thrusterMaxHealth,
             trigger = trigger
         }
@@ -251,7 +251,7 @@ function Gunship:server_onCreate()
 end
 
 function Gunship:server_onDestroy()
-    for k, v in pairs(self.damageAreas) do
+    for k, v in pairs(self.sv_damageAreas) do
         sm.areaTrigger.destroy(v.trigger)
     end
 end
@@ -274,7 +274,7 @@ end
 function Gunship:sv_e_onHit(args)
     local pos = args.position - args.normal * 0.15
     local x, y, z = pos.x, pos.y, pos.z
-    for k, v in pairs(self.damageAreas) do
+    for k, v in pairs(self.sv_damageAreas) do
         local trigger = v.trigger
         local min, max = trigger:getWorldMin(), trigger:getWorldMax()
         if x >= min.x and x <= max.x and y >= min.y and y <= max.y and z > min.z and z <= max.z then
@@ -298,7 +298,7 @@ function Gunship:sv_onDamageAreaHit(trigger, hitPos, airTime, velocity, name, so
     if level == 0 or not sm.exists(trigger) then return true end
 
     local id = trigger:getUserData().id
-    local area = self.damageAreas[id]
+    local area = self.sv_damageAreas[id]
     if area.health <= 0 then return true end
 
     local finalDamage = round(damage * (1 - destructionResistence[level]))
@@ -313,7 +313,7 @@ function Gunship:sv_onDamageAreaHit(trigger, hitPos, airTime, velocity, name, so
     if area.health <= 0 then
         sm.effect.playEffect("PropaneTank - ExplosionSmall", trigger:getWorldPosition())
         sm.areaTrigger.destroy(trigger)
-        self.damageAreas[id] = nil
+        self.sv_damageAreas[id] = nil
     end
 
     return true
@@ -329,9 +329,30 @@ function Gunship:server_onCollision(other, position, selfPointVelocity, otherPoi
 end
 
 function Gunship:server_onFixedUpdate(dt)
+    local missingEngines = self:UpdateDamageAreas()
+
+    local char = self.interactable:getSeatCharacter()
+    if not char then return end
+
+    local shape, body = self.shape, self.shape.body
+    local velocity = shape.velocity
+    if body:hasChanged(sm.game.getServerTick() - 1) then
+        self.sv_mass = self:GetBodyMass()
+    end
+
+    if missingEngines < 4 then
+        self:ApplyPhysics(char, shape, body, velocity, missingEngines, dt)
+    end
+
+    self:sv_handleAutocannon(velocity, char, dt)
+    self:sv_handleRocketLaunchers(char, dt)
+end
+
+function Gunship:UpdateDamageAreas()
     local missingEngines = 0
+    local damageAreas = self.sv_damageAreas or self.cl_damageAreas
     for i = 1, 4 do
-        local area = self.damageAreas[i]
+        local area = damageAreas[i]
         if area then
             local name = "jnt_engine"..i
             local engineDir = self:GetLocalBoneDir(name.."_effect")
@@ -351,43 +372,33 @@ function Gunship:server_onFixedUpdate(dt)
         end
     end
 
-    local char = self.interactable:getSeatCharacter()
-    if not char then return end
-
-    local shape, body = self.shape, self.shape.body
-    local velocity = shape.velocity
-    if body:hasChanged(sm.game.getServerTick() - 1) then
-        self.sv_mass = self:GetBodyMass()
-    end
-
-    if missingEngines < 4 then
-        self:sv_applyPhysics(char, shape, body, velocity, missingEngines, dt)
-    end
-
-    self:sv_handleAutocannon(velocity, char, dt)
-    self:sv_handleRocketLaunchers(char, dt)
+    return missingEngines
 end
 
-function Gunship:sv_applyPhysics(char, shape, body, velocity, missingEngines, dt)
+function Gunship:ApplyPhysics(char, shape, body, velocity, missingEngines, dt)
+    local _actions = self.sv_actions or self.cl_actions
+    local damageAreas = self.sv_damageAreas or self.cl_damageAreas
+    local mass = self.sv_mass or self.cl_mass
+
     local direction = char.direction
-    local force = vec3(0, 0, getGravity() + 0.45) + self:GetMoveDir() * (self.sv_actions[16] and boostSpeed or moveSpeed) - velocity * 0.5
+    local force = vec3(0, 0, (pcall(sm.localPlayer.getId) and 10 or getGravity()) + 0.45) + self:GetMoveDir() * (_actions[16] and boostSpeed or moveSpeed) - velocity * 0.5
     local offset = VEC3_ZERO
     local forceMultiplier = (4 - missingEngines) / 4
     if missingEngines > 0 then
         for i = 1, 4 do
-            if self.damageAreas[i] then
+            if damageAreas[i] then
                 offset = offset + self.interactable:getLocalBonePosition("jnt_engine"..i)
             end
         end
 
         offset = offset / (4 - missingEngines)
     end
-    sm.physics.applyImpulse(self.shape, force * forceMultiplier * dt * self.sv_mass, true, offset)
+    sm.physics.applyImpulse(self.shape, force * forceMultiplier * dt * mass, true, offset)
 
     local torque =
         -body.angularVelocity * 0.3 -
-        self.shape.up * (BoolToNum(self.sv_actions[1]) - BoolToNum(self.sv_actions[2])) * 0.15
-    if self.sv_actions[18] or self.forceStatic then
+        self.shape.up * (BoolToNum(_actions[1]) - BoolToNum(_actions[2])) * 0.15
+    if _actions[18] or self.forceStatic then
         torque = torque + CalculateRightVector(self.aimDirection):cross(shape.right)
     else
         self.aimDirection = direction
@@ -400,7 +411,7 @@ function Gunship:sv_applyPhysics(char, shape, body, velocity, missingEngines, dt
 
         torque = torque + shape.up:cross(direction) + steer
     end
-    sm.physics.applyTorque(body, torque * self.sv_mass * forceMultiplier, true)
+    sm.physics.applyTorque(body, torque * mass * forceMultiplier, true)
 end
 
 function Gunship:sv_handleAutocannon(velocity, char, dt)
@@ -576,6 +587,21 @@ function Gunship:client_onCreate()
 
     self.horizontalTurretAnim = sm.quat.identity()
     self.verticalTurretAnim = 0
+
+    self.cl_mass = self:GetBodyMass()
+    self.cl_damageAreas = {}
+    for i = 1, 4 do
+        local trigger = sm.areaTrigger.createBox(engineScale, self.shape.worldPosition, nil, nil, {
+            id = i,
+            isCustomCollision = true,
+            parent = self.shape
+        })
+        trigger:bindOnProjectile("cl_onDamageAreaHit")
+
+        self.cl_damageAreas[i] = {
+            trigger = trigger
+        }
+    end
 end
 
 function Gunship:client_onDestroy()
@@ -616,12 +642,18 @@ function Gunship:client_onClientDataUpdate(data, channel)
         self.wgui.healthbar:setScale(vec3(baseHealthbarScale * math.max(self.cl_health / maxHealth, 0) - 0.006, 0.02, 0))
     else
         local alive = data.health > 0
-        self.interactable:setSubMeshVisible("engine"..data.id, alive)
+        local id = data.id
+        self.interactable:setSubMeshVisible("engine"..id, alive)
+
         if not alive then
-            local id = data.id
             if self.thrusters[id] then
                 self.thrusters[id]:destroy()
                 self.thrusters[id] = nil
+            end
+
+            if self.cl_damageAreas[id] then
+                sm.areaTrigger.destroy(self.cl_damageAreas[id].trigger)
+                self.cl_damageAreas[id] = nil
             end
         end
     end
@@ -758,13 +790,23 @@ function Gunship:client_onUpdate(dt)
     end
 end
 
-function Gunship:client_onFixedUpdate()
+function Gunship:client_onFixedUpdate(dt)
     if #self.interactable:getChildren(2 ^ 14) == 0 and self.controllingRocket then
         self.controllingRocket = false
         self.network:sendToServer("sv_onRocketExplode")
     end
 
-    if self.seatedTick and sm.game.getServerTick() - self.seatedTick > 40 and not self.interactable:getSeatCharacter() then
+    if self.shape.body:hasChanged(sm.game.getServerTick() - 1) then
+        self.cl_mass = self:GetBodyMass()
+    end
+
+    local seatedChar = self.interactable:getSeatCharacter()
+    local missingEngines = self:UpdateDamageAreas()
+    if seatedChar and not sm.isHost and missingEngines < 4 then
+        self:ApplyPhysics(seatedChar, self.shape, self.shape.body, self.shape.velocity, missingEngines, dt)
+    end
+
+    if self.seatedTick and sm.game.getServerTick() - self.seatedTick > 10 and not seatedChar then
         self.seatedTick = nil
         sm.camera.setCameraState(0)
         self.gui:close()
@@ -781,6 +823,17 @@ function Gunship:client_onInteract(char, state)
     sm.localPlayer.setLockedControls(true)
     sm.localPlayer.setDirection(self.shape.up)
     sm.event.sendToInteractable(self.interactable, "cl_seat")
+end
+
+---@param velocity Vec3
+function Gunship:cl_onDamageAreaHit(trigger, hitPos, airTime, velocity, name, source, damage, data, normal, uuid)
+    -- local effect = GetProjectileData(uuid).effect
+    -- if effect then
+    --     local dir = -velocity:normalize()
+    --     sm.effect.playEffect(effect, hitPos + dir * 0.05, nil, getRotation(dir, VEC3_UP))
+    -- end
+
+    return true
 end
 
 function Gunship:cl_seat()
