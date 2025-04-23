@@ -32,6 +32,7 @@ local VEC3_FORWARD = vec3(0, 1, 0)
 local VEC3_UP = vec3(0, 0, 1)
 local VEC3_ZERO = sm.vec3.zero()
 local RAD90 = math.pi * 0.5
+local DIVRAD90 = 1 / RAD90
 
 Line_tracer = class()
 function Line_tracer:init(thickness, colour)
@@ -84,16 +85,17 @@ Gunship.connectionOutput = sm.interactable.connectionType.seated
 Gunship.colorNormal = sm.color.new(0xcb0a00ff)
 Gunship.colorHighlight = sm.color.new(0xee0a00ff)
 
-local maxHealth = 1000
+local maxHealth = 2000
 local moveSpeed = 25
 local boostSpeed = 100
-local fireRate = 1 / 4
+local fireRate = 1 / 5
 local rocketRate = 1
 local rocketBurst = 3
 local rocketBurstTicks = 5
 local aimAssistRange = 100
-local autocannonVelocity = 200
+local autocannonVelocity = 400
 local autocannonDamage = 100
+local autocannonProjectile = sm.uuid.new("4a33d08b-4e12-4412-abb5-7b16e1aafe1a")
 local rocketVelocity = 200
 local rocketDamage = 100
 local turretTurnSpeed = 5
@@ -214,7 +216,7 @@ function Gunship:server_onFixedUpdate(dt)
         end
 
         self.network:sendToClients("cl_shoot", 0)
-        sm.projectile.projectileAttack(projectile_tape, autocannonDamage, firePos, fireDir * autocannonVelocity, char:getPlayer())
+        sm.projectile.projectileAttack(autocannonProjectile, autocannonDamage, firePos, fireDir * autocannonVelocity, char:getPlayer())
 
         self.sv_fireTimer = fireRate
     end
@@ -296,7 +298,7 @@ function Gunship:client_onCreate()
     local aimPoint = sm.effect.createEffect("ShapeRenderable")
     aimPoint:setParameter("uuid", sm.uuid.new("7030b7b1-f0a1-4b24-bd0d-11d0a42185e6"))
     aimPoint:setParameter("color", green)
-    aimPoint:setScale(vec3(0.5, 0.5, 0.5))
+    aimPoint:setScale(vec3(0.25, 0.25, 0.25))
     self.aimPoint = aimPoint
 
     self.tracers = {}
@@ -783,7 +785,8 @@ function Gunship:cl_updateCockpitUI(dt)
     self.wgui.bar4:setRotation(shapeRot)
     self.wgui.bar4:setScale(barScale)
 
-    local degreeOffset = verticalOffset * (math.asin(up.z) / (math.pi * 0.5))
+    local angle = math.asin(up.z) * DIVRAD90
+    local degreeOffset = verticalOffset * (angle == angle and angle or 0)
     self.wgui.bar5:setPosition(base - horizontalOffset + degreeOffset)
     self.wgui.bar5:setRotation(shapeRot)
     self.wgui.bar5:setScale(barScale)
