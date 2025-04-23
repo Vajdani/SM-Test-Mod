@@ -764,7 +764,7 @@ function Gunship:client_onFixedUpdate()
         self.network:sendToServer("sv_onRocketExplode")
     end
 
-    if self.seatedTick and sm.game.getServerTick() - self.seatedTick > 5 and not self.interactable:getSeatCharacter() then
+    if self.seatedTick and sm.game.getServerTick() - self.seatedTick > 40 and not self.interactable:getSeatCharacter() then
         self.seatedTick = nil
         sm.camera.setCameraState(0)
         self.gui:close()
