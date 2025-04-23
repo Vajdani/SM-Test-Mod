@@ -97,6 +97,7 @@ local autocannonDamage = 100
 local rocketVelocity = 200
 local rocketDamage = 100
 local turretTurnSpeed = 5
+local zoomFraction = 0.4
 local actions = {
     [1] = true,  --Right
     [2] = true,  --Left
@@ -357,8 +358,9 @@ function Gunship:client_onCreate()
 
     self.leftThrusterAnim = 0.5
     self.rightThrusterAnim = 0.5
-    self.horizontalTurretAnim = 0.5
-    self.verticalTurretAnim = 0.5
+
+    self.horizontalTurretAnim = sm.quat.identity()
+    self.verticalTurretAnim = 0
 end
 
 function Gunship:client_onDestroy()
@@ -481,14 +483,19 @@ function Gunship:client_onUpdate(dt)
     -- sm.camera.setRotation(shapeRot * angleAxis(math.rad(90), VEC3_RIGHT) * angleAxis(math.rad(180), VEC3_FORWARD))
 
     if self.cl_actions[18] then
-        sm.camera.setFov(sm.camera.getDefaultFov()) --* 0.4)
+        sm.camera.setFov(sm.camera.getDefaultFov() * zoomFraction)
     else
         sm.camera.setFov(sm.camera.getDefaultFov())
     end
 
     local targetPos, offsets
     if self.tracingTurret then
-        local origin = self:GetTurretFirePos() + self.shape.velocity * dt
+        local offset = turretOffset[1]
+        local origin =
+            self.shape:getInterpolatedWorldPosition() +
+            self.shape:getInterpolatedAt() * offset.z -
+            self.shape:getInterpolatedUp() * offset.y +
+            self.shape:getInterpolatedRight() * offset.x
         local endPos = origin + self:GetTurretDir() * aimAssistRange
         local hit, result = sm.physics.raycast(origin, endPos, self.shape, rayFilter)
         targetPos = hit and result.pointWorld or endPos
@@ -829,7 +836,7 @@ end
 local turretHorizontalMultiplier = 1 / math.pi * 0.5
 local turretVerticalMultiplier = 1 / RAD90
 function Gunship:cl_updateTurret(seatedChar, dt)
-    local horizontal, vertical = 0.5, 0
+    local horizontal, vertical = 0, 0
     if seatedChar then
         local dir = seatedChar.direction
         local pos = self:GetCameraPosition(dt)
@@ -844,16 +851,18 @@ function Gunship:cl_updateTurret(seatedChar, dt)
 
         dir = self.shape:transformDirection(dir)
 
-        horizontal = 0.5 - math.atan2(dir.x, dir.z) * turretHorizontalMultiplier
-        vertical = -math.min(math.asin(dir.y), 0) * turretVerticalMultiplier
+        horizontal = math.atan2(dir.x, dir.z)
+        vertical = math.max(-math.asin(dir.y), 0) * turretVerticalMultiplier
     end
 
     local animSpeed = dt * turretTurnSpeed
+    self.horizontalTurretAnim = sm.quat.slerp(self.horizontalTurretAnim, angleAxis(horizontal, VEC3_FORWARD), animSpeed)
     self.verticalTurretAnim = sm.util.lerp(self.verticalTurretAnim, vertical, animSpeed)
-    self.horizontalTurretAnim = sm.util.lerp(self.horizontalTurretAnim, horizontal, animSpeed)
 
-    self.interactable:setAnimProgress("turret_rotate_horizontal", self.horizontalTurretAnim)
     self.interactable:setAnimProgress("turret_rotate_vertical", self.verticalTurretAnim)
+
+    local dir = self.horizontalTurretAnim * VEC3_UP
+    self.interactable:setAnimProgress("turret_rotate_horizontal", 0.5 - math.atan2(dir.x, dir.z) * turretHorizontalMultiplier)
 end
 
 function Gunship:cl_updateAction(args)
