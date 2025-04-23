@@ -615,13 +615,15 @@ function Gunship:client_onClientDataUpdate(data, channel)
 
         self.wgui.healthbar:setScale(vec3(baseHealthbarScale * math.max(self.cl_health / maxHealth, 0) - 0.006, 0.02, 0))
     else
-        local id = data.id
-        if self.thrusters[id] then
-            self.thrusters[id]:destroy()
-            self.thrusters[id] = nil
+        local alive = data.health > 0
+        self.interactable:setSubMeshVisible("engine"..data.id, alive)
+        if not alive then
+            local id = data.id
+            if self.thrusters[id] then
+                self.thrusters[id]:destroy()
+                self.thrusters[id] = nil
+            end
         end
-
-        self.interactable:setSubMeshVisible("engine"..data.id, data.health > 0)
     end
 end
 
