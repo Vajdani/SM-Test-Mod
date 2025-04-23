@@ -17,6 +17,14 @@
             {
                "file" : "$CONTENT_DATA/Objects/Mesh/gunship_engine4_rotate.fbx",
                "name" : "engine4_rotate"
+            },
+            {
+               "file" : "$CONTENT_DATA/Objects/Mesh/gunship_turret_rotate_horizontal.fbx",
+               "name" : "turret_rotate_horizontal"
+            },
+            {
+               "file" : "$CONTENT_DATA/Objects/Mesh/gunship_turret_rotate_vertical.fbx",
+               "name" : "turret_rotate_vertical"
             }
          ],
          "mesh" : "$CONTENT_DATA/Objects/Mesh/gunship.fbx",

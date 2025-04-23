@@ -12,6 +12,21 @@ local function BoolToNum(bool)
     return bool and 1 or 0
 end
 
+local function dot(a, b)
+    return a.x*b.x + a.y*b.y + a.z*b.z + a.w*b.w;
+end
+
+local function normalise(a)
+    local l = 1.0 / math.sqrt(dot(a, a));
+    return sm.quat.new(l*a.x, l*a.y, l*a.z, l*a.w);
+end
+
+oldQuatSLerp = oldQuatSLerp or sm.quat.slerp
+---@diagnostic disable-next-line:duplicate-set-field
+function sm.quat.slerp(q1, q2, t)
+    return normalise(oldQuatSLerp(q1, q2, t))
+end
+
 local VEC3_RIGHT = vec3(1, 0, 0)
 local VEC3_FORWARD = vec3(0, 1, 0)
 local VEC3_UP = vec3(0, 0, 1)
@@ -76,6 +91,12 @@ local fireRate = 1 / 4
 local rocketRate = 1
 local rocketBurst = 3
 local rocketBurstTicks = 5
+local aimAssistRange = 100
+local autocannonVelocity = 200
+local autocannonDamage = 100
+local rocketVelocity = 200
+local rocketDamage = 100
+local turretTurnSpeed = 5
 local actions = {
     [1] = true,  --Right
     [2] = true,  --Left
@@ -179,24 +200,20 @@ function Gunship:server_onFixedUpdate(dt)
     self.sv_fireTimer = math.max(self.sv_fireTimer - dt, 0)
     self.sv_rocketTimer = math.max(self.sv_rocketTimer - dt, 0)
     if self.sv_actions[19] and self.sv_fireTimer <= 0 then
-        local firePos = self.interactable:getWorldBonePosition("jnt_turret_firepos") + velocity * (1 / 40)
-        local camPos = self:GetCameraPosition()
-        local targetPos = camPos + direction * 100
-        local hit, result = sm.physics.raycast(camPos, targetPos, self.shape, rayFilter)
+        local firePos, fireDir = self:GetTurretFirePos() + velocity * (1 / 40), self:GetTurretDir()
+        local targetPos = firePos + fireDir * aimAssistRange
+        local hit, result = sm.physics.raycast(firePos, targetPos, self.shape, rayFilter)
         if hit then
             targetPos = result.pointWorld
         end
 
-        local low, high = sm.projectile.solveBallisticArc(firePos, targetPos, 200, 10)
-        local fireDir
-        if low then
+        local low, high = sm.projectile.solveBallisticArc(firePos, targetPos, autocannonVelocity, 10)
+        if low and low:length2() > FLT_EPSILON then
             fireDir = low:normalize()
-        else
-            fireDir = direction
         end
 
         self.network:sendToClients("cl_shoot", 0)
-        sm.projectile.projectileAttack(projectile_tape, 100, firePos, fireDir * 200, char:getPlayer())
+        sm.projectile.projectileAttack(projectile_tape, autocannonDamage, firePos, fireDir * autocannonVelocity, char:getPlayer())
 
         self.sv_fireTimer = fireRate
     end
@@ -247,7 +264,7 @@ function Gunship:sv_fireRocket(args)
 
     local firePos, fireDir = self:GetRocketFireData(self.interactable:getWorldBonePosition("jnt_rocket"..self.sv_rocketCounter.."_firepos"))
     self.network:sendToClients("cl_shoot", self.sv_rocketCounter)
-    sm.projectile.projectileAttack(projectile_explosivetape, 100, firePos + fireDir, fireDir * 200, args.player)
+    sm.projectile.projectileAttack(projectile_explosivetape, rocketDamage, firePos + fireDir, fireDir * rocketVelocity, args.player)
 end
 
 function Gunship:sv_onRocketFire()
@@ -335,9 +352,13 @@ function Gunship:client_onCreate()
     self.interactable:setAnimEnabled("engine2_rotate", true)
     self.interactable:setAnimEnabled("engine3_rotate", true)
     self.interactable:setAnimEnabled("engine4_rotate", true)
+    self.interactable:setAnimEnabled("turret_rotate_horizontal", true)
+    self.interactable:setAnimEnabled("turret_rotate_vertical", true)
 
-    self.leftThrusterAnim = 0
-    self.rightThrusterAnim = 0
+    self.leftThrusterAnim = 0.5
+    self.rightThrusterAnim = 0.5
+    self.horizontalTurretAnim = 0.5
+    self.verticalTurretAnim = 0.5
 end
 
 function Gunship:client_onDestroy()
@@ -384,8 +405,7 @@ local rocketOffset = {
     vec3(1.0625, -4.625, 0.187502),
 }
 local turretOffset = {
-    vec3(0, -4.25, -1),
-    vec3(0, -4.25, -1),
+    vec3(0, -3.3125, -1)
 }
 function Gunship:client_onUpdate(dt)
     self.cockpit:setParameter("color", self.shape.color)
@@ -417,6 +437,8 @@ function Gunship:client_onUpdate(dt)
         end
         self.engine:stop()
     end
+
+    self:cl_updateTurret(seatedChar, dt)
 
     if self.seatedTick and not self.controllingRocket then
         if not self.cockpit:isPlaying() then
@@ -453,34 +475,25 @@ function Gunship:client_onUpdate(dt)
     self:cl_updateCockpitUI(dt)
 
     sm.camera.setCameraState(2)
-    -- sm.camera.setPosition(self.shape.worldPosition + self.shape.right * 10) --camPos)
-    -- sm.camera.setDirection(-self.shape.right) --charDir)
     sm.camera.setPosition(camPos)
     sm.camera.setDirection(charDir)
     -- local shapePos, shapeRot, up, at, right = self:GetAccurateTransform(dt)
     -- sm.camera.setRotation(shapeRot * angleAxis(math.rad(90), VEC3_RIGHT) * angleAxis(math.rad(180), VEC3_FORWARD))
 
     if self.cl_actions[18] then
-        sm.camera.setFov(sm.camera.getDefaultFov() * 0.4)
+        sm.camera.setFov(sm.camera.getDefaultFov()) --* 0.4)
     else
         sm.camera.setFov(sm.camera.getDefaultFov())
     end
 
     local targetPos, offsets
-    if self.tracingTurret then --or self.cl_actions[18] then
-        targetPos = camPos + charDir * 100
-        local gunPos = self.interactable:getWorldBonePosition("jnt_turret_firepos")
-        local hit, result = sm.physics.raycast(camPos, targetPos, self.shape, rayFilter)
-        if hit then
-            targetPos = result.pointWorld
-        end
+    if self.tracingTurret then
+        local origin = self:GetTurretFirePos() + self.shape.velocity * dt
+        local endPos = origin + self:GetTurretDir() * aimAssistRange
+        local hit, result = sm.physics.raycast(origin, endPos, self.shape, rayFilter)
+        targetPos = hit and result.pointWorld or endPos
 
-        local colHit, colResult = sm.physics.spherecast(gunPos, targetPos, 0.075, nil, rayFilter)
-        if isAnyOf(colResult:getBody(), self.shape.body:getCreationBodies()) then
-            self:cl_setTracerColour(red)
-        else
-            self:cl_setTracerColour(green)
-        end
+        self:cl_setTracerColour(math.asin(self.shape:transformDirection(charDir).y) > 0 and red or green)
 
         offsets = turretOffset
     else
@@ -494,13 +507,17 @@ function Gunship:client_onUpdate(dt)
     if self.tracerEnabled then
         for i = 1, 2 do
             local offset = offsets[i]
-            self.tracers[i]:update(
-                self.shape:getInterpolatedWorldPosition() +
-                self.shape:getInterpolatedAt() * offset.z -
-                self.shape:getInterpolatedUp() * offset.y +
-                self.shape:getInterpolatedRight() * offset.x +
-                self.shape.velocity * dt, targetPos
-            )
+            if offset then
+                self.tracers[i]:update(
+                    self.shape:getInterpolatedWorldPosition() +
+                    self.shape:getInterpolatedAt() * offset.z -
+                    self.shape:getInterpolatedUp() * offset.y +
+                    self.shape:getInterpolatedRight() * offset.x +
+                    self.shape.velocity * dt, targetPos
+                )
+            else
+                self.tracers[i]:stop()
+            end
         end
     elseif self.tracers[1].effect:isPlaying() then
         for i = 1, 2 do
@@ -809,6 +826,36 @@ function Gunship:cl_updateThrusters(dt)
     self.interactable:setAnimProgress("engine4_rotate", self.leftThrusterAnim)
 end
 
+local turretHorizontalMultiplier = 1 / math.pi * 0.5
+local turretVerticalMultiplier = 1 / RAD90
+function Gunship:cl_updateTurret(seatedChar, dt)
+    local horizontal, vertical = 0.5, 0
+    if seatedChar then
+        local dir = seatedChar.direction
+        local pos = self:GetCameraPosition(dt)
+        local hit, result = sm.physics.raycast(pos, pos + dir * aimAssistRange, self.shape)
+        if hit then
+            -- local low, high = sm.projectile.solveBallisticArc(self:GetTurretFirePos(), result.pointWorld, autocannonVelocity, 10)
+            -- if low and low:length2() > FLT_EPSILON then
+            --     dir = low:normalize()
+            -- end
+            dir = (result.pointWorld - self:GetTurretFirePos()):normalize()
+        end
+
+        dir = self.shape:transformDirection(dir)
+
+        horizontal = 0.5 - math.atan2(dir.x, dir.z) * turretHorizontalMultiplier
+        vertical = -math.min(math.asin(dir.y), 0) * turretVerticalMultiplier
+    end
+
+    local animSpeed = dt * turretTurnSpeed
+    self.verticalTurretAnim = sm.util.lerp(self.verticalTurretAnim, vertical, animSpeed)
+    self.horizontalTurretAnim = sm.util.lerp(self.horizontalTurretAnim, horizontal, animSpeed)
+
+    self.interactable:setAnimProgress("turret_rotate_horizontal", self.horizontalTurretAnim)
+    self.interactable:setAnimProgress("turret_rotate_vertical", self.verticalTurretAnim)
+end
+
 function Gunship:cl_updateAction(args)
     if sm.localPlayer.getPlayer().character ~= self.interactable:getSeatCharacter() then
         self.cl_actions[args[1]] = args[2]
@@ -895,13 +942,13 @@ end
 function Gunship:GetRocketFireData(start, dt)
     local firePos = start + self.shape.velocity * (dt or (1 / 40))
     local camPos = self:GetCameraPosition()
-    local targetPos = camPos + self.shape:getInterpolatedUp() * 100
+    local targetPos = camPos + self.shape:getInterpolatedUp() * aimAssistRange
     local hit, result = sm.physics.spherecast(camPos, targetPos, 0.15, self.shape, rayFilter)
     if hit then
         targetPos = result.pointWorld
     end
 
-    local low, high = sm.projectile.solveBallisticArc(firePos, targetPos, 200, 10)
+    local low, high = sm.projectile.solveBallisticArc(firePos, targetPos, rocketVelocity, 10)
     local fireDir
     if low and low:length2() > FLT_EPSILON then
         fireDir = low:normalize()
@@ -960,4 +1007,12 @@ function Gunship:SetBodyVisibility(state)
     -- for i = 1, 4 do
     --     self.interactable:setSubMeshVisible("engine"..i, state)
     -- end
+end
+
+function Gunship:GetTurretDir()
+    return (self.interactable:getWorldBonePosition("jnt_turret_firepos_end") - self:GetTurretFirePos()):normalize()
+end
+
+function Gunship:GetTurretFirePos()
+    return self.interactable:getWorldBonePosition("jnt_turret_firepos")
 end
