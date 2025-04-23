@@ -329,20 +329,26 @@ function Gunship:server_onCollision(other, position, selfPointVelocity, otherPoi
 end
 
 function Gunship:server_onFixedUpdate(dt)
-    for k, v in pairs(self.damageAreas) do
-        local name = "jnt_engine" .. k
-        local engineDir = self:GetLocalBoneDir(name.."_effect")
-        local enginePos = self.interactable:getWorldBonePosition(name)
-        local worldUp = self:TransformLocalDirection(engineDir)
-        local worldRight = self:TransformLocalDirection(CalculateRightVector(engineDir))
-        local trigger = v.trigger
-        if k == 1 or k == 3 then
-            trigger:setWorldPosition(enginePos - worldRight * engineOffset)
-        else
-            trigger:setWorldPosition(enginePos + worldRight * engineOffset)
-        end
+    local missingEngines = 0
+    for i = 1, 4 do
+        local area = self.damageAreas[i]
+        if area then
+            local name = "jnt_engine"..i
+            local engineDir = self:GetLocalBoneDir(name.."_effect")
+            local enginePos = self.interactable:getWorldBonePosition(name)
+            local worldUp = self:TransformLocalDirection(engineDir)
+            local worldRight = self:TransformLocalDirection(CalculateRightVector(engineDir))
+            local trigger = area.trigger
+            if i == 1 or i == 3 then
+                trigger:setWorldPosition(enginePos - worldRight * engineOffset)
+            else
+                trigger:setWorldPosition(enginePos + worldRight * engineOffset)
+            end
 
-        trigger:setWorldRotation(quat_normalise(sm.util.axesToQuat(worldRight, worldUp)))
+            trigger:setWorldRotation(quat_normalise(sm.util.axesToQuat(worldRight, worldUp)))
+        else
+            missingEngines = missingEngines + 1
+        end
     end
 
     local char = self.interactable:getSeatCharacter()
@@ -354,21 +360,29 @@ function Gunship:server_onFixedUpdate(dt)
         self.sv_mass = self:GetBodyMass()
     end
 
+    if missingEngines < 4 then
+        self:sv_applyPhysics(char, shape, body, velocity, missingEngines, dt)
+    end
+
+    self:sv_handleAutocannon(velocity, char, dt)
+    self:sv_handleRocketLaunchers(char, dt)
+end
+
+function Gunship:sv_applyPhysics(char, shape, body, velocity, missingEngines, dt)
     local direction = char.direction
-    local force =
-        vec3(0, 0, getGravity() + 0.45) +
-        -- self:GetMoveDir() * moveSpeed -
-        self:GetMoveDir() * (self.sv_actions[16] and boostSpeed or moveSpeed) -
-        velocity * 0.5
+    local force = vec3(0, 0, getGravity() + 0.45) + self:GetMoveDir() * (self.sv_actions[16] and boostSpeed or moveSpeed) - velocity * 0.5
+    local offset = VEC3_ZERO
+    local forceMultiplier = (4 - missingEngines) / 4
+    if missingEngines > 0 then
+        for i = 1, 4 do
+            if self.damageAreas[i] then
+                offset = offset + self.interactable:getLocalBonePosition("jnt_engine"..i)
+            end
+        end
 
-    -- local groundCheck = body:getWorldAabb()
-    -- local hit, result = sm.physics.raycast(groundCheck, groundCheck - VEC3_UP * 5, body, rayFilter)
-    -- if hit then
-    --     force = force + VEC3_UP * moveSpeed
-    --     -- up = 1
-    -- end
-
-    sm.physics.applyImpulse(self.shape, force * dt * self.sv_mass, true)
+        offset = offset / (4 - missingEngines)
+    end
+    sm.physics.applyImpulse(self.shape, force * forceMultiplier * dt * self.sv_mass, true, offset)
 
     local torque =
         -body.angularVelocity * 0.3 -
@@ -386,10 +400,11 @@ function Gunship:server_onFixedUpdate(dt)
 
         torque = torque + shape.up:cross(direction) + steer
     end
-    sm.physics.applyTorque(body, torque * self.sv_mass, true)
+    sm.physics.applyTorque(body, torque * self.sv_mass * forceMultiplier, true)
+end
 
+function Gunship:sv_handleAutocannon(velocity, char, dt)
     self.sv_fireTimer = math.max(self.sv_fireTimer - dt, 0)
-    self.sv_rocketTimer = math.max(self.sv_rocketTimer - dt, 0)
     if self.sv_actions[19] and self.sv_fireTimer <= 0 then
         local firePos, fireDir = self:GetTurretFirePos() + velocity * (1 / 40), self:GetTurretDir()
         local targetPos = firePos + fireDir * aimAssistRange
@@ -408,7 +423,10 @@ function Gunship:server_onFixedUpdate(dt)
 
         self.sv_fireTimer = fireRate
     end
+end
 
+function Gunship:sv_handleRocketLaunchers(char, dt)
+    self.sv_rocketTimer = math.max(self.sv_rocketTimer - dt, 0)
     if self.sv_actions[5] and self.sv_rocketTimer <= 0 then
         self.sv_rocketCounter = self.sv_rocketCounter % 2 + 1
         local player = char:getPlayer()
@@ -567,8 +585,8 @@ function Gunship:client_onDestroy()
 
     self.cockpit:destroy()
 
-    for i = 1, 4 do
-        self.thrusters[i]:destroy()
+    for k, v in pairs(self.thrusters) do
+        v:destroy()
     end
 
     self.aimPoint:destroy()
@@ -597,6 +615,12 @@ function Gunship:client_onClientDataUpdate(data, channel)
 
         self.wgui.healthbar:setScale(vec3(baseHealthbarScale * math.max(self.cl_health / maxHealth, 0) - 0.006, 0.02, 0))
     else
+        local id = data.id
+        if self.thrusters[id] then
+            self.thrusters[id]:destroy()
+            self.thrusters[id] = nil
+        end
+
         self.interactable:setSubMeshVisible("engine"..data.id, data.health > 0)
     end
 end
@@ -615,9 +639,9 @@ function Gunship:client_onUpdate(dt)
 
     local seatedChar = self.interactable:getSeatCharacter()
     if seatedChar then
-        if not self.thrusters[1]:isPlaying() then
-            for i = 1, 4 do
-                self.thrusters[i]:start()
+        if not self.engine:isPlaying() then
+            for k, v in pairs(self.thrusters) do
+                v:start()
             end
             self.engine:start()
         end
@@ -632,9 +656,9 @@ function Gunship:client_onUpdate(dt)
             self.engine:setParameter("rpm", 0.33 + moving * 0.1)
             self.engine:setParameter("load", 0.5 + moving * 0.1)
         end
-    elseif not seatedChar and self.thrusters[1]:isPlaying() then
-        for i = 1, 4 do
-            self.thrusters[i]:stop()
+    elseif not seatedChar and self.engine:isPlaying() then
+        for k, v in pairs(self.thrusters) do
+            v:stop()
         end
         self.engine:stop()
     end
@@ -1175,16 +1199,6 @@ end
 function Gunship:GetMoveDir()
     local _actions = self.sv_actions or self.cl_actions
     local at, up, right = self.shape.at, self.shape.up, self.shape.right
-    -- if _actions[16] then
-    --     at = VEC3_UP
-
-    --     up.z = 0
-    --     up = up:normalize()
-
-    --     right.z = 0
-    --     right = right:normalize()
-    -- end
-
     return (
         at * (BoolToNum(_actions[21]) - BoolToNum(_actions[20])) +
         up * (BoolToNum(_actions[3]) - BoolToNum(_actions[4])) +
