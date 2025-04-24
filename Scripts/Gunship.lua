@@ -625,6 +625,10 @@ function Gunship:client_onDestroy()
     end
 
     self.gui:destroy()
+
+    for k, v in pairs(self.cl_damageAreas) do
+        sm.areaTrigger.destroy(v.trigger)
+    end
 end
 
 function Gunship:client_onClientDataUpdate(data, channel)
