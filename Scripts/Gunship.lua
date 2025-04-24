@@ -157,11 +157,12 @@ function sm.physics.spherecast(startPos, endPos, radius, object, mask)
 end
 
 ---@class DamageArea
----@field health number
+---@field health? number
 ---@field trigger AreaTrigger
 
 ---@class Gunship : ShapeClass
----@field damageAreas DamageArea[]
+---@field sv_damageAreas DamageArea[]
+---@field cl_damageAreas DamageArea[]
 Gunship = class()
 Gunship.maxParentCount = 0
 Gunship.maxChildCount = 7
@@ -220,7 +221,6 @@ local red = sm.color.new(1, 0, 0)
 local white = sm.color.new(1, 1, 1)
 local yellow = sm.color.new(1, 1, 0)
 local black = sm.color.new(0, 0, 0)
-local baseHealthbarScale = 0.25 * 1.75
 
 function Gunship:server_onCreate()
     self.sv_actions = {}
@@ -533,16 +533,6 @@ function Gunship:client_onCreate()
     self.engine = sm.effect.createEffect("GasEngine - Level 4", self.interactable, "jnt_camera")
 
     self.wgui = {}
-    local healthbar = sm.effect.createEffect("ShapeRenderable")
-    healthbar:setParameter("uuid", sm.uuid.new("7030b7b1-f0a1-4b24-bd0d-11d0a42185e6"))
-    healthbar:setScale(vec3(0.25, 0.25, 0.25))
-    self.wgui.healthbar = healthbar
-
-    local healthbarbg = sm.effect.createEffect("ShapeRenderable")
-    healthbarbg:setParameter("uuid", sm.uuid.new("7030b7b1-f0a1-4b24-bd0d-11d0a42185e6"))
-    healthbarbg:setParameter("color", black)
-    healthbarbg:setScale(vec3(baseHealthbarScale, 0.025, 0))
-    self.wgui.healthbarbg = healthbarbg
 
     -- if not self.wgui.hotbar then
     --     self.wgui.hotbar = {
@@ -570,6 +560,16 @@ function Gunship:client_onCreate()
     --         end
     --     }
     -- end
+
+    local mainHealth = sm.effect.createEffect("ShapeRenderable")
+    mainHealth:setParameter("uuid", sm.uuid.new("7030b7b1-f0a1-4b24-bd0d-11d0a42185e6"))
+    self.wgui.mainHealth = mainHealth
+
+    for i = 1, 4 do
+        local bar = sm.effect.createEffect("ShapeRenderable")
+        bar:setParameter("uuid", sm.uuid.new("7030b7b1-f0a1-4b24-bd0d-11d0a42185e6"))
+        self.wgui["engine"..i.."Health"] = bar
+    end
 
     self.gui = sm.gui.createSeatGui()
 
@@ -630,22 +630,17 @@ end
 function Gunship:client_onClientDataUpdate(data, channel)
     if channel == 1 then
         self.cl_health = data
-
-        if self.cl_health > maxHealth * 0.75 then
-            self.wgui.healthbar:setParameter("color", white)
-        elseif self.cl_health > maxHealth * 0.25 then
-            self.wgui.healthbar:setParameter("color", yellow)
-        else
-            self.wgui.healthbar:setParameter("color", red)
-        end
-
-        self.wgui.healthbar:setScale(vec3(baseHealthbarScale * math.max(self.cl_health / maxHealth, 0) - 0.006, 0.02, 0))
+        self.wgui.mainHealth:setParameter("color", self:GetHealthColour(data, maxHealth))
     else
         local alive = data.health > 0
         local id = data.id
         self.interactable:setSubMeshVisible("engine"..id, alive)
 
-        if not alive then
+        if alive then
+            self.wgui["engine"..id.."Health"]:setParameter("color", self:GetHealthColour(data.health, thrusterMaxHealth))
+        else
+            self.wgui["engine"..id.."Health"]:setParameter("color", black)
+
             if self.thrusters[id] then
                 self.thrusters[id]:destroy()
                 self.thrusters[id] = nil
@@ -964,15 +959,6 @@ function Gunship:cl_updateCockpitUI(dt)
     self.cockpit:setPosition(shapePos)
     self.cockpit:setRotation(shapeRot)
 
-    local healthPercent = math.max(self.cl_health / maxHealth, 0)
-    local healthbar, healthbarbg = self.wgui.healthbar, self.wgui.healthbarbg
-
-    healthbar:setPosition(shapePos + up * 4.4 + right * baseHealthbarScale * (1 - healthPercent) * 0.5 + at * 0.1)
-    healthbar:setRotation(shapeRot)
-
-    healthbarbg:setPosition(shapePos + up * 4.401 + at * 0.1)
-    healthbarbg:setRotation(shapeRot)
-
     -- local children = self.interactable:getChildren()
     -- local hotbarWidth = (#children - 1) * 0.03 * 0.5
     -- for i = 1, self.maxChildCount do
@@ -1018,8 +1004,8 @@ function Gunship:cl_updateCockpitUI(dt)
     --         hotbarItem.bg:setRotation(shapeRot)
     --         hotbarItem.bg:setParameter("color", int.active and white or black)
 
-    --         hotbarItem.item:setPosition(itemPos)
-    --         hotbarItem.item:setRotation(shapeRot)
+    --         hotbarItem.item:setPosition(itemPos - up * 0.005)
+    --         hotbarItem.item:setRotation(shapeRot * angleAxis(-RAD90, VEC3_RIGHT))
     --     elseif hotbarItem and hotbarItem.bg:isPlaying() then
     --         hotbarItem.bg:stop()
     --         hotbarItem.item:stop()
@@ -1034,7 +1020,6 @@ function Gunship:cl_updateCockpitUI(dt)
         for i = 1, 10 do
             local bar = sm.effect.createEffect("ShapeRenderable")
             bar:setParameter("uuid", sm.uuid.new("7030b7b1-f0a1-4b24-bd0d-11d0a42185e6"))
-            bar:setScale(vec3(0.25, 0.25, 0.25))
             self.wgui["bar" .. i] = bar
         end
 
@@ -1043,7 +1028,7 @@ function Gunship:cl_updateCockpitUI(dt)
 
     local base = shapePos + up * 4.4 + at * 0.25
     local barScale = vec3(0.03, 0.0025, 0)
-    local verticalScale, horizontalScale = 0.1 - barScale.y * 0.5, 0.125 - barScale.x * 0.5
+    local verticalScale, horizontalScale = 0.09 - barScale.y * 0.5, 0.11 - barScale.x * 0.5
     local verticalOffset, horizontalOffset = at * verticalScale, right * horizontalScale
     self.wgui.bar1:setPosition(base + verticalOffset + horizontalOffset)
     self.wgui.bar1:setRotation(shapeRot)
@@ -1093,6 +1078,30 @@ function Gunship:cl_updateCockpitUI(dt)
             self.wgui["bar" .. i]:start()
         end
     end
+
+    local healthCenter = base + right * 0.275
+    local healthRotation = shapeRot * angleAxis(math.rad(45), VEC3_FORWARD)
+    self.wgui.mainHealth:setPosition(healthCenter)
+    self.wgui.mainHealth:setRotation(healthRotation)
+    self.wgui.mainHealth:setScale(vec3(0.2, 0.75, 0) * 0.1)
+
+    local uiEngineScale = vec3(0.01, 0.02, 0)
+    local uiEngineRightOffset, uiEngineUpOffset = healthRotation * VEC3_RIGHT * 0.0175, healthRotation * VEC3_FORWARD * 0.025
+    self.wgui.engine1Health:setPosition(healthCenter - uiEngineRightOffset + uiEngineUpOffset)
+    self.wgui.engine1Health:setRotation(healthRotation)
+    self.wgui.engine1Health:setScale(uiEngineScale)
+
+    self.wgui.engine2Health:setPosition(healthCenter + uiEngineRightOffset + uiEngineUpOffset)
+    self.wgui.engine2Health:setRotation(healthRotation)
+    self.wgui.engine2Health:setScale(uiEngineScale)
+
+    self.wgui.engine3Health:setPosition(healthCenter - uiEngineRightOffset - uiEngineUpOffset)
+    self.wgui.engine3Health:setRotation(healthRotation)
+    self.wgui.engine3Health:setScale(uiEngineScale)
+
+    self.wgui.engine4Health:setPosition(healthCenter + uiEngineRightOffset - uiEngineUpOffset)
+    self.wgui.engine4Health:setRotation(healthRotation)
+    self.wgui.engine4Health:setScale(uiEngineScale)
 end
 
 function Gunship:cl_updateThrusters(dt)
@@ -1325,4 +1334,14 @@ function Gunship:GetDestructionResistence(uuid)
     end
 
     return 0
+end
+
+function Gunship:GetHealthColour(health, _maxHealth)
+    if health > _maxHealth * 0.75 then
+        return white
+    elseif health > _maxHealth * 0.25 then
+        return yellow
+    end
+
+    return red
 end
