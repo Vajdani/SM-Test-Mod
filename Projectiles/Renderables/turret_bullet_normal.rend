@@ -6,9 +6,9 @@
             {
                "material" : "DifAsgNor",
                "textureList" : [
-                  "$CONTENT_DATA/Objects/Textures/Ammo/obj_turret_cartridge_dif.tga",
-                  "$CONTENT_DATA/Objects/Textures/Ammo/obj_turret_cartridge_asg.tga",
-                  "$CONTENT_DATA/Objects/Textures/Ammo/obj_turret_cartridge_nor.tga"
+                  "$CONTENT_DATA/Projectiles/Textures/obj_turret_cartridge_dif.tga",
+                  "$CONTENT_DATA/Projectiles/Textures/obj_turret_cartridge_asg.tga",
+                  "$CONTENT_DATA/Projectiles/Textures/obj_turret_cartridge_nor.tga"
                ]
             }
          ]
