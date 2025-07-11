@@ -27,6 +27,7 @@ function GunnerShield:server_onFixedUpdate(dt)
     self.deathTimer = self.deathTimer - dt
     if self.deathTimer <= 1 and not self.sentStop then
         self.network:sendToClients("cl_onEvent", "stop")
+        sm.areaTrigger.destroy(self.trigger)
         self.sentStop = true
     end
 
@@ -35,8 +36,13 @@ function GunnerShield:server_onFixedUpdate(dt)
     end
 end
 
+function GunnerShield:sv_e_onHit() end
+
 function GunnerShield:sv_activate()
-    self.trigger = sm.areaTrigger.createAttachedSphere(self.interactable, 5)
+    self.trigger = sm.areaTrigger.createAttachedSphere(self.interactable, 5, sm.vec3.zero(), sm.quat.identity(), -1, {
+        isCustomCollision = true,
+        parent = self.shape
+    })
     self.trigger:bindOnProjectile("sv_onTriggerHit", self)
 end
 
@@ -264,7 +270,6 @@ function GunnerShield_handheld.client_onEquip( self, animate )
 end
 
 function GunnerShield_handheld.client_onUnequip( self, animate )
-
 	self.wantEquipped = false
 	self.equipped = false
 	if sm.exists( self.tool ) then
@@ -273,6 +278,8 @@ function GunnerShield_handheld.client_onUnequip( self, animate )
 		end
 		setTpAnimation( self.tpAnimations, "putdown" )
 		if self.isLocal then
+            self.pendingThrow = false
+
 			self.tool:setMovementSlowDown( false )
 			self.tool:setBlockSprint( false )
 			self.tool:setCrossHairAlpha( 1.0 )

@@ -14,7 +14,7 @@ function Shit:server_onFixedUpdate()
     local isCrouching = char:isCrouching()
 
     if isCrouching --[[and self.canShit]] then
-        local pos = char.worldPosition - vec3_up:cross(calculateRightVector(char.direction) * 0.5)
+        local pos = char.worldPosition - vec3_up:cross(CalculateRightVector(char.direction) * 0.5)
 
         self.network:sendToClients("cl_onShit", pos)
         local shape = sm.shape.createPart(
@@ -65,11 +65,3 @@ function Shit:client_onUpdate()
     sm.camera.setDirection(dir)
     sm.camera.setFov(90)
 end]]
-
-
-
---thanks QMark
-function calculateRightVector(vector)
-    local yaw = math.atan2(vector.y, vector.x) - math.pi / 2
-    return sm.vec3.new(math.cos(yaw), math.sin(yaw), 0)
-end

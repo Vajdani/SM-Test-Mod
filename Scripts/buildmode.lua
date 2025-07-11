@@ -301,7 +301,7 @@ function BM:client_onUpdate(dt)
         if self.controls[6] then up = up - moveSpeed end
 
         local playerDir = player.character.direction
-        self.camPos = self.camPos + playerDir * fwd + calculateRightVector(playerDir) * right + vec3_up * up
+        self.camPos = self.camPos + playerDir * fwd + CalculateRightVector(playerDir) * right + vec3_up * up
 
         local lerp = dt * 10
         local pos = self.camPos
@@ -370,23 +370,4 @@ function BM:cl_blockRemove()
             dir = sm.camera.getDirection()
         }
     )
-end
-
-
-
-function calculateRightVector(vector)
-    local yaw = math.atan2(vector.y, vector.x) - math.pi / 2
-    return sm.vec3.new(math.cos(yaw), math.sin(yaw), 0)
-end
-
----@return Vec3
-function getClosestBlockWorldPosition( target, position )
-    local A = target:getClosestBlockLocalPosition( position )/4
-    local B = target.localPosition/4 - sm.vec3.new(0.125,0.125,0.125)
-    local C = target:getBoundingBox()
-    return target:transformLocalPoint( A-(B+C/2) )
-end
-
-function roundVector( vec3 )
-    return sm.vec3.new(round(vec3.x), round(vec3.y), round(vec3.z))
 end

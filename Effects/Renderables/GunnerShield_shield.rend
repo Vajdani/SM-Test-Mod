@@ -9,7 +9,7 @@
          "subMeshList": [
             {
                "textureList": [
-                  "$CHALLENGE_DATA/Effects/Textures/t_hologram_goal.tga"
+                  "$GAME_DATA/Textures/transparent.tga"
                ],
                "material": "Hologram"
             }
