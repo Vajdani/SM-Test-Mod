@@ -253,6 +253,28 @@
          },
          "uuid": "0924fd4b-8a20-4b66-b900-5fc1324dc5a9",
          "autoTool": true
+      },
+      {
+         "name": "tool_ik",
+         "previewRenderable": "$GAME_DATA/Character/Char_Tools/char_spudgun_preview.rend",
+         "previewRotation": [
+            1,
+            0,
+            0,
+            0,
+            0,
+            -1,
+            0,
+            1,
+            0
+         ],
+         "script": {
+            "class": "IK",
+            "data": {},
+            "file": "$CONTENT_DATA/Scripts/IK.lua"
+         },
+         "uuid": "3563b776-064c-444f-bd77-cc98329b1aaf",
+         "showInInventory": false
       }
    ]
 }

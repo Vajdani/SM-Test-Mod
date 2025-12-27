@@ -6,30 +6,18 @@ Drone.projectileSpeed = 130
 Drone.minFloatHight = 5
 Drone.maxFloatHight = 50
 Drone.movementControls = {
-    {
-        id = sm.interactable.actions.forward,
-        dir = function( camUp, dir, up )
-            return up:cross(dir:cross(camUp))
-        end
-    },
-    {
-        id = sm.interactable.actions.backward,
-        dir = function( camUp, dir, up )
-            return up:cross(camUp:cross(dir))
-        end
-    },
-    {
-        id = sm.interactable.actions.left,
-        dir = function( camUp, dir )
-            return camUp:cross(dir)
-        end
-    },
-    {
-        id = sm.interactable.actions.right,
-        dir = function( camUp, dir )
-            return dir:cross(camUp)
-        end
-    }
+    [sm.interactable.actions.forward] = function( camUp, dir, up )
+        return up:cross(dir:cross(camUp))
+    end,
+    [sm.interactable.actions.backward] = function( camUp, dir, up )
+        return up:cross(camUp:cross(dir))
+    end,
+    [sm.interactable.actions.left] = function( camUp, dir )
+        return camUp:cross(dir)
+    end,
+    [sm.interactable.actions.right] = function( camUp, dir )
+        return dir:cross(camUp)
+    end,
 }
 
 local camAdjust = sm.vec3.new(0,0,0.575)
@@ -88,8 +76,8 @@ function Drone:sv_getMoveDir()
     local moveDir = sm.vec3.zero()
 
     for k, v in pairs(self.movementControls) do
-        if self.sv.controls[v.id] then
-            moveDir = moveDir + v.dir( camUp, dir, up )
+        if self.sv.controls[k] then
+            moveDir = moveDir + v( camUp, dir, up )
         end
     end
 

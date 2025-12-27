@@ -10,12 +10,14 @@ function sus:server_onFixedUpdate()
     local target, distance, dir
     local shapePos = self.shape.worldPosition
     for k, char in pairs(self.trigger:getContents() --[[@as Character[] ]]) do
-        local _dir = char.worldPosition - shapePos
-        local _distance = _dir:length2()
-        if not distance or _distance < distance then
-            distance = _distance
-            target = char
-            dir = _dir:normalize()
+        if sm.exists(char) then
+            local _dir = char.worldPosition - shapePos
+            local _distance = _dir:length2()
+            if not distance or _distance < distance then
+                distance = _distance
+                target = char
+                dir = _dir:normalize()
+            end
         end
     end
 
@@ -34,10 +36,9 @@ end
 function sus:client_onCreate()
     self.interactable:setAnimEnabled("run", true)
     self.animProgress = 0
-    self.animDuration = self.interactable:getAnimDuration("run")
 end
 
 function sus:client_onUpdate(dt)
-    self.animProgress = self.animProgress + dt
-    self.interactable:setAnimProgress("run", self.animProgress / self.animDuration)
+    self.animProgress = self.animProgress + dt * 5
+    self.interactable:setAnimProgress("run", self.animProgress)
 end

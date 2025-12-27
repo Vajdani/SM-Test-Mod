@@ -94,16 +94,14 @@ function Railgun:sv_pierce( rayStart )
 	local dir = playerChar.direction
 	local rayLength = self.range
 	for i = 1, self.maxTries do
-		local hit, result = sm.physics.raycast( rayStart, rayStart + dir * rayLength )
+		local hit, result = sm.physics.raycast( rayStart, rayStart + dir * rayLength, playerChar )
 		if not hit or result.type ~= "character" then break end
 
 		local char = result:getCharacter()
 		local pos = char.worldPosition
 		rayLength = rayLength - (rayStart - pos):length()
 		rayStart = pos
-		if char ~= playerChar then
-			sm.projectile.projectileAttack( projectile_potato, self.damage, result.pointWorld, dir * 10, player )
-		end
+		sm.projectile.projectileAttack( projectile_potato, self.damage, result.pointWorld, dir * 10, player )
 	end
 end
 

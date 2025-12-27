@@ -79,7 +79,7 @@ function Spine:client_onUpdate( dt )
 end
 
 function Spine:client_onEquippedUpdate( lmb, rmb )
-    local spinning = isAnyOf(lmb, {1,2})
+    local spinning = lmb == 1 or lmb == 2
     if self.spinning ~= spinning then
         self.network:sendToServer("sv_updateSpin", spinning)
     end

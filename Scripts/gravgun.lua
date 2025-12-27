@@ -1,6 +1,7 @@
 dofile "util.lua"
 
-local BETA = true
+local BETA = false
+local gravRotate = true
 local ico_lmb = sm.gui.getKeyBinding("Create", true)
 local ico_rmb = sm.gui.getKeyBinding("Attack", true)
 local ico_q = sm.gui.getKeyBinding("NextCreateRotation", true)
@@ -871,8 +872,8 @@ function Grav:cl_mode_grav( lmb, rmb, f )
 	end
 
 	if self.target then
-		local canRotate = type(self.target) == "Body" and BETA == true
-		if f and BETA == true then
+		local canRotate = type(self.target) == "Body" and gravRotate
+		if f and gravRotate then
 			gui_intText(
 				ico_lmb.."Drop target\t",
 				ico_rmb.."Throw target",

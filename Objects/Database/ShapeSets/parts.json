@@ -1273,7 +1273,7 @@
          "box": {
             "x": 2,
             "y": 2,
-            "z": 3
+            "z": 2
          },
          "color": "ff0000",
          "density": 1250.0,
@@ -1314,12 +1314,12 @@
                }
             ]
          },
-         "rotationSet": "PropZ",
+         "rotationSet": "PropY",
          "scripted": {
             "classname": "sus",
             "filename": "$CONTENT_DATA/Scripts/amogusnpc.lua"
          },
-         "sticky": "-Z",
+         "sticky": "+X-X+Y-Y+Z-Z",
          "uuid": "06d24542-f6ac-455f-9bfd-1d82764fe750"
       },
       {
