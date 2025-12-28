@@ -4,10 +4,6 @@ dofile( "$SURVIVAL_DATA/Scripts/game/survival_shapes.lua" )
 dofile( "$SURVIVAL_DATA/Scripts/game/survival_projectiles.lua" )
 
 local blockGunUUID = sm.uuid.new("6f346cef-4e6c-4d32-8dae-9e9c3e04230f")
-local vec3_up = sm.vec3.new(0,0,1)
-local vec3_zero = sm.vec3.zero()
-local rad90 = math.rad(90)
-local camRotAdjust = sm.quat.angleAxis(-rad90, vec3_up)
 
 ---@class BG_tool : ToolClass
 ---@field fpAnimations table
@@ -18,33 +14,34 @@ local camRotAdjust = sm.quat.angleAxis(-rad90, vec3_up)
 ---@field aiming boolean
 ---@field hasGun boolean
 ---@field equipped boolean
+---@field wantEquipped boolean
 ---@field shootEffect Effect
 ---@field shootEffectFP Effect
 ---@field aimBlendSpeed number
 ---@field blendTime number
+---@field aimWeight number
 ---@field sprintCooldown number
 ---@field movementDispersion number
 ---@field gun table
+---@field fireCooldownTimer number
+---@field spreadCooldownTimer number
+---@field sprintCooldownTimer number
+---@field canRegisterF boolean
+---@field prevPrimaryState number
+---@field prevSecondaryState number
 BG_tool = class()
-
-local renderables = {
-	"$GAME_DATA/Character/Char_Tools/Char_spudgun/Base/char_spudgun_base_basic.rend",
-	"$GAME_DATA/Character/Char_Tools/Char_spudgun/Barrel/Barrel_basic/char_spudgun_barrel_basic.rend",
-	"$GAME_DATA/Character/Char_Tools/Char_spudgun/Sight/Sight_basic/char_spudgun_sight_basic.rend",
-	"$GAME_DATA/Character/Char_Tools/Char_spudgun/Stock/Stock_broom/char_spudgun_stock_broom.rend",
-	"$GAME_DATA/Character/Char_Tools/Char_spudgun/Tank/Tank_basic/char_spudgun_tank_basic.rend"
-}
 
 local renderablesTp = {
 	"$GAME_DATA/Character/Char_Male/Animations/char_male_tp_spudgun.rend",
-	"$GAME_DATA/Character/Char_Tools/Char_spudgun/char_spudgun_tp_animlist.rend"
+	"$GAME_DATA/Character/Char_Tools/Char_spudgun/char_spudgun_tp_animlist.rend",
+	"$CONTENT_DATA/Tools/char_spudgun_barrel_transform.rend"
 }
 local renderablesFp = {
+	"$CONTENT_DATA/Tools/blockgun_fp.rend",
 	"$GAME_DATA/Character/Char_Tools/Char_spudgun/char_spudgun_fp_animlist.rend",
-	"$CONTENT_DATA/Tools/blockgun_fp.rend"
+	"$CONTENT_DATA/Tools/char_spudgun_barrel_transform.rend"
 }
 
-sm.tool.preloadRenderables( renderables )
 sm.tool.preloadRenderables( renderablesTp )
 sm.tool.preloadRenderables( renderablesFp )
 
@@ -53,7 +50,53 @@ function BG_tool.client_onCreate( self )
 	self.hasGun = false
 	self.gun = {}
 
+	self.aimBlendSpeed = 3.0
+	self.blendTime = 0.2
+
+	self.jointWeight = 0.0
+	self.spineWeight = 0.0
+	local cameraWeight, cameraFPWeight = self.tool:getCameraWeights()
+	self.aimWeight = math.max( cameraWeight, cameraFPWeight )
+
 	if not self.isLocal then return end
+
+	self.normalFireMode = {
+		fireCooldown = 0.20,
+		spreadCooldown = 0.18,
+		spreadIncrement = 2.6,
+		spreadMinAngle = .25,
+		spreadMaxAngle = 8,
+		fireVelocity = 130.0,
+
+		minDispersionStanding = 0.1,
+		minDispersionCrouching = 0.04,
+
+		maxMovementDispersion = 0.4,
+		jumpDispersionMultiplier = 2
+	}
+
+	self.aimFireMode = {
+		fireCooldown = 0.20,
+		spreadCooldown = 0.18,
+		spreadIncrement = 1.3,
+		spreadMinAngle = 0,
+		spreadMaxAngle = 8,
+		fireVelocity =  130.0,
+
+		minDispersionStanding = 0.01,
+		minDispersionCrouching = 0.01,
+
+		maxMovementDispersion = 0.4,
+		jumpDispersionMultiplier = 2
+	}
+
+	self.fireCooldownTimer = 0.0
+	self.spreadCooldownTimer = 0.0
+
+	self.movementDispersion = 0.0
+
+	self.sprintCooldownTimer = 0.0
+	self.sprintCooldown = 0.3
 
 	self.canRegisterF = true
 end
@@ -65,8 +108,7 @@ function BG_tool.server_onCreate( self )
 	end
 end
 
-function BG_tool.loadAnimations( self )
-
+function BG_tool:loadAnimations()
 	self.tpAnimations = createTpAnimations(
 		self.tool,
 		{
@@ -125,68 +167,24 @@ function BG_tool.loadAnimations( self )
 				sprintIdle = { "bg_sprint_idle", { looping = true } },
 			}
 		)
+
+		setFpAnimation( self.fpAnimations, "idle", 0 )
 	end
-
-	self.normalFireMode = {
-		fireCooldown = 0.20,
-		spreadCooldown = 0.18,
-		spreadIncrement = 2.6,
-		spreadMinAngle = .25,
-		spreadMaxAngle = 8,
-		fireVelocity = 130.0,
-
-		minDispersionStanding = 0.1,
-		minDispersionCrouching = 0.04,
-
-		maxMovementDispersion = 0.4,
-		jumpDispersionMultiplier = 2
-	}
-
-	self.aimFireMode = {
-		fireCooldown = 0.20,
-		spreadCooldown = 0.18,
-		spreadIncrement = 1.3,
-		spreadMinAngle = 0,
-		spreadMaxAngle = 8,
-		fireVelocity =  130.0,
-
-		minDispersionStanding = 0.01,
-		minDispersionCrouching = 0.01,
-
-		maxMovementDispersion = 0.4,
-		jumpDispersionMultiplier = 2
-	}
-
-	self.fireCooldownTimer = 0.0
-	self.spreadCooldownTimer = 0.0
-
-	self.movementDispersion = 0.0
-
-	self.sprintCooldownTimer = 0.0
-	self.sprintCooldown = 0.3
-
-	self.aimBlendSpeed = 3.0
-	self.blendTime = 0.2
-
-	self.jointWeight = 0.0
-	self.spineWeight = 0.0
-	local cameraWeight, cameraFPWeight = self.tool:getCameraWeights()
-	self.aimWeight = math.max( cameraWeight, cameraFPWeight )
-
 end
 
 function BG_tool.client_onUpdate( self, dt )
-	--[[sm.camera.setCameraState(3)
-	sm.camera.setPosition(self.tool:getPosition() + sm.vec3.new(0,1,0) + self.tool:getDirection() * 2)
-	sm.camera.setDirection(-self.tool:getDirection() - sm.vec3.new(0,1,0))
-	sm.camera.setFov(90)]]
-
 	-- First person animation
 	local isSprinting =  self.tool:isSprinting()
 	local isCrouching =  self.tool:isCrouching()
 
-	if self.isLocal and self.hasGun then
+	if self.isLocal then
 		self:updateFp( dt, isSprinting )
+
+		if isSprinting then
+			self.sprintWeight = math.min((self.sprintWeight or 0) + dt * 5, 1)
+		else
+			self.sprintWeight = math.max((self.sprintWeight or 0) - dt * 5, 0)
+		end
 	end
 
 	if not self.equipped then
@@ -198,15 +196,37 @@ function BG_tool.client_onUpdate( self, dt )
 	end
 
 	if self.hasGun then
-		local dir = self.tool:getDirection()
-		local camRot = self:getCamRot(dir)
-		local handPos = self.tool:isInFirstPersonView() and self.tool:getFpBonePos("jnt_right_weapon") or self.tool:getTpBonePos("jnt_right_weapon")
+		local rHand
+		local gunDir = self.tool:getSmoothDirection()
+		local scaleMult = 1
+		if self.tool:isInFirstPersonView() then
+			rHand = self.tool:getFpBonePos("jnt_right_hand")
+			if self.sprintWeight > 0 then
+				local right = gunDir:cross(VEC3_UP):normalize()
+				-- local up = right:cross(gunDir)
+				gunDir = sm.quat.angleAxis(math.rad(-20 * self.sprintWeight), right) * gunDir
+				-- gunDir = sm.quat.angleAxis(math.rad(-20 * self.sprintWeight), right) * sm.quat.angleAxis(math.rad(-30 * self.sprintWeight), up) * gunDir
+				-- gunDir = (self.tool:getFpBonePos("pejnt_barrel_end") - self.tool:getFpBonePos("pejnt_barrel")):safeNormalize(gunDir)
+			end
 
+			scaleMult = scaleMult * 0.25
+		else
+			rHand = self.tool:getTpBonePos("jnt_right_hand")
+			if isSprinting then
+				gunDir = self.tool:getTpBoneDir("pejnt_barrel")
+			end
+		end
+
+		rHand = rHand + self.tool:getOwner().character.velocity * dt
+
+		local camRot = self:getCamRot(gunDir)
 		if self.equipped then
+			local gunScale = self.gun.data.scale * scaleMult
 			for k, data in pairs(self.gun.effects) do
 				local effect = data.effect
-				effect:setPosition( handPos + camRot * data.pos )
-				effect:setRotation( camRot * data.rot )
+				effect:setPosition(rHand + camRot * data.pos * gunScale)
+				effect:setRotation(camRot * data.rot)
+				effect:setScale(data.scale * scaleMult)
 
 				if not effect:isPlaying() then
 					effect:start()
@@ -214,36 +234,31 @@ function BG_tool.client_onUpdate( self, dt )
 			end
 		end
 
-		local pos = handPos + camRot * (self.gun.data.muzzleOffset or vec3_zero)
+		local pos = rHand + camRot * (self.gun.data.muzzleOffset or VEC3_ZERO) * scaleMult
 		local effectPos, rot
 		if self.isLocal then
-			--local dir = sm.localPlayer.getDirection()
-			--local pos = self.tool:getFpBonePos( "pejnt_barrel" )
-			effectPos = self.aiming and pos + dir * 0.45 or pos + dir * 0.2
-			rot = sm.vec3.getRotation( sm.vec3.new( 0, 0, 1 ), dir )
+			effectPos = self.aiming and pos + gunDir * 0.45 or pos + gunDir * 0.2
+			rot = sm.vec3.getRotation( sm.vec3.new( 0, 0, 1 ), gunDir )
 
 			self.shootEffectFP:setPosition( effectPos )
 			self.shootEffectFP:setVelocity( self.tool:getMovementVelocity() )
 			self.shootEffectFP:setRotation( rot )
 		end
 
-		--local pos = self.tool:getTpBonePos( "pejnt_barrel" )
-		--local dir = self.tool:getTpBoneDir( "pejnt_barrel" )
-		effectPos = pos + dir * 0.2
-		rot = sm.vec3.getRotation( sm.vec3.new( 0, 0, 1 ), dir )
+		effectPos = pos + gunDir * 0.2
+		rot = sm.vec3.getRotation( sm.vec3.new( 0, 0, 1 ), gunDir )
 
 		self.shootEffect:setPosition( effectPos )
 		self.shootEffect:setVelocity( self.tool:getMovementVelocity() )
 		self.shootEffect:setRotation( rot )
 	end
 
-	-- Timers
-	self.fireCooldownTimer = math.max( self.fireCooldownTimer - dt, 0.0 )
-	self.spreadCooldownTimer = math.max( self.spreadCooldownTimer - dt, 0.0 )
-	self.sprintCooldownTimer = math.max( self.sprintCooldownTimer - dt, 0.0 )
-
-
 	if self.isLocal then
+		-- Timers
+		self.fireCooldownTimer = math.max( self.fireCooldownTimer - dt, 0.0 )
+		self.spreadCooldownTimer = math.max( self.spreadCooldownTimer - dt, 0.0 )
+		self.sprintCooldownTimer = math.max( self.sprintCooldownTimer - dt, 0.0 )
+
 		local dispersion = 0.0
 		local fireMode = self.aiming and self.aimFireMode or self.normalFireMode
 		local recoilDispersion = 1.0 - ( math.max( fireMode.minDispersionCrouching, fireMode.minDispersionStanding ) + fireMode.maxMovementDispersion )
@@ -280,31 +295,29 @@ function BG_tool.client_onUpdate( self, dt )
 			self.tool:setCrossHairAlpha( 1.0 )
 			self.tool:setInteractionTextSuppressed( false )
 		end
+
+		-- Sprint block
+		local blockSprint = self.aiming or self.sprintCooldownTimer > 0.0
+		self.tool:setBlockSprint( blockSprint )
+
+		-- Camera update
+		local bobbing = 1
+		if self.aiming then
+			local blend = 1 - (1 - 1 / self.aimBlendSpeed) ^ (dt * 60)
+			self.aimWeight = sm.util.lerp( self.aimWeight, 1.0, blend )
+			bobbing = 0.12
+		else
+			local blend = 1 - (1 - 1 / self.aimBlendSpeed) ^ (dt * 60)
+			self.aimWeight = sm.util.lerp( self.aimWeight, 0.0, blend )
+			bobbing = 1
+		end
+
+		local fov = math.ceil(sm.camera.getDefaultFov() * (self.hasGun and self.gun.data.aimFOVScale or 1))
+		self.tool:updateCamera( 2.8, fov, sm.vec3.new( 0.65, 0.0, 0.05 ), self.aimWeight )
+		self.tool:updateFpCamera( fov, sm.vec3.new( 0.0, 0.0, 0.0 ), self.aimWeight, bobbing )
 	end
 
-	-- Sprint block
-	local blockSprint = self.aiming or self.sprintCooldownTimer > 0.0
-	self.tool:setBlockSprint( blockSprint )
-
-	if self.hasGun then
-		self:updateTP( dt, isSprinting, isCrouching )
-	end
-
-	-- Camera update
-	local bobbing = 1
-	if self.aiming then
-		local blend = 1 - (1 - 1 / self.aimBlendSpeed) ^ (dt * 60)
-		self.aimWeight = sm.util.lerp( self.aimWeight, 1.0, blend )
-		bobbing = 0.12
-	else
-		local blend = 1 - (1 - 1 / self.aimBlendSpeed) ^ (dt * 60)
-		self.aimWeight = sm.util.lerp( self.aimWeight, 0.0, blend )
-		bobbing = 1
-	end
-
-	local fov = math.ceil(sm.camera.getDefaultFov() * (self.hasGun and self.gun.data.aimFOVScale or 1))
-	self.tool:updateCamera( 2.8, fov, sm.vec3.new( 0.65, 0.0, 0.05 ), self.aimWeight )
-	self.tool:updateFpCamera( fov, sm.vec3.new( 0.0, 0.0, 0.0 ), self.aimWeight, bobbing )
+	self:updateTP( dt, isSprinting, isCrouching )
 end
 
 
@@ -328,11 +341,6 @@ function BG_tool:updateRenderables()
 		for k, v in pairs( renderablesFp ) do currentRenderablesFp[#currentRenderablesFp+1] = v end
 	end
 
-	--[[for k, v in pairs( renderables ) do
-		currentRenderablesTp[#currentRenderablesTp+1] = v
-		currentRenderablesFp[#currentRenderablesFp+1] = v
-	end]]
-
 	self.tool:setTpRenderables( currentRenderablesTp )
 	if self.isLocal then
 		self.tool:setFpRenderables( currentRenderablesFp )
@@ -340,6 +348,8 @@ function BG_tool:updateRenderables()
 end
 
 function BG_tool:updateFp( dt, isSprinting )
+	if not self.fpAnimations then return end
+
 	if self.equipped then
 		if isSprinting and self.fpAnimations.currentAnimation ~= "sprintInto" and self.fpAnimations.currentAnimation ~= "sprintIdle" then
 			swapFpAnimation( self.fpAnimations, "sprintExit", "sprintInto", 0.0 )
@@ -355,9 +365,16 @@ function BG_tool:updateFp( dt, isSprinting )
 		end
 	end
 	updateFpAnimations( self.fpAnimations, self.equipped, dt )
+
+	if self.fpAnimations.currentAnimation == "unequip" and self.fpAnimations.animations.unequip.time > self.fpAnimations.animations.unequip.info.duration then
+		self.fpAnimations = nil
+		self.tool:setFpRenderables({})
+	end
 end
 
 function BG_tool:updateTP( dt, isSprinting, isCrouching )
+	if not self.tpAnimations then return end
+
 	local playerDir = self.tool:getSmoothDirection()
 	local angle = math.asin( playerDir:dot( sm.vec3.new( 0, 0, 1 ) ) ) / ( math.pi / 2 )
 
@@ -376,6 +393,10 @@ function BG_tool:updateTP( dt, isSprinting, isCrouching )
 					setTpAnimation( self.tpAnimations, self.aiming and "aim" or "idle", 10.0 )
 				elseif name == "pickup" then
 					setTpAnimation( self.tpAnimations, self.aiming and "aim" or "idle", 0.001 )
+				elseif name == "putdown" then
+					self.tpAnimations = nil
+					self.tool:setTpRenderables({})
+					return
 				elseif animation.nextAnimation ~= "" then
 					setTpAnimation( self.tpAnimations, animation.nextAnimation, 0.001 )
 				end
@@ -436,6 +457,8 @@ function BG_tool:updateTP( dt, isSprinting, isCrouching )
 	self.tool:updateJoint( "jnt_head", sm.vec3.new( totalOffsetX, totalOffsetY, totalOffsetZ ), 0.3 * finalJointWeight )
 end
 
+local ignoreColor = sm.color.new("#696969")
+local vec3_4th = sm.vec3.one() * 0.25
 function BG_tool:sv_onGunPickup( args )
 	local data = args.gun.publicData
 	if data == nil then return end
@@ -443,16 +466,17 @@ function BG_tool:sv_onGunPickup( args )
 	local shapes = {}
 	local referencePoint = args.blockGun.worldPosition
 	for k, shape in pairs(args.body:getShapes()) do --args.body:getCreationShapes()
-		shapes[#shapes+1] = {
-			uuid = shape.uuid,
-			color = shape.color,
-			pos = (shape.worldPosition - referencePoint),
-			rot = shape.worldRotation,
-			boundingBox = shape:getBoundingBox()
-		}
+		if shape.uuid ~= blockGunUUID and shape.color ~= ignoreColor then
+			shapes[#shapes+1] = {
+				uuid = shape.uuid,
+				color = shape.color,
+				pos = (shape.worldPosition - referencePoint),
+				rot = shape.worldRotation,
+				boundingBox = (shape.isBlock or shape.isWedge) and shape:getBoundingBox() or vec3_4th
+			}
+		end
 	end
 
-	--local saved = { settings = data, shapes = args.body:getCreationShapes(), blockGun = args.blockGun }
 	local saved = { settings = data, shapes = shapes }
 	self.storage:save( saved )
 	self.network:sendToClients( "cl_onGunPickup", saved )
@@ -465,35 +489,18 @@ function BG_tool:cl_onGunPickup( data )
 	self.gun.effects = {}
 
 	local scale = self.gun.data.scale
-	--[[local referencePoint = data.blockGun.worldPosition
 	for k, shape in pairs(data.shapes) do
-		local effect = sm.effect.createEffect( "ShapeRenderable" )
 		local uuid = shape.uuid
+		local effect = sm.effect.createEffect( "ShapeRenderable" )
 		effect:setParameter("uuid", uuid)
 		effect:setParameter("color", shape.color)
-		effect:setScale( (sm.item.isBlock(uuid) and shape:getBoundingBox() or sm.vec3.one() * 0.25) * scale )
 
 		self.gun.effects[#self.gun.effects+1] = {
 			effect = effect,
-			pos = (shape.worldPosition - referencePoint) * scale,
-			rot = shape.worldRotation
+			pos = shape.pos,
+			rot = shape.rot,
+			scale = shape.boundingBox * scale
 		}
-	end]]
-
-	for k, shape in pairs(data.shapes) do
-		local uuid = shape.uuid
-		if uuid ~= blockGunUUID then
-			local effect = sm.effect.createEffect( "ShapeRenderable" )
-			effect:setParameter("uuid", uuid)
-			effect:setParameter("color", shape.color)
-			effect:setScale( (sm.item.isBlock(uuid) and shape.boundingBox or sm.vec3.one() * 0.25) * scale )
-
-			self.gun.effects[#self.gun.effects+1] = {
-				effect = effect,
-				pos = shape.pos * scale,
-				rot = shape.rot
-			}
-		end
 	end
 
 	if self.gun.data.muzzleOffset then
@@ -502,16 +509,15 @@ function BG_tool:cl_onGunPickup( data )
 
 	self.hasGun = true
 
-	self:updateRenderables()
-	self:loadAnimations()
-
 	local effects = self.gun.data.muzzleEffect
 	self.shootEffect = sm.effect.createEffect( effects.tp )
 
 	if self.isLocal then
 		self.shootEffectFP = sm.effect.createEffect( effects.fp )
+	end
 
-		self:updateFireModes()
+	if self.equipped then
+		self:client_onEquip(true)
 	end
 end
 
@@ -530,7 +536,7 @@ function BG_tool:updateFireModes()
 end
 
 function BG_tool:sv_clearGun()
-	self.storage:save({})
+	self.storage:save(nil)
 	self.network:sendToClients("cl_clearGun")
 end
 
@@ -542,8 +548,17 @@ function BG_tool:cl_clearGun()
 	self.gun = {}
 	self.hasGun = false
 
-	self:updateRenderables()
-	self:loadAnimations()
+	sm.audio.play( "PotatoRifle - Unequip", self.tool:getPosition() )
+	setTpAnimation( self.tpAnimations, "putdown" )
+	if self.isLocal then
+		self.tool:setMovementSlowDown( false )
+		self.tool:setBlockSprint( false )
+		self.tool:setCrossHairAlpha( 1.0 )
+		self.tool:setInteractionTextSuppressed( false )
+		if self.fpAnimations.currentAnimation ~= "unequip" then
+			swapFpAnimation( self.fpAnimations, "equip", "unequip", 0.2 )
+		end
+	end
 
 	self.shootEffect:destroy()
 	if self.isLocal then
@@ -573,17 +588,15 @@ function BG_tool.client_onEquip( self, animate )
 	self.aimWeight = math.max( cameraWeight, cameraFPWeight )
 	self.jointWeight = 0.0
 
-	self:updateRenderables()
+	if self.hasGun then
+		self:updateRenderables()
 
-	if self.hasGun or self.tpAnimations == nil then
 		self:loadAnimations()
-	end
 
-	setTpAnimation( self.tpAnimations, "pickup", 0.0001 )
-	if self.isLocal then
-		swapFpAnimation( self.fpAnimations, "unequip", "equip", 0.2 )
+		setTpAnimation( self.tpAnimations, "pickup", 0.0001 )
+		if self.isLocal then
+			swapFpAnimation( self.fpAnimations, "unequip", "equip", 0.2 )
 
-		if self.hasGun then
 			self:updateFireModes()
 		end
 	end
@@ -593,7 +606,7 @@ function BG_tool.client_onUnequip( self, animate )
 	self.wantEquipped = false
 	self.equipped = false
 	self.aiming = false
-	if sm.exists( self.tool ) then
+	if sm.exists( self.tool ) and self.hasGun then
 		if animate then
 			sm.audio.play( "PotatoRifle - Unequip", self.tool:getPosition() )
 		end
@@ -607,9 +620,7 @@ function BG_tool.client_onUnequip( self, animate )
 				swapFpAnimation( self.fpAnimations, "equip", "unequip", 0.2 )
 			end
 		end
-	end
 
-	if self.hasGun then
 		for k, data in pairs(self.gun.effects) do
 			data.effect:stop()
 		end
@@ -686,68 +697,27 @@ function BG_tool.calculateFirePosition( self )
 	return firePosition
 end
 
-function BG_tool.calculateTpMuzzlePos( self )
-	local crouching = self.tool:isCrouching()
-	local dir = sm.localPlayer.getDirection()
-	local pitch = math.asin( dir.z )
-	local right = sm.localPlayer.getRight()
-	local up = right:cross(dir)
-
-	local fakeOffset = sm.vec3.new( 0.0, 0.0, 0.0 )
-
-	--General offset
-	fakeOffset = fakeOffset + right * 0.25
-	fakeOffset = fakeOffset + dir * 0.5
-	fakeOffset = fakeOffset + up * 0.25
-
-	--Action offset
-	local pitchFraction = pitch / ( math.pi * 0.5 )
-	if crouching then
-		fakeOffset = fakeOffset + dir * 0.2
-		fakeOffset = fakeOffset + up * 0.1
-		fakeOffset = fakeOffset - right * 0.05
-
-		if pitchFraction > 0.0 then
-			fakeOffset = fakeOffset - up * 0.2 * pitchFraction
-		else
-			fakeOffset = fakeOffset + up * 0.1 * math.abs( pitchFraction )
-		end
-	else
-		fakeOffset = fakeOffset + up * 0.1 *  math.abs( pitchFraction )
-	end
-
-	local fakePosition = fakeOffset + GetOwnerPosition( self.tool )
-	return fakePosition
+function BG_tool:calculateTpMuzzlePos()
+	return self:calculateFpMuzzlePos()
 end
 
 ---@return Vec3
-function BG_tool.calculateFpMuzzlePos( self )
-	local fovScale = ( sm.camera.getFov() - 45 ) / 45
+function BG_tool:calculateFpMuzzlePos()
+	local rHand = self.tool:getOwner().character.velocity
+	local scaleMult = 1
+	local playerDir = self.tool:getSmoothDirection()
+	local gunDir = playerDir --self.tool:getTpBoneDir("pejnt_barrel")
+	if self.tool:isInFirstPersonView() then
+		rHand = self.tool:getFpBonePos("jnt_right_hand")
+		-- gunDir = (self.tool:getFpBonePos("pejnt_barrel_end") - self.tool:getFpBonePos("pejnt_barrel")):safeNormalize(playerDir)
 
-	local up = sm.localPlayer.getUp()
-	local dir = sm.localPlayer.getDirection()
-	local right = sm.localPlayer.getRight()
-
-	local muzzlePos45 = sm.vec3.new( 0.0, 0.0, 0.0 )
-	local muzzlePos90 = sm.vec3.new( 0.0, 0.0, 0.0 )
-
-	if self.aiming then
-		muzzlePos45 = muzzlePos45 - up * 0.2
-		muzzlePos45 = muzzlePos45 + dir * 0.5
-
-		muzzlePos90 = muzzlePos90 - up * 0.5
-		muzzlePos90 = muzzlePos90 - dir * 0.6
+		scaleMult = scaleMult * 0.25
 	else
-		muzzlePos45 = muzzlePos45 - up * 0.15
-		muzzlePos45 = muzzlePos45 + right * 0.2
-		muzzlePos45 = muzzlePos45 + dir * 1.25
-
-		muzzlePos90 = muzzlePos90 - up * 0.15
-		muzzlePos90 = muzzlePos90 + right * 0.2
-		muzzlePos90 = muzzlePos90 + dir * 0.25
+		rHand = self.tool:getTpBonePos("jnt_right_hand")
+		-- gunDir = self.tool:getTpBoneDir("pejnt_barrel")
 	end
 
-	return self.tool:getTpBonePos("jnt_right_weapon") + sm.vec3.lerp( muzzlePos45, muzzlePos90, fovScale )
+	return rHand + gunDir * 0.1 + self:getCamRot(gunDir) * (self.gun.data.muzzleOffset or VEC3_ZERO) * scaleMult
 end
 
 function BG_tool.cl_onPrimaryUse( self, state )
@@ -944,6 +914,7 @@ function BG_tool:getRotation( forward, up )
     return quaternion
 end
 
+local camRotAdjust = sm.quat.angleAxis(-RAD90, VEC3_UP)
 function BG_tool:getCamRot( dir )
-	return self:getRotation(dir:rotate(rad90, dir:cross(vec3_up)), dir) * camRotAdjust
+	return self:getRotation(dir:rotate(RAD90, dir:cross(VEC3_UP)), dir) * camRotAdjust
 end

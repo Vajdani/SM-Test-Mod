@@ -15,22 +15,26 @@ BG.defaultValues = {
     spread = 8,
     scale = 1
 }
-BG.projectileOptions = { "Potato", "Small Potato", "Fries", "Tape", "Explosive Tape" }
-BG.muzzleOptions = { "Spudgun", "SpudShotgun", "Spudling" }
 
 local projectileToUUID = {
-    Potato = projectile_potato,
-    ["Small Potato"] = projectile_smallpotato,
-    Fries = projectile_fries,
-    Tape = projectile_tape,
-    ["Explosive Tape"] = projectile_explosivetape
+    Potato              = projectile_potato,
+    ["Small Potato"]    = projectile_smallpotato,
+    Fries               = projectile_fries,
+    Tape                = projectile_tape,
+    ["Explosive Tape"]  = projectile_explosivetape,
+    ["Pesticide"]       = projectile_pesticide,
+    ["Water"]           = projectile_water,
+    ["Glowstick"]       = projectile_glowstick,
 }
 local UUIDToProjectile = {
-    [tostring(projectile_potato)] = "Potato",
-    [tostring(projectile_smallpotato)] = "Small Potato",
-    [tostring(projectile_fries)] = "Fries",
-    [tostring(projectile_tape)] = "Tape",
-    [tostring(projectile_explosivetape)] = "Explosive Tape"
+    [tostring(projectile_potato)]        = "Potato",
+    [tostring(projectile_smallpotato)]   = "Small Potato",
+    [tostring(projectile_fries)]         = "Fries",
+    [tostring(projectile_tape)]          = "Tape",
+    [tostring(projectile_explosivetape)] = "Explosive Tape",
+    [tostring(projectile_pesticide)]     = "Pesticide",
+    [tostring(projectile_water)]         = "Water",
+    [tostring(projectile_glowstick)]     = "Glowstick",
 }
 local muzzleToEffects = {
     Spudgun = { tp = "SpudgunBasic - BasicMuzzel", fp = "SpudgunBasic - FPBasicMuzzel" },
@@ -64,7 +68,8 @@ function BG:sv_updateSettings( data )
 end
 
 function BG:sv_markMuzzlePos( offset )
-    self.sv_data.muzzleOffset = offset
+    self.sv_data.muzzleOffset = offset[1]
+    self.sv_data.muzzleOffsetNormal = offset[2]
     self.network:setClientData( self.sv_data )
     self.storage:save( self.sv_data )
     self.interactable.publicData = self.sv_data
@@ -78,10 +83,23 @@ function BG:client_onCreate()
     self.gui:setTextAcceptedCallback( "fov", "cl_settings_fov" )
     self.gui:setButtonCallback( "auto", "cl_settings_auto" )
     self.gui:setTextAcceptedCallback( "cooldown", "cl_settings_cooldown" )
-    self.gui:createDropDown( "projectile", "cl_settings_projectile", self.projectileOptions )
+
+    local projectileOptions = {}
+    for k, v in pairs(projectileToUUID) do
+        table.insert(projectileOptions, k)
+    end
+
+    self.gui:createDropDown( "projectile", "cl_settings_projectile", projectileOptions )
+
     self.gui:setTextAcceptedCallback( "damage", "cl_settings_damage" )
     self.gui:setTextAcceptedCallback( "velocity", "cl_settings_velocity" )
-    self.gui:createDropDown( "muzzle", "cl_settings_muzzle", self.muzzleOptions )
+
+    local muzzleOptions = {}
+    for k, v in pairs(muzzleToEffects) do
+        table.insert(muzzleOptions, k)
+    end
+    self.gui:createDropDown( "muzzle", "cl_settings_muzzle", muzzleOptions )
+
     self.gui:setTextAcceptedCallback( "spread", "cl_settings_spread" )
     self.gui:setTextAcceptedCallback( "scale", "cl_settings_scale" )
     self.gui:setButtonCallback( "reset", "cl_settings_reset" )
@@ -92,30 +110,52 @@ function BG:client_onCreate()
     self.blockgunSeen = false
 end
 
+local handRot = sm.quat.angleAxis(RAD90, VEC3_RIGHT)
 function BG:client_onUpdate()
     if not self.markingMuzzlePos then return end
-    sm.gui.setInteractionText("", sm.gui.getKeyBinding("Use", true), "Cancel")
+    sm.gui.setInteractionText("", sm.gui.getKeyBinding("Attack", true), "Cancel")
 
     sm.gui.displayAlertText("Currently marking muzzle positon", 1)
     local hit, result = sm.localPlayer.getRaycast( 7.5 )
+    local pos = result.pointWorld
     self.blockgunSeen = hit and result.type == "body" and result:getBody() == self.shape.body
 
-    if not self.blockgunSeen then return end
+    if self.blockgunSeen then
+        if self.nextMuzzle then
+            self.nextMuzzle:setPosition(pos + result.normalWorld * 0.25)
+            self.nextMuzzle:setRotation(sm.vec3.getRotation(VEC3_UP, result.normalWorld) * handRot)
+        end
 
-    local pos = result.pointWorld
-    sm.particle.createParticle("paint_smoke", pos)
+        if self.currentMuzzle then
+            local pos2 = self.shape.worldPosition + self.cl_data.muzzleOffset
+            local rot = sm.quat.identity()
+            if self.cl_data.muzzleOffsetNormal then
+                pos2 = pos2 + self.cl_data.muzzleOffsetNormal * 0.25
+                rot = sm.vec3.getRotation(VEC3_UP, self.cl_data.muzzleOffsetNormal)
+            end
+
+            self.currentMuzzle:setPosition(pos2)
+            self.currentMuzzle:setRotation(rot * handRot)
+        end
+    else
+        return
+    end
+
     sm.gui.setInteractionText("", sm.gui.getKeyBinding("Create", true), "Mark as muzzle position")
 
     if self.click then
         self.click = false
         self.markingMuzzlePos = false
         self.blockgunSeen = false
+
         sm.effect.playEffect("Part - Upgrade", pos, sm.vec3.zero(), sm.vec3.getRotation(sm.vec3.new(0,1,0), result.normalWorld))
         sm.gui.displayAlertText("Successfully marked muzzle positon!", 2.5)
         sm.audio.play("Blueprint - Build")
 
+        self:cl_destroyMuzzleEffects()
+
         sm.localPlayer.getPlayer().character:setLockingInteractable( nil )
-        self.network:sendToServer("sv_markMuzzlePos", pos - self.shape.worldPosition)
+        self.network:sendToServer("sv_markMuzzlePos", { pos - self.shape.worldPosition, result.normalWorld })
     end
 end
 
@@ -150,6 +190,22 @@ end
 function BG:client_onTinker( char, state )
     if not state then return end
 
+    if self.cl_data.muzzleOffset then
+        self.currentMuzzle = sm.effect.createEffect("ShapeRenderable")
+        self.currentMuzzle:setParameter("uuid", obj_decor_mannequinhand)
+        self.currentMuzzle:setParameter("visualization", true)
+        self.currentMuzzle:setParameter("valid", false)
+        self.currentMuzzle:setScale(sm.vec3.one() * 0.25)
+        self.currentMuzzle:start()
+    end
+
+    self.nextMuzzle = sm.effect.createEffect("ShapeRenderable")
+    self.nextMuzzle:setParameter("uuid", obj_decor_mannequinhand)
+    self.nextMuzzle:setParameter("visualization", true)
+    self.nextMuzzle:setParameter("valid", true)
+    self.nextMuzzle:setScale(sm.vec3.one() * 0.25)
+    self.nextMuzzle:start()
+
     self.markingMuzzlePos = true
     char:setLockingInteractable( self.interactable )
 end
@@ -159,15 +215,31 @@ function BG:client_onAction( action, state )
         if self.blockgunSeen then
             self.click = state
         end
-    elseif action == sm.interactable.actions.use then
+
+        return true
+    elseif action == sm.interactable.actions.attack then
         self.click = false
         self.markingMuzzlePos = false
         sm.gui.displayAlertText("Cancelled muzzle marking!", 2.5)
         sm.audio.play("Blueprint - Delete")
         sm.localPlayer.getPlayer().character:setLockingInteractable( nil )
+
+        self:cl_destroyMuzzleEffects()
+
+        return true
     end
 
     return false
+end
+
+function BG:cl_destroyMuzzleEffects()
+    if self.currentMuzzle then
+        self.currentMuzzle:destroy()
+        self.currentMuzzle = nil
+    end
+
+    self.nextMuzzle:destroy()
+    self.nextMuzzle = nil
 end
 
 
