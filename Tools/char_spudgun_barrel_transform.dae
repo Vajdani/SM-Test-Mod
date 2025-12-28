@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<COLLADA xmlns="http://www.collada.org/2005/11/COLLADASchema" version="1.4.1"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <asset>
+    <contributor>
+      <author>Blender User</author>
+      <authoring_tool>Blender 4.5.5 LTS commit date:2025-11-17, commit time:16:03, hash:836beaaf597a</authoring_tool>
+    </contributor>
+    <created>2025-12-28T18:27:19</created>
+    <modified>2025-12-28T18:27:19</modified>
+    <unit name="meter" meter="1" />
+    <up_axis>Z_UP</up_axis>
+  </asset>
+  <library_images />
+  <library_controllers />
+  <library_visual_scenes>
+    <visual_scene id="char_spudgun_barrel_basic_geo" name="char_spudgun_barrel_basic_geo">
+      <node id="jnt_barrel" name="jnt_barrel" sid="jnt_barrel" type="JOINT">
+        <matrix sid="transform">1 0 0 0 0 1 0 1.226135 0 0 1 1.069256 0 0 0 1</matrix>
+        <node id="pejnt_barrel" name="pejnt_barrel" sid="pejnt_barrel" type="JOINT">
+          <matrix sid="transform">-1 -2.46003e-14 -1.50996e-7 0 -1.50996e-7 1.37475e-7 1 0
+            -3.84225e-15 1 -1.5574e-7 1.734274 0 0 0 1</matrix>
+          <node id="pejnt_barrel_end" name="pejnt_barrel_end" sid="pejnt_barrel_end"
+            type="JOINT">
+            <matrix sid="transform">1 0 0 0 0 1 1.42109e-14 1.734274 0 -1.42109e-14 1 0 0 0 0 1</matrix>
+            <extra>
+              <technique profile="blender">
+                <connect sid="connect" type="bool">1</connect>
+                <roll sid="roll" type="float">-3.141592</roll>
+                <tip_x sid="tip_x" type="float">0</tip_x>
+                <tip_y sid="tip_y" type="float">2.38419e-7</tip_y>
+                <tip_z sid="tip_z" type="float">1.734274</tip_z>
+              </technique>
+            </extra>
+          </node>
+          <extra>
+            <technique profile="blender">
+              <roll sid="roll" type="float">-3.141592</roll>
+            </technique>
+          </extra>
+        </node>
+        <extra>
+          <technique profile="blender">
+            <tip_x sid="tip_x" type="float">0</tip_x>
+            <tip_y sid="tip_y" type="float">1.734274</tip_y>
+            <tip_z sid="tip_z" type="float">0</tip_z>
+          </technique>
+        </extra>
+      </node>
+    </visual_scene>
+  </library_visual_scenes>
+  <scene>
+    <instance_visual_scene url="#char_spudgun_barrel_basic_geo" />
+  </scene>
+</COLLADA>
