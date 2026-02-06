@@ -139,3 +139,23 @@ function sm.physics.spherecast(startPos, endPos, radius, object, mask)
 
     return oldSpherecast(startPos, endPos, radius, object, mask)
 end
+
+
+
+initCmd = initCmd or false
+
+oldBindCmd = oldBindCmd or sm.game.bindChatCommand
+---@diagnostic disable-next-line:duplicate-set-field
+function sm.game.bindChatCommand(command, params, callback, help)
+    if not initCmd then
+        initCmd = true
+
+        dofile "$CONTENT_a3db3704-0fa0-4685-befe-e668f81149e1/Scripts/vanilla_override.lua"
+
+        oldBindCmd("/lhotbar", { { "string", "hotbar name", false } },  "cl_onChatCommand", "Loads the saved hotbar with the given name.")
+        oldBindCmd("/shotbar", { { "string", "hotbar name", false } },  "cl_onChatCommand", "Saves the active hotbar with the given name.")
+        oldBindCmd("/hotbars", {},                                      "cl_onChatCommand", "Lists all saved hotbars.")
+    end
+
+    oldBindCmd(command, params, callback, help)
+end

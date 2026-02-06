@@ -130,6 +130,109 @@ sm.tool.preloadRenderables( renderablesFp )
 function GunnerShield_handheld:client_onCreate()
 	self.isLocal = self.tool:isLocal()
 	self.owner = self.tool:getOwner()
+
+    if self.isLocal then
+        sm.testmod_cmdHandler = self.tool
+    end
+end
+
+local function OpenFile(path)
+    if sm.json.fileExists(path) then
+        return sm.json.open(path)
+    end
+
+    return {}
+end
+
+function GunnerShield_handheld:cl_lhotbar(params)
+    local hotbar = OpenFile("$CONTENT_DATA/presets.json")[params[2]]
+    if hotbar then
+        self.network:sendToServer("sv_switchHotbar", hotbar)
+    else
+        sm.gui.chatMessage(("#ff0000ff%s %s"):format(sm.gui.translateLocalizationTags("#{UGC_CANNOT_FIND}"), params[2]))
+        sm.audio.play("RaftShark")
+    end
+end
+
+function GunnerShield_handheld:cl_shotbar(params)
+    local presets = OpenFile("$CONTENT_DATA/presets.json")
+    local name = params[2]
+    if presets[name] then
+        self.confirmOverwriteGui = sm.gui.createGuiFromLayout( "$GAME_DATA/Gui/Layouts/PopUp/PopUp_YN.layout", true )
+        self.confirmOverwriteGui:setButtonCallback( "Yes", "cl_onOverwriteConfirmButtonClick" )
+        self.confirmOverwriteGui:setButtonCallback( "No", "cl_onOverwriteConfirmButtonClick" )
+        self.confirmOverwriteGui:setText( "Title", "#{MENU_YN_TITLE_ARE_YOU_SURE}" )
+        self.confirmOverwriteGui:setText( "Message", "#{ERRMSG_SAVE_ALREADY_EXISTS}\n#{WORLD_BUILDER_OVERWRITE}" )
+        self.confirmOverwriteGui:open()
+        self.hotbarSaveData = {
+            name = name,
+            presets = presets,
+        }
+
+        return
+    end
+
+    self:cl_saveHotbar(presets, name)
+end
+
+local uuid_nil = sm.uuid.getNil()
+function GunnerShield_handheld:cl_hotbars()
+    local presets = OpenFile("$CONTENT_DATA/presets.json")
+    local count = 0
+    for k, v in pairs(presets) do
+        count = count + 1
+        sm.gui.chatMessage(("Hotbar %s: %s"):format(count, k))
+        for id, item in pairs(v) do
+            local uuid = sm.uuid.new(item[1])
+            if uuid == uuid_nil then
+                goto continue
+            end
+
+            if sm.item.isTool(uuid) then
+                sm.gui.chatMessage(("\t%s: %s"):format(id, sm.shape.getShapeTitle(uuid)))
+            else
+                sm.gui.chatMessage(("\t%s: %s x%s"):format(id, sm.shape.getShapeTitle(uuid), item[2]))
+            end
+
+            ::continue::
+        end
+    end
+
+    if count == 0 then
+        sm.gui.chatMessage("No saved hotbars found.")
+    end
+end
+
+function GunnerShield_handheld:sv_switchHotbar(hotbar, player)
+    local inventory = player:getHotbar()
+    sm.container.beginTransaction()
+    for i = 1, 10 do
+        local item = hotbar[i]
+        inventory:setItem(i - 1, sm.uuid.new(item[1]), item[2])
+    end
+    sm.container.endTransaction()
+end
+
+function GunnerShield_handheld:cl_onOverwriteConfirmButtonClick(button)
+    if button == "Yes" then
+        self:cl_saveHotbar(self.hotbarSaveData.presets, self.hotbarSaveData.name)
+        self.hotbarSaveData = nil
+    end
+
+    self.confirmOverwriteGui:close()
+    self.confirmOverwriteGui = nil
+end
+
+function GunnerShield_handheld:cl_saveHotbar(presets, name)
+    local inventory = sm.localPlayer.getHotbar()
+    local hotbar = {}
+    for i = 0, 9 do
+        local item = inventory:getItem(i)
+        hotbar[#hotbar+1] = { tostring(item.uuid), item.quantity }
+    end
+
+    presets[name] = hotbar
+    sm.json.save(presets, "$CONTENT_DATA/presets.json")
 end
 
 function GunnerShield_handheld.loadAnimations( self )
