@@ -1,12 +1,31 @@
 ---@class GunnerShield : ShapeClass
 GunnerShield = class()
+GunnerShield.maxParentCount = 1
+GunnerShield.connectionInput = sm.interactable.connectionType.logic + sm.interactable.connectionType.seated
 
-local vec3_up = sm.vec3.new(0,0,1)
-local effectUp =sm.vec3.new(0,1,0)
+local vec3_up      = sm.vec3.new(0,0,1)
+local effectUp     = sm.vec3.new(0,1,0)
+local DeathTimer   = 10
+local ShieldRadius = 5
 
 function GunnerShield:server_onCreate()
-    self.deathTimer = 10
+    self.deathTimer = DeathTimer
     self.sentStop = false
+
+    local isThrown = false
+    local saved = self.storage:load() or {}
+    if saved.isThrown then
+        isThrown = true
+    elseif self.params then
+        isThrown = self.params.isThrown
+    end
+
+    self.isThrown = isThrown
+    self.storage:save({ isThrown = isThrown })
+
+    if (isThrown or #self.shape.body:getCreationShapes() == 1) and not self.shape.body:isDynamic() then
+        self:sv_activate(true)
+    end
 end
 
 function GunnerShield:server_onCollision(other, position, selfPointVelocity, otherPointVelocity, normal)
@@ -14,7 +33,8 @@ function GunnerShield:server_onCollision(other, position, selfPointVelocity, oth
     if other == nil and (body:isDynamic() or body:isOnLift()) then
         local rot = sm.vec3.getRotation(effectUp, normal)
         local uuid = self.shape.uuid
-        sm.shape.createPart(uuid, position + normal * 0.175 - rot * sm.item.getShapeOffset(uuid), rot, false, true)
+        local shape = sm.shape.createPart(uuid, position + normal * 0.175 - rot * sm.item.getShapeOffset(uuid), rot, false, true)
+        shape.interactable:setParams({ isThrown = self.isThrown })
         self.shape:destroyShape()
     else
         sm.physics.applyImpulse(self.shape, normal * self.shape.mass * 1.5, true)
@@ -22,6 +42,19 @@ function GunnerShield:server_onCollision(other, position, selfPointVelocity, oth
 end
 
 function GunnerShield:server_onFixedUpdate(dt)
+    -- print(sm.player.getAllPlayers()[1].character.velocity:length())
+    local parent = self.interactable:getSingleParent()
+    if parent then
+        if not parent:hasSeat() then
+            self:sv_activate(parent.active)
+        end
+
+        return
+    elseif self.interactable.active and not self.isThrown then
+        self:sv_activate(false)
+        return
+    end
+
     if not self.trigger or not sm.exists(self.shape) then return end
 
     self.deathTimer = self.deathTimer - dt
@@ -38,12 +71,29 @@ end
 
 function GunnerShield:sv_e_onHit() end
 
-function GunnerShield:sv_activate()
-    self.trigger = sm.areaTrigger.createAttachedSphere(self.interactable, 5, sm.vec3.zero(), sm.quat.identity(), -1, {
+function GunnerShield:sv_activate(state)
+    if state == nil then
+        state = not self.interactable.active
+    end
+
+    if state == self.interactable.active then return end
+
+    self.interactable.active = state
+    if not state and sm.exists(self.trigger) then
+        self.deathTimer = DeathTimer
+        sm.areaTrigger.destroy(self.trigger)
+    end
+
+    self.network:sendToClients("cl_activate", state)
+end
+
+function GunnerShield:sv_enableShield()
+    self.trigger = sm.areaTrigger.createAttachedSphere(self.interactable, ShieldRadius, sm.vec3.zero(), sm.quat.identity(), -1, {
         isCustomCollision = true,
         parent = self.shape
     })
     self.trigger:bindOnProjectile("sv_onTriggerHit", self)
+    self.trigger:bindOnEnter("sv_onTriggerEnter", self)
 end
 
 function GunnerShield:sv_onTriggerHit(trigger, hitPos, airTime, velocity, name, source, damage, data, normal, uuid)
@@ -58,25 +108,72 @@ function GunnerShield:sv_onTriggerHit(trigger, hitPos, airTime, velocity, name, 
     return true
 end
 
+function GunnerShield:sv_onTriggerEnter(trigger, results)
+    local pos = self.shape.worldPosition
+    for k, v in pairs(results) do
+        if not sm.exists(v) or type(v) ~= "Body" then
+            goto continue
+        end
+
+        local shapes = v:getCreationShapes()
+        if #shapes <= 5 and v.velocity:length() >= 10 then
+            local hitPos = pos + (v:getCenterOfMassPosition() - pos):normalize() * ShieldRadius
+
+            for _k, _v in pairs(shapes) do
+                _v:destroyShape()
+            end
+
+            sm.effect.playEffect(
+                "Barrier - SledgeHammerHit",
+                hitPos, sm.vec3.zero(),
+                sm.vec3.getRotation(effectUp, hitPos - pos)
+            )
+        end
+
+        ::continue::
+    end
+end
+
+
 
 function GunnerShield:client_onCreate()
-    local body = self.shape.body
-    if body:isDynamic() or body:isOnLift() then return end
 
-    self.effect = sm.effect.createEffect("GunnerShield", self.interactable)
-    self.effect:setOffsetRotation(sm.vec3.getRotation(vec3_up, effectUp))
-    self.effect:setScale(sm.vec3.one() * 4)
-    self.effect:bindEventCallback( "cl_onEvent", {}, self )
+end
 
-    self.effect:start()
+function GunnerShield:cl_activate(state)
+    if state then
+        self.effect = sm.effect.createEffect("GunnerShield", self.interactable)
+        self.effect:setOffsetRotation(sm.vec3.getRotation(vec3_up, effectUp))
+        self.effect:setScale(sm.vec3.one() * 4)
+        self.effect:bindEventCallback( "cl_onEvent", {}, self )
+
+        self.effect:start()
+    else
+        self:cl_onEvent("stop")
+    end
+end
+
+function GunnerShield:client_canInteract(char)
+    local parent = self.interactable:getSingleParent()
+    if not parent then return false end
+
+    return char == parent:getSeatCharacter()
+end
+
+function GunnerShield:client_onInteract(char, state)
+    if not state or not sm.exists(char) or char ~= self.interactable:getSingleParent():getSeatCharacter() then
+        return
+    end
+
+    self.network:sendToServer("sv_activate")
 end
 
 function GunnerShield:cl_onEvent(event)
     if event == "activate" and sm.isHost then
-        self.network:sendToServer("sv_activate")
+        self.network:sendToServer("sv_enableShield")
     end
 
-    if event == "stop" then
+    if event == "stop" and sm.exists(self.effect) then
         self.effect:stop()
     end
 end
@@ -444,5 +541,6 @@ function GunnerShield_handheld:sv_throwShield(pos, caller)
     local rot = sm.vec3.getRotation(-vec3_up, effectUp)
     local dir = caller.character.direction
     local shape = sm.shape.createPart(uuid, pos + dir - rot * sm.item.getShapeOffset(uuid), rot, true, true)
+    shape.interactable:setParams({ isThrown = true })
     sm.physics.applyImpulse(shape, dir * 7.5 * shape.mass, true)
 end
