@@ -1,6 +1,8 @@
 {
 	"particleSystemList":
 	[
-		"GunnerShield.json"
+		"GunnerShield.json",
+		"GunnerShield_impact.json",
+		"GunnerShield_hit_impact.json"
 	]
 }

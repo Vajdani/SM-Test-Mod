@@ -12,29 +12,19 @@ function GunnerShield:server_onCreate()
     self.deathTimer = DeathTimer
     self.sentStop = false
 
-    local isThrown = false
-    local saved = self.storage:load() or {}
-    if saved.isThrown then
-        isThrown = true
-    elseif self.params then
-        isThrown = self.params.isThrown
-    end
-
-    self.isThrown = isThrown
-    self.storage:save({ isThrown = isThrown })
-
-    if (isThrown or #self.shape.body:getCreationShapes() == 1) and not self.shape.body:isDynamic() then
+    if self:isThrown() and not self.shape.body:isDynamic() and not self.shape.body:isOnLift() then
         self:sv_activate(true)
     end
 end
 
 function GunnerShield:server_onCollision(other, position, selfPointVelocity, otherPointVelocity, normal)
+    if not self:isThrown() then return end
+
     local body = self.shape.body
-    if other == nil and (body:isDynamic() or body:isOnLift()) then
+    if other == nil and body:isDynamic() then
         local rot = sm.vec3.getRotation(effectUp, normal)
         local uuid = self.shape.uuid
-        local shape = sm.shape.createPart(uuid, position + normal * 0.175 - rot * sm.item.getShapeOffset(uuid), rot, false, true)
-        shape.interactable:setParams({ isThrown = self.isThrown })
+        sm.shape.createPart(uuid, position + normal * 0.125 - rot * sm.item.getShapeOffset(uuid), rot, false, true):setColor(self.shape.color)
         self.shape:destroyShape()
     else
         sm.physics.applyImpulse(self.shape, normal * self.shape.mass * 1.5, true)
@@ -50,7 +40,7 @@ function GunnerShield:server_onFixedUpdate(dt)
         end
 
         return
-    elseif self.interactable.active and not self.isThrown then
+    elseif self.interactable.active and not self:isThrown() then
         self:sv_activate(false)
         return
     end
@@ -82,6 +72,7 @@ function GunnerShield:sv_activate(state)
     if not state and sm.exists(self.trigger) then
         self.deathTimer = DeathTimer
         sm.areaTrigger.destroy(self.trigger)
+        self.trigger = nil
     end
 
     self.network:sendToClients("cl_activate", state)
@@ -100,9 +91,11 @@ function GunnerShield:sv_onTriggerHit(trigger, hitPos, airTime, velocity, name, 
     if self:isInTrigger(source) then return false end
 
     sm.effect.playEffect(
-        "Barrier - SledgeHammerHit",
+        "GunnerShield - Hit",
         hitPos, sm.vec3.zero(),
-        sm.vec3.getRotation(effectUp, hitPos - self.shape.worldPosition)
+        sm.vec3.getRotation(effectUp, hitPos - self.shape.worldPosition),
+        sm.vec3.one(),
+        { Color = self.shape.color }
     )
 
     return true
@@ -146,6 +139,7 @@ function GunnerShield:client_onCreate()
 
     self.bubble = sm.effect.createEffect("GunnerShield", self.interactable)
     self.bubble:setOffsetRotation(sm.vec3.getRotation(vec3_up, effectUp))
+	self.bubble:setParameter("minColor", sm.color.new(0, 0, 0, 0))
 
     self:cl_updateBubble()
 end
@@ -196,7 +190,20 @@ function GunnerShield:cl_updateBubble()
         return
     end
 
-    self.bubble:setScale(sm.vec3.one() * 4 * self.scale)
+    self.bubble:setScale(sm.vec3.one() * ShieldRadius * self.scale)
+
+    local col = self.shape.color
+    -- self.bubble:setParameter("minColor", sm.color.new(col.r, col.g, col.b, 0.0))
+	-- self.bubble:setParameter("maxColor", sm.color.new(col.r, col.g, col.b, 0.5))
+
+	self.bubble:setParameter("maxColor", col)
+
+	-- self.bubble:setParameter("minColor", sm.color.new(1 - col.r, 1 - col.g, 1 - col.b, 0))
+	-- self.bubble:setParameter("maxColor", sm.color.new(col.r, col.g, col.b, 1))
+
+    -- col.a = col.a * 0.1
+    col.a = col.a * 0.5
+    self.beams:setParameter("Color", col)
 end
 
 function GunnerShield:cl_onEvent(event)
@@ -219,6 +226,10 @@ function GunnerShield:isInTrigger(obj)
     end
 
     return isAnyOf(obj, self.trigger:getContents())
+end
+
+function GunnerShield:isThrown()
+    return #self.shape.body:getCreationShapes() == 1
 end
 
 
@@ -576,6 +587,5 @@ function GunnerShield_handheld:sv_throwShield(pos, caller)
     local rot = sm.vec3.getRotation(-vec3_up, effectUp)
     local dir = caller.character.direction
     local shape = sm.shape.createPart(uuid, pos + dir - rot * sm.item.getShapeOffset(uuid), rot, true, true)
-    shape.interactable:setParams({ isThrown = true })
     sm.physics.applyImpulse(shape, (dir * 7.5 + caller.character.velocity) * shape.mass, true)
 end

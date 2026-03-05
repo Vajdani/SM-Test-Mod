@@ -60,6 +60,33 @@
 			}
 		]
 	},
+	"GunnerShield - Hit":
+	{
+		"effectList":
+		[
+			{
+				"type": "particle",
+				"name": "GunnerShield_impact",
+				"offset": { "x": 0.0, "y": 0.0, "z": 0.0 },
+				"direction": { "x": 0.0, "y": 1.0, "z": 0.0 },
+				"attached": false,
+				"delay": 0.0
+			},
+			// {
+			// 	"type": "particle",
+			// 	"name": "GunnerShield_hit_impact",
+			// 	"offset": { "x": 0.0, "y": 0.0, "z": 0.0 },
+			// 	"direction": { "x": 0.0, "y": 1.0, "z": 0.0 },
+			// 	"attached": false,
+			// 	"delay": 0.0
+			// },
+			{
+				"type": "audio",
+				"name": "event:/vehicle/triggers/encryptor_off",
+				"delay": 0
+			}
+		]
+	},
 	"GunshipTurret - Shoot": {
 		"effectList": [
 			{
