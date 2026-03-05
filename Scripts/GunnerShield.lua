@@ -59,7 +59,7 @@ function GunnerShield:server_onFixedUpdate(dt)
 
     self.deathTimer = self.deathTimer - dt
     if self.deathTimer <= 1 and not self.sentStop then
-        self.network:sendToClients("cl_onEvent", "stop")
+        self.network:sendToClients("cl_activate", false)
         sm.areaTrigger.destroy(self.trigger)
         self.sentStop = true
     end
@@ -137,20 +137,27 @@ end
 
 
 function GunnerShield:client_onCreate()
+    self.scale = 0
+    self.active = false
 
+    self.beams = sm.effect.createEffect("GunnerShield - Beams", self.interactable)
+    self.beams:setOffsetRotation(sm.vec3.getRotation(vec3_up, effectUp))
+    self.beams:bindEventCallback( "cl_onEvent", {}, self )
+
+    self.bubble = sm.effect.createEffect("GunnerShield", self.interactable)
+    self.bubble:setOffsetRotation(sm.vec3.getRotation(vec3_up, effectUp))
+
+    self:cl_updateBubble()
 end
 
-function GunnerShield:cl_activate(state)
-    if state then
-        self.effect = sm.effect.createEffect("GunnerShield", self.interactable)
-        self.effect:setOffsetRotation(sm.vec3.getRotation(vec3_up, effectUp))
-        self.effect:setScale(sm.vec3.one() * 4)
-        self.effect:bindEventCallback( "cl_onEvent", {}, self )
-
-        self.effect:start()
+function GunnerShield:client_onUpdate(dt)
+    if self.active then
+        self.scale = math.min(self.scale + dt, 1)
     else
-        self:cl_onEvent("stop")
+        self.scale = math.max(self.scale - dt * 5, 0)
     end
+
+    self:cl_updateBubble()
 end
 
 function GunnerShield:client_canInteract(char)
@@ -168,13 +175,37 @@ function GunnerShield:client_onInteract(char, state)
     self.network:sendToServer("sv_activate")
 end
 
+function GunnerShield:cl_activate(state)
+    if state then
+        self.bubble:start()
+        self.beams:start()
+    else
+        self:cl_onEvent("stop")
+    end
+
+    self.active = state
+end
+
+function GunnerShield:cl_updateBubble()
+    local state = self.scale > 0
+    if not state then
+        if self.bubble:isPlaying() then
+            self.bubble:stop()
+        end
+
+        return
+    end
+
+    self.bubble:setScale(sm.vec3.one() * 4 * self.scale)
+end
+
 function GunnerShield:cl_onEvent(event)
     if event == "activate" and sm.isHost then
         self.network:sendToServer("sv_enableShield")
     end
 
-    if event == "stop" and sm.exists(self.effect) then
-        self.effect:stop()
+    if event == "stop" and sm.exists(self.bubble) then
+        self.beams:stop()
     end
 end
 
@@ -202,6 +233,8 @@ dofile( "$SURVIVAL_DATA/Scripts/game/survival_projectiles.lua" )
 ---@field normalFireMode table
 ---@field blendTime number
 ---@field aimBlendSpeed number
+---@field wantEquipped boolean
+---@field equipped boolean
 GunnerShield_handheld = class()
 
 local renderables = {
@@ -542,5 +575,5 @@ function GunnerShield_handheld:sv_throwShield(pos, caller)
     local dir = caller.character.direction
     local shape = sm.shape.createPart(uuid, pos + dir - rot * sm.item.getShapeOffset(uuid), rot, true, true)
     shape.interactable:setParams({ isThrown = true })
-    sm.physics.applyImpulse(shape, dir * 7.5 * shape.mass, true)
+    sm.physics.applyImpulse(shape, (dir * 7.5 + caller.character.velocity) * shape.mass, true)
 end
