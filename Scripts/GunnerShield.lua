@@ -212,6 +212,8 @@ end
 
 
 function GunnerShield:isInTrigger(obj)
+    if not sm.exists(self.trigger) then return false end
+
     if type(obj) == "Player" then
         obj = obj.character
     end
