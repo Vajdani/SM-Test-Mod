@@ -1,7 +1,7 @@
 dofile "util.lua"
 
 local BETA = false
-local gravRotate = true
+local gravRotate = false
 local ico_lmb = sm.gui.getKeyBinding("Create", true)
 local ico_rmb = sm.gui.getKeyBinding("Attack", true)
 local ico_q = sm.gui.getKeyBinding("NextCreateRotation", true)
@@ -530,8 +530,8 @@ function Grav:server_onFixedUpdate()
 			local mouseDelta = sv.mouseDelta
 			local charDir = sv.rotDirection:rotate(math.rad(mouseDelta.x), vec3_up)
 			charDir = charDir:rotate(math.rad(mouseDelta.y), CalculateRightVector(charDir))
-			local difference = (target.worldRotation * sm.vec3.new(1,0,0)):cross(charDir) --[[@as Vec3]]
-			sm.physics.applyTorque(target, ((difference * 2) - ( target.angularVelocity--[[@as Vec3]] * 0.3 )) * mass, true)
+			local difference = (target.worldRotation * sm.vec3.new(0,1,0)):cross(charDir) --[[@as Vec3]]
+			sm.physics.applyTorque(target, (difference - ( target.angularVelocity--[[@as Vec3]] * 0.2 )) * mass * 0.261917234, true)
 		end
 	end
 end

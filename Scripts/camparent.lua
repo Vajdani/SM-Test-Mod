@@ -58,7 +58,7 @@ end
 
 function CamParent:client_onCreate()
     self.cl = {}
-    self.cl.camIndex = 0
+    self.cl.camIndex = 1
     self.cl.seatedChar = nil
 end
 
@@ -86,13 +86,9 @@ function CamParent:client_onUpdate( dt )
 
     if noSeatChar or char ~= seatChar then return end
 
-    local children = self:getCamChildren()
-    local camHost = children[self.cl.camIndex] or self.shape
-
-    local lerpTime = dt * 10
-    local newPos = camHost.worldPosition - seat.up * 5
-    sm.camera.setPosition( sm.vec3.lerp( sm.camera.getPosition(), newPos, lerpTime ) )
-    sm.camera.setDirection( sm.vec3.lerp( sm.camera.getDirection(), seat.up, lerpTime ) )
+    local camHost = self:getCamChildren()[self.cl.camIndex] or self.shape
+    sm.camera.setPosition(camHost:getInterpolatedWorldPosition() + camHost.velocity * dt)
+    sm.camera.setDirection(camHost:getInterpolatedRight())
 end
 
 function CamParent:client_canInteract()
@@ -116,7 +112,7 @@ end
 
 function CamParent:cl_changeCamIndex()
     local children = self:getCamChildren()
-    self.cl.camIndex = self.cl.camIndex < #children and self.cl.camIndex + 1 or 0
+    self.cl.camIndex = self.cl.camIndex < #children and self.cl.camIndex + 1 or 1
 end
 
 function CamParent:cl_onClientCamChanged( args )

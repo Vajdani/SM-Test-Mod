@@ -62,83 +62,83 @@ black = sm.color.new(0, 0, 0)
 
 
 
-oldRaycast = oldRaycast or sm.physics.raycast
----@diagnostic disable-next-line:duplicate-set-field
-function sm.physics.raycast(startPos, endPos, ignoredObject, mask)
-    local hit, result = oldRaycast(startPos, endPos, ignoredObject,
-        sm.physics.filter.default + sm.physics.filter.areaTrigger)
-    if hit and result.type == "areaTrigger" then
-        local trigger = result:getAreaTrigger()
-        if sm.exists(trigger) then
-            local userdata = trigger:getUserData()
-            if userdata and userdata.isCustomCollision then
-                return true, {
-                    directionWorld = result.directionWorld,
-                    fraction = result.fraction,
-                    normalLocal = result.normalLocal,
-                    normalWorld = result.normalWorld,
-                    originWorld = result.originWorld,
-                    pointLocal = result.pointLocal,
-                    pointWorld = result.pointWorld,
-                    type = "body",
-                    valid = result.valid,
-                    getAreaTrigger = function() return nil end,
-                    getBody = function()
-                        return userdata.parent.body
-                    end,
-                    getCharacter = function() return nil end,
-                    getHarvestable = function() return nil end,
-                    getJoint = function() return nil end,
-                    getLiftData = function() return nil end,
-                    getShape = function()
-                        return userdata.parent
-                    end,
-                }
-            end
-        end
-    end
+-- oldRaycast = oldRaycast or sm.physics.raycast
+-- ---@diagnostic disable-next-line:duplicate-set-field
+-- function sm.physics.raycast(startPos, endPos, ignoredObject, mask)
+--     local hit, result = oldRaycast(startPos, endPos, ignoredObject,
+--         sm.physics.filter.default + sm.physics.filter.areaTrigger)
+--     if hit and result.type == "areaTrigger" then
+--         local trigger = result:getAreaTrigger()
+--         if sm.exists(trigger) then
+--             local userdata = trigger:getUserData()
+--             if userdata and userdata.isCustomCollision then
+--                 return true, {
+--                     directionWorld = result.directionWorld,
+--                     fraction = result.fraction,
+--                     normalLocal = result.normalLocal,
+--                     normalWorld = result.normalWorld,
+--                     originWorld = result.originWorld,
+--                     pointLocal = result.pointLocal,
+--                     pointWorld = result.pointWorld,
+--                     type = "body",
+--                     valid = result.valid,
+--                     getAreaTrigger = function() return nil end,
+--                     getBody = function()
+--                         return userdata.parent.body
+--                     end,
+--                     getCharacter = function() return nil end,
+--                     getHarvestable = function() return nil end,
+--                     getJoint = function() return nil end,
+--                     getLiftData = function() return nil end,
+--                     getShape = function()
+--                         return userdata.parent
+--                     end,
+--                 }
+--             end
+--         end
+--     end
 
-    return oldRaycast(startPos, endPos, ignoredObject, mask)
-end
+--     return oldRaycast(startPos, endPos, ignoredObject, mask)
+-- end
 
-oldSpherecast = oldSpherecast or sm.physics.spherecast
----@diagnostic disable-next-line:duplicate-set-field
-function sm.physics.spherecast(startPos, endPos, radius, object, mask)
-    local hit, result = oldSpherecast(startPos, endPos, radius, object,
-        sm.physics.filter.default + sm.physics.filter.areaTrigger)
-    if hit and result.type == "areaTrigger" then
-        local trigger = result:getAreaTrigger()
-        if sm.exists(trigger) then
-            local userdata = trigger:getUserData()
-            if userdata and userdata.isCustomCollision then
-                return true, {
-                    directionWorld = result.directionWorld,
-                    fraction = result.fraction,
-                    normalLocal = result.normalLocal,
-                    normalWorld = result.normalWorld,
-                    originWorld = result.originWorld,
-                    pointLocal = result.pointLocal,
-                    pointWorld = result.pointWorld,
-                    type = "body",
-                    valid = result.valid,
-                    getAreaTrigger = function() return nil end,
-                    getBody = function()
-                        return userdata.parent.body
-                    end,
-                    getCharacter = function() return nil end,
-                    getHarvestable = function() return nil end,
-                    getJoint = function() return nil end,
-                    getLiftData = function() return nil end,
-                    getShape = function()
-                        return userdata.parent
-                    end,
-                }
-            end
-        end
-    end
+-- oldSpherecast = oldSpherecast or sm.physics.spherecast
+-- ---@diagnostic disable-next-line:duplicate-set-field
+-- function sm.physics.spherecast(startPos, endPos, radius, object, mask)
+--     local hit, result = oldSpherecast(startPos, endPos, radius, object,
+--         sm.physics.filter.default + sm.physics.filter.areaTrigger)
+--     if hit and result.type == "areaTrigger" then
+--         local trigger = result:getAreaTrigger()
+--         if sm.exists(trigger) then
+--             local userdata = trigger:getUserData()
+--             if userdata and userdata.isCustomCollision then
+--                 return true, {
+--                     directionWorld = result.directionWorld,
+--                     fraction = result.fraction,
+--                     normalLocal = result.normalLocal,
+--                     normalWorld = result.normalWorld,
+--                     originWorld = result.originWorld,
+--                     pointLocal = result.pointLocal,
+--                     pointWorld = result.pointWorld,
+--                     type = "body",
+--                     valid = result.valid,
+--                     getAreaTrigger = function() return nil end,
+--                     getBody = function()
+--                         return userdata.parent.body
+--                     end,
+--                     getCharacter = function() return nil end,
+--                     getHarvestable = function() return nil end,
+--                     getJoint = function() return nil end,
+--                     getLiftData = function() return nil end,
+--                     getShape = function()
+--                         return userdata.parent
+--                     end,
+--                 }
+--             end
+--         end
+--     end
 
-    return oldSpherecast(startPos, endPos, radius, object, mask)
-end
+--     return oldSpherecast(startPos, endPos, radius, object, mask)
+-- end
 
 
 

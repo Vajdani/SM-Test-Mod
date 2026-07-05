@@ -432,6 +432,7 @@ local function normalise(a)
 end
 
 oldQuatSLerp = oldQuatSLerp or sm.quat.slerp
+---@diagnostic disable-next-line:duplicate-set-field
 function sm.quat.slerp(q1, q2, t)
     return normalise(oldQuatSLerp(q1, q2, t))
 end
@@ -481,12 +482,12 @@ function Car:client_onUpdate( dt )
         --if self.cameraMode ~= 1 then
             local worldPos = shape:getInterpolatedWorldPosition() + shape.velocity * dt
             --1.875 7.5
-            local offset = dir_forward * -1 * (3.75 * self.zoom) + dir_up * 4 --(fwd == -1 and dir_forward or -dir_forward) * (3.75 * self.zoom) + dir_up * 4
+            local offset = dir_forward * -1 * (3.75 * (self.zoom + 1)) + dir_up * 4 --(fwd == -1 and dir_forward or -dir_forward) * (3.75 * self.zoom) + dir_up * 4
             local newPos
-            local defaultDir = sm.camera.getDefaultRotation() * sm.vec3.new(0,1,0)
+            local defaultDir = sm.localPlayer.getPlayer().character:getSmoothViewDirection()
             if self.cameraMode == 1 then
                 local standing, seated = sm.camera.getCameraPullback()
-                newPos = sm.camera.getDefaultPosition() - defaultDir * seated
+                newPos = worldPos - defaultDir * seated
             else
                 newPos = worldPos + offset
             end

@@ -1879,6 +1879,32 @@
          "physicsMaterial": "Metal",
          "flammable": false,
          "showInInventory": false
+      },
+      {
+         "box": {
+            "x": 2,
+            "y": 1,
+            "z": 2
+         },
+         "color": "70c2ff",
+         "flammable": false,
+         "name": "test",
+         "physicsMaterial": "Mechanical",
+         "ratings": {
+            "buoyancy": 2,
+            "density": 2,
+            "durability": 10,
+            "friction": 5
+         },
+         "renderable": "$CONTENT_DATA/Objects/Renderables/GunnerShield.rend",
+         "rotationSet": "PropY",
+         "scripted": {
+            "classname": "SomeObject",
+            "filename": "$CONTENT_DATA/Scripts/test.lua"
+         },
+         "sticky": "-Y",
+         "uuid": "ef1d668b-a3f3-4f98-acfc-0890e6d3acfa",
+         "showInInventory": false
       }
    ]
 }
