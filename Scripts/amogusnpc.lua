@@ -1,11 +1,19 @@
 ---@class sus : ShapeClass
 sus = class()
 
-function sus:server_onCreate()
+function sus:client_onCreate()
+    self.interactable:setAnimEnabled("run", true)
+    self.animProgress = 0
+
     self.trigger = sm.areaTrigger.createAttachedSphere(self.interactable, 10, sm.vec3.zero(), sm.quat.identity(), sm.areaTrigger.filter.character)
 end
 
-function sus:server_onFixedUpdate()
+function sus:client_onUpdate(dt)
+    self.animProgress = self.animProgress + dt * 5
+    self.interactable:setAnimProgress("run", self.animProgress)
+end
+
+function sus:client_onFixedUpdate()
     ---@type Character, number, Vec3
     local target, distance, dir
     local shapePos = self.shape.worldPosition
@@ -29,16 +37,4 @@ function sus:server_onFixedUpdate()
 
     local vel = self.shape.velocity; vel.z = 0
     sm.physics.applyImpulse(self.shape, (impulse - vel * 0.2) * self.shape.mass, true)
-end
-
-
-
-function sus:client_onCreate()
-    self.interactable:setAnimEnabled("run", true)
-    self.animProgress = 0
-end
-
-function sus:client_onUpdate(dt)
-    self.animProgress = self.animProgress + dt * 5
-    self.interactable:setAnimProgress("run", self.animProgress)
 end
