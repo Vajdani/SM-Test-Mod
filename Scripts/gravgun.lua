@@ -85,8 +85,8 @@ dofile( "$SURVIVAL_DATA/Scripts/game/survival_harvestable.lua" )
 ---@field copyTargetGui GuiInterface
 ---@field oldUuid Uuid
 ---@field newUuid Uuid
----@field prevrmb boolean
----@field prevlmb boolean
+---@field prevrmb number
+---@field prevlmb number
 ---@field canTriggerFb boolean
 Grav = class()
 Grav.raycastRange = 1000
@@ -100,6 +100,12 @@ Grav.modes = {
 		onReload = "cl_mode_grav_hoverInc",
 		colour = sm.color.new(1,1,1)
 	},
+	-- ["Physics Manipulator"] = {
+	-- 	onEquipped = "cl_mode_pman",
+	-- 	onToggle = "cl_mode_pman_hoverDec",
+	-- 	onReload = "cl_mode_pman_hoverInc",
+	-- 	colour = sm.color.new(1,1,1)
+	-- },
 	["Tumbler"] = {
 		onEquipped = "cl_mode_tumble",
 		colour = sm.color.new(1,0,0)
@@ -508,8 +514,17 @@ function Grav:server_onFixedUpdate()
 		end
 	end
 
+	if not sv.equipped then
+		return
+	end
+
+	if sm.exists(self.sv_pmanTarget) then
+		self:sv_manipulatePhysics()
+		return
+	end
+
 	local target = sv.target
-	if not target or not sm.exists(target) or not sv.equipped then return end
+	if not target or not sm.exists(target) then return end
 
 	---@type Character
 	local char = self.tool:getOwner().character
@@ -533,6 +548,14 @@ function Grav:server_onFixedUpdate()
 			local difference = (target.worldRotation * sm.vec3.new(0,1,0)):cross(charDir) --[[@as Vec3]]
 			sm.physics.applyTorque(target, (difference - ( target.angularVelocity--[[@as Vec3]] * 0.2 )) * mass * 0.261917234, true)
 		end
+	end
+end
+
+function Grav:sv_manipulatePhysics()
+	local target, offset = self.sv_pmanTarget --[[@as Body]], self.sv_pmanOffset --[[@as Vec3]]
+	if sm.game.getServerTick()%20 == 0 then
+		print(target, offset)
+		sm.effect.playEffect("Part - Upgrade", target:transformPoint(offset))
 	end
 end
 
@@ -574,7 +597,7 @@ function Grav:sv_pasteTarget( pos )
 	elseif type == "Uuid" then
 		sm.unit.createUnit(target, pos)
 	else
-		sm.harvestable.create(target[1], pos, sm.vec3.getRotation(sm.vec3.new(0,1,0), vec3_up))
+		sm.harvestable.createHarvestable(target[1], pos, sm.vec3.getRotation(sm.vec3.new(0,1,0), vec3_up))
 	end
 end
 
@@ -604,11 +627,7 @@ function Grav:sv_deleteObject( obj )
 		end
 
 		for k, shape in pairs(obj:getCreationShapes()) do
-			if sm.item.isBlock(shape.uuid) then
-				shape:destroyShape()
-			else
-				shape:destroyPart()
-			end
+			shape:destroyShape()
 		end
 	elseif _type == "Harvestable" then
 		obj:destroy()
@@ -659,22 +678,14 @@ function Grav:sv_clear( mode )
 	if mode == 1 then
 		for k, body in pairs(sm.body.getAllBodies()) do
 			for j, shape in pairs(body:getCreationShapes()) do
-				if sm.item.isBlock(shape.uuid) then
-					shape:destroyShape()
-				else
-					shape:destroyPart()
-				end
+				shape:destroyShape()
 			end
 		end
 	elseif mode == 2 then
 		for k, body in pairs(sm.body.getAllBodies()) do
 			if body:isDynamic() then
 				for j, shape in pairs(body:getCreationShapes()) do
-					if sm.item.isBlock(shape.uuid) then
-						shape:destroyShape()
-					else
-						shape:destroyPart()
-					end
+					shape:destroyShape()
 				end
 			end
 		end
@@ -796,6 +807,7 @@ function Grav.client_onCreate( self )
 	for k, v in pairs(self.modes) do
 		options[#options+1] = k
 	end
+	table.sort(options)
 	self.gui:createDropDown( "modes", "cl_gui_modeDropDown", options )
 	self.gui:setSelectedDropDownItem( "modes", self.mode )
 	self.gui:setVisible( "panel_blockReplace", false )
@@ -959,6 +971,55 @@ function Grav:cl_mode_grav_hoverDec()
 	self.network:sendToServer("sv_updateRange", self.hoverRange)
 end
 
+function Grav:sv_updatePManTarget(args)
+	args = args or {}
+
+	self.sv_pmanTarget = args.target
+	self.sv_pmanOffset = args.offset
+end
+
+function Grav:cl_mode_pman(lmb, rmb, f)
+	if self.cl_pmanTarget then
+		if not sm.exists(self.cl_pmanTarget) then
+			self.cl_pmanTarget = nil
+			self.cl_pmanOffset = nil
+			self.network:sendToServer("sv_updatePManTarget")
+			return false
+		end
+
+		if lmb == 1 then
+			self.cl_pmanTarget = nil
+			self.cl_pmanOffset = nil
+			self.network:sendToServer("sv_updatePManTarget")
+		end
+
+		return false
+	end
+
+	local hit, result = sm.localPlayer.getRaycast(self.raycastRange)
+	local body = result:getBody()
+	if body then
+		gui_intText("", ico_lmb, "Pick up target")
+
+		if lmb == 1 then
+			self.cl_pmanTarget = body
+			self.cl_pmanOffset = result.pointLocal
+			self.network:sendToServer("sv_updatePManTarget", { target = body, offset = result.pointLocal })
+		end
+	end
+
+	return true
+end
+
+function Grav:cl_mode_pman_hoverDec()
+
+end
+
+function Grav:cl_mode_pman_hoverInc()
+
+end
+
+
 function Grav:cl_mode_tumble(lmb)
 	local hit, result = sm.localPlayer.getRaycast( self.raycastRange )
 	if not hit then return true end
@@ -993,8 +1054,7 @@ function Grav:cl_mode_copyrightInfringement()
 	if not hit then return true end
 
 	local target = result:getBody() or result:getCharacter() or result:getHarvestable()
-	local isChar = type(target) == "Character"
-	if target == nil or isChar and target:isPlayer() then return true end
+	if target == nil or type(target) == "Character" and target:isPlayer() then return true end
 
 	if not self.copyTarget then
 		gui_intText("", ico_lmb, "Set target")
